@@ -16,6 +16,20 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
     description: 'Represents an end-user device, web browser, or external consumer of the system.',
     defaultProperties: {},
   },
+  dns: {
+    label: 'DNS',
+    color: '#64748b',
+    icon: '📡',
+    description: 'Domain Name System: Translates human-readable domain names to IP addresses.',
+    defaultProperties: {},
+  },
+  cdn: {
+    label: 'CDN',
+    color: '#14b8a6',
+    icon: '🌐',
+    description: 'Content Delivery Network: Geographically distributed group of servers which work together to provide fast delivery of Internet content.',
+    defaultProperties: {},
+  },
   load_balancer: {
     label: 'Load Balancer',
     color: '#f59e0b',
@@ -25,6 +39,19 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
       algorithm: 'round_robin',
       healthCheck: true,
       layer: 'l7',
+    },
+  },
+  reverse_proxy: {
+    label: 'Reverse Proxy',
+    color: '#0ea5e9',
+    icon: '🔀',
+    description: 'Sits between clients and backend servers, handling SSL termination, caching, compression, and request routing.',
+    defaultProperties: {
+      product: 'nginx',
+      sslTermination: true,
+      caching: false,
+      compression: false,
+      rateLimiting: false,
     },
   },
   api_gateway: {
@@ -44,30 +71,6 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
       stateless: true,
     },
   },
-  database: {
-    label: 'Database',
-    color: '#ef4444',
-    icon: '🗄️',
-    description: 'A structured system for storing, managing, and retrieving data.',
-    defaultProperties: {
-      dbType: 'sql',
-      acidRequired: true,
-      readWriteRatio: 0.8,
-      scalingStrategy: 'vertical',
-    },
-  },
-  cache: {
-    label: 'Cache',
-    color: '#8b5cf6',
-    icon: '⚡',
-    description: 'High-speed data storage layer which stores a subset of data for faster retrieval.',
-    defaultProperties: {
-      cacheType: 'distributed',
-      product: 'redis',
-      evictionPolicy: 'lru',
-      ttlSeconds: 3600,
-    },
-  },
   message_queue: {
     label: 'Message Queue',
     color: '#ec4899',
@@ -82,19 +85,29 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
       hasDLQ: false,
     },
   },
-  cdn: {
-    label: 'CDN',
-    color: '#14b8a6',
-    icon: '🌐',
-    description: 'Content Delivery Network: Geographically distributed group of servers which work together to provide fast delivery of Internet content.',
-    defaultProperties: {},
+  cache: {
+    label: 'Cache',
+    color: '#8b5cf6',
+    icon: '⚡',
+    description: 'High-speed data storage layer which stores a subset of data for faster retrieval.',
+    defaultProperties: {
+      cacheType: 'distributed',
+      product: 'redis',
+      evictionPolicy: 'lru',
+      ttlSeconds: 3600,
+    },
   },
-  dns: {
-    label: 'DNS',
-    color: '#64748b',
-    icon: '📡',
-    description: 'Domain Name System: Translates human-readable domain names to IP addresses.',
-    defaultProperties: {},
+  database: {
+    label: 'Database',
+    color: '#ef4444',
+    icon: '🗄️',
+    description: 'A structured system for storing, managing, and retrieving data.',
+    defaultProperties: {
+      dbType: 'sql',
+      acidRequired: true,
+      readWriteRatio: 0.8,
+      scalingStrategy: 'vertical',
+    },
   },
   storage: {
     label: 'Storage',
@@ -107,19 +120,7 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
       versioning: false,
     },
   },
-  reverse_proxy: {
-    label: 'Reverse Proxy',
-    color: '#0ea5e9',
-    icon: '🔀',
-    description: 'Sits between clients and backend servers, handling SSL termination, caching, compression, and request routing.',
-    defaultProperties: {
-      product: 'nginx',
-      sslTermination: true,
-      caching: false,
-      compression: false,
-      rateLimiting: false,
-    },
-  },
+  
 }
 
 export function getMergedConfig(roles: ComponentType[]): {

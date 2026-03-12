@@ -253,7 +253,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
     setNodes((nds) => [...nds, newNode])
     setEdges((eds) => [...eds, ...newEdges])
     setSelectedNodeId(newNodeId)
-  }, [selectedNode, edges, setNodes, setEdges])
+  }, [selectedNode, edges, setNodes, setEdges, pushHistory])
 
   const canMerge = selectedNodeIds.length === 2
   const selectedNodeForSplit = selectedNode
@@ -681,6 +681,238 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
     }, 50)
   }, [pushHistory, setNodes, setEdges, isDarkMode, rfInstance])
 
+  const handleTwitter = useCallback(() => {
+    pushHistory()
+    
+    const twitterNodes: Node[] = [
+      // Entry points
+      { id: 'tw-client', type: 'architecture', position: { x: 400, y: 0 }, data: { label: 'Client', componentType: 'client', properties: {} } },
+      { id: 'tw-dns', type: 'architecture', position: { x: 700, y: 0 }, data: { label: 'DNS', componentType: 'dns', properties: {} } },
+      { id: 'tw-cdn', type: 'architecture', position: { x: 700, y: 150 }, data: { label: 'CDN', componentType: 'cdn', properties: {} } },
+      { id: 'tw-lb', type: 'architecture', position: { x: 400, y: 150 }, data: { label: 'Load Balancer', componentType: 'load_balancer', properties: { algorithm: 'round_robin', layer: 'l7', replicas: 2 } } },
+      
+      // Gateway
+      { id: 'tw-apigw', type: 'architecture', position: { x: 400, y: 300 }, data: { label: 'API Gateway', componentType: 'api_gateway', properties: { authEnabled: true, rateLimit: 5000, replicas: 2 } } },
+      
+      // Core Services
+      { id: 'tw-user-srv', type: 'architecture', position: { x: 50, y: 500 }, data: { label: 'User Service', componentType: 'service', properties: { replicas: 2 } } },
+      { id: 'tw-tweet-srv', type: 'architecture', position: { x: 250, y: 500 }, data: { label: 'Tweet Service', componentType: 'service', properties: { replicas: 2 } } },
+      { id: 'tw-timeline-srv', type: 'architecture', position: { x: 450, y: 500 }, data: { label: 'Timeline Service', componentType: 'service', properties: { replicas: 3 } } },
+      { id: 'tw-media-srv', type: 'architecture', position: { x: 650, y: 500 }, data: { label: 'Media Service', componentType: 'service', properties: { replicas: 2 } } },
+      
+      // Async & Storage
+      { id: 'tw-mq', type: 'architecture', position: { x: 250, y: 700 }, data: { label: 'Message Queue', componentType: 'message_queue', properties: { product: 'kafka', queueType: 'pub_sub', hasDLQ: true } } },
+      { id: 'tw-storage', type: 'architecture', position: { x: 650, y: 700 }, data: { label: 'Storage (S3)', componentType: 'storage', properties: { storageClass: 'standard', accessLevel: 'private' } } },
+      
+      // Async Workers
+      { id: 'tw-fanout-srv', type: 'architecture', position: { x: 150, y: 900 }, data: { label: 'Fan-out Service', componentType: 'service', properties: { replicas: 3 } } },
+      { id: 'tw-search-srv', type: 'architecture', position: { x: 350, y: 900 }, data: { label: 'Search Service', componentType: 'service', properties: { replicas: 2 } } },
+      
+      // Data Layer
+      { id: 'tw-db', type: 'architecture', position: { x: 250, y: 1100 }, data: { label: 'Database (MySQL)', componentType: 'database', properties: { dbType: 'sql', readWriteRatio: 0.2, replicas: 2 } } },
+      { id: 'tw-cache', type: 'architecture', position: { x: 550, y: 1100 }, data: { label: 'Cache (Redis)', componentType: 'cache', properties: { cacheType: 'distributed', product: 'redis', evictionPolicy: 'lru', ttlSeconds: 3600 } } },
+    ]
+
+    const edgeStyle = { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }
+
+    const twitterEdges: Edge[] = [
+      // User Request Flow (Sync)
+      { id: 'e-tw-client-dns', source: 'tw-client', target: 'tw-dns', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'dns' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-tw-client-cdn', source: 'tw-client', target: 'tw-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-tw-client-lb', source: 'tw-client', target: 'tw-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-tw-lb-apigw', source: 'tw-lb', target: 'tw-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      
+      // Gateway to Services (Sync)
+      { id: 'e-tw-apigw-user', source: 'tw-apigw', target: 'tw-user-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-tw-apigw-tweet', source: 'tw-apigw', target: 'tw-tweet-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-tw-apigw-timeline', source: 'tw-apigw', target: 'tw-timeline-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-tw-apigw-media', source: 'tw-apigw', target: 'tw-media-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      
+      // Service to Data/Storage (Sync)
+      { id: 'e-tw-user-db', source: 'tw-user-srv', target: 'tw-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-tw-tweet-db', source: 'tw-tweet-srv', target: 'tw-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-tw-timeline-cache', source: 'tw-timeline-srv', target: 'tw-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-tw-media-storage', source: 'tw-media-srv', target: 'tw-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
+      
+      // Async Decoupling (MQ as Channel)
+      // Tweet Service -> MQ (Async)
+      { id: 'e-tw-tweet-mq', source: 'tw-tweet-srv', target: 'tw-mq', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'default', animated: true },
+      // MQ -> Workers (Async Consumption)
+      { id: 'e-tw-mq-fanout', source: 'tw-mq', target: 'tw-fanout-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-tw-mq-search', source: 'tw-mq', target: 'tw-search-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'default', animated: true },
+      
+      // Worker to Data (Sync - Worker Services access Data Layer)
+      { id: 'e-tw-fanout-cache', source: 'tw-fanout-srv', target: 'tw-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-tw-search-db', source: 'tw-search-srv', target: 'tw-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'default', animated: true },
+    ]
+
+    setNodes(twitterNodes)
+    setEdges(twitterEdges)
+
+    setTimeout(() => {
+      if (rfInstance) {
+        rfInstance.fitView({ padding: 0.2, duration: 500 })
+      }
+    }, 50)
+  }, [pushHistory, setNodes, setEdges, isDarkMode, rfInstance])
+
+  const handleYouTube = useCallback(() => {
+    pushHistory()
+    
+    const ytNodes: Node[] = [
+      // Row 1: Users & DNS
+      { id: 'yt-client', type: 'architecture', position: { x: 500, y: 50 }, data: { label: 'Client', componentType: 'client', properties: {} } },
+      { id: 'yt-dns', type: 'architecture', position: { x: 900, y: 50 }, data: { label: 'DNS', componentType: 'dns', properties: {} } },
+      
+      // Row 2: Entry Points
+      { id: 'yt-lb', type: 'architecture', position: { x: 500, y: 200 }, data: { label: 'Load Balancer', componentType: 'load_balancer', properties: { algorithm: 'round_robin', layer: 'l7', replicas: 2 } } },
+      { id: 'yt-cdn', type: 'architecture', position: { x: 900, y: 200 }, data: { label: 'CDN', componentType: 'cdn', properties: {} } },
+      
+      // Row 3: Gateway
+      { id: 'yt-apigw', type: 'architecture', position: { x: 500, y: 350 }, data: { label: 'API Gateway', componentType: 'api_gateway', properties: { authEnabled: true, rateLimit: 10000 } } },
+      
+      // Row 4: Core Services
+      { id: 'yt-user-srv', type: 'architecture', position: { x: 100, y: 550 }, data: { label: 'User Service', componentType: 'service', properties: { replicas: 2 } } },
+      { id: 'yt-search-srv', type: 'architecture', position: { x: 300, y: 550 }, data: { label: 'Search Service', componentType: 'service', properties: { replicas: 2 } } },
+      { id: 'yt-reco-srv', type: 'architecture', position: { x: 500, y: 550 }, data: { label: 'Recommendation', componentType: 'service', properties: { replicas: 2 } } },
+      { id: 'yt-streaming-srv', type: 'architecture', position: { x: 700, y: 550 }, data: { label: 'Streaming', componentType: 'service', properties: { replicas: 3 } } },
+      { id: 'yt-metadata-srv', type: 'architecture', position: { x: 900, y: 550 }, data: { label: 'Metadata Service', componentType: 'service', properties: { replicas: 2 } } },
+      { id: 'yt-upload-srv', type: 'architecture', position: { x: 1100, y: 550 }, data: { label: 'Upload Service', componentType: 'service', properties: { replicas: 2 } } },
+      
+      // Row 5: Async & Workers
+      { id: 'yt-mq', type: 'architecture', position: { x: 1100, y: 750 }, data: { label: 'Message Queue', componentType: 'message_queue', properties: { product: 'kafka', queueType: 'pub_sub', hasDLQ: true } } },
+      { id: 'yt-transcoding-srv', type: 'architecture', position: { x: 1100, y: 950 }, data: { label: 'Transcoding', componentType: 'service', properties: { replicas: 5 } } },
+      
+      // Row 6: Data Layer
+      { id: 'yt-db', type: 'architecture', position: { x: 300, y: 1150 }, data: { label: 'Database', componentType: 'database', properties: { dbType: 'sql', readWriteRatio: 0.8 } } },
+      { id: 'yt-cache', type: 'architecture', position: { x: 600, y: 1150 }, data: { label: 'Cache', componentType: 'cache', properties: { cacheType: 'distributed', product: 'redis', evictionPolicy: 'lru', ttlSeconds: 3600 } } },
+      { id: 'yt-storage', type: 'architecture', position: { x: 1000, y: 1150 }, data: { label: 'Storage (S3)', componentType: 'storage', properties: { storageClass: 'standard' } } },
+    ]
+
+    const edgeStyle = { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }
+
+    const ytEdges: Edge[] = [
+      // Request Flow
+      { id: 'e-yt-client-dns', source: 'yt-client', target: 'yt-dns', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'dns' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-client-cdn', source: 'yt-client', target: 'yt-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-client-lb', source: 'yt-client', target: 'yt-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-lb-apigw', source: 'yt-lb', target: 'yt-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      
+      // API Gateway to Services
+      { id: 'e-yt-apigw-user', source: 'yt-apigw', target: 'yt-user-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-apigw-search', source: 'yt-apigw', target: 'yt-search-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-apigw-reco', source: 'yt-apigw', target: 'yt-reco-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-apigw-streaming', source: 'yt-apigw', target: 'yt-streaming-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-apigw-metadata', source: 'yt-apigw', target: 'yt-metadata-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-apigw-upload', source: 'yt-apigw', target: 'yt-upload-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      
+      // Upload Flow
+      { id: 'e-yt-upload-storage', source: 'yt-upload-srv', target: 'yt-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-upload-mq', source: 'yt-upload-srv', target: 'yt-mq', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-mq-transcoding', source: 'yt-mq', target: 'yt-transcoding-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-transcoding-storage', source: 'yt-transcoding-srv', target: 'yt-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-transcoding-mq', source: 'yt-transcoding-srv', target: 'yt-mq', sourceHandle: 'top-source', targetHandle: 'bottom-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-mq-metadata', source: 'yt-mq', target: 'yt-metadata-srv', sourceHandle: 'top-source', targetHandle: 'bottom-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'default', animated: true },
+      
+      // Metadata & CDN
+      { id: 'e-yt-metadata-db', source: 'yt-metadata-srv', target: 'yt-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-metadata-cdn', source: 'yt-metadata-srv', target: 'yt-cdn', sourceHandle: 'top-source', targetHandle: 'bottom-target', data: { connectionType: 'async', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      
+      // Streaming Flow
+      { id: 'e-yt-streaming-db', source: 'yt-streaming-srv', target: 'yt-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-streaming-cache', source: 'yt-streaming-srv', target: 'yt-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-cdn-storage', source: 'yt-cdn', target: 'yt-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { ...edgeStyle, strokeDasharray: '5,5' }, type: 'default', animated: true },
+
+      // Search & Reco
+      { id: 'e-yt-search-db', source: 'yt-search-srv', target: 'yt-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-reco-cache', source: 'yt-reco-srv', target: 'yt-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'default', animated: true },
+    ]
+
+    setNodes(ytNodes)
+    setEdges(ytEdges)
+
+    setTimeout(() => {
+      if (rfInstance) {
+        rfInstance.fitView({ padding: 0.2, duration: 500 })
+      }
+    }, 50)
+  }, [pushHistory, setNodes, setEdges, isDarkMode, rfInstance])
+
+  const handleGoogle = useCallback(() => {
+    pushHistory()
+    
+    const googleNodes: Node[] = [
+      // Row 1: Users & DNS
+      { id: 'gg-client', type: 'architecture', position: { x: 400, y: 0 }, data: { label: 'Client', componentType: 'client', properties: {} } },
+      { id: 'gg-dns', type: 'architecture', position: { x: 700, y: 0 }, data: { label: 'DNS', componentType: 'dns', properties: {} } },
+      
+      // Row 2: Entry Points
+      { id: 'gg-lb', type: 'architecture', position: { x: 400, y: 150 }, data: { label: 'Load Balancer', componentType: 'load_balancer', properties: { replicas: 2 } } },
+      { id: 'gg-cdn', type: 'architecture', position: { x: 700, y: 150 }, data: { label: 'CDN', componentType: 'cdn', properties: {} } },
+      
+      // Row 3: Gateway
+      { id: 'gg-apigw', type: 'architecture', position: { x: 400, y: 300 }, data: { label: 'API Gateway', componentType: 'api_gateway', properties: { authEnabled: true, rateLimit: 20000 } } },
+      
+      // Row 4: Core Services
+      { id: 'gg-auto-srv', type: 'architecture', position: { x: 0, y: 450 }, data: { label: 'Autocomplete Service', componentType: 'service', properties: { replicas: 2 } } },
+      { id: 'gg-query-srv', type: 'architecture', position: { x: 200, y: 450 }, data: { label: 'Query Service', componentType: 'service', properties: { replicas: 3 } } },
+      { id: 'gg-ranking-srv', type: 'architecture', position: { x: 400, y: 450 }, data: { label: 'Ranking Service', componentType: 'service', properties: { replicas: 3 } } },
+      { id: 'gg-ads-srv', type: 'architecture', position: { x: 600, y: 450 }, data: { label: 'Ads Service', componentType: 'service', properties: { replicas: 2 } } },
+      { id: 'gg-snippet-srv', type: 'architecture', position: { x: 800, y: 450 }, data: { label: 'Snippet Service', componentType: 'service', properties: { replicas: 2 } } },
+      { id: 'gg-crawler-srv', type: 'architecture', position: { x: 1000, y: 450 }, data: { label: 'Crawler Service', componentType: 'service', properties: { replicas: 3 } } },
+      
+      // Row 5: Async Middleware
+      { id: 'gg-mq', type: 'architecture', position: { x: 1000, y: 650 }, data: { label: 'Message Queue', componentType: 'message_queue', properties: { product: 'kafka', hasDLQ: true } } },
+      
+      // Row 6: Indexing Worker
+      { id: 'gg-indexing-srv', type: 'architecture', position: { x: 1000, y: 850 }, data: { label: 'Indexing Service', componentType: 'service', properties: { replicas: 2 } } },
+      
+      // Row 7: Data Layer
+      { id: 'gg-cache', type: 'architecture', position: { x: 100, y: 1050 }, data: { label: 'Cache (Results/Trie)', componentType: 'cache', properties: { product: 'redis', evictionPolicy: 'lru', ttlSeconds: 3600 } } },
+      { id: 'gg-db-index', type: 'architecture', position: { x: 500, y: 1050 }, data: { label: 'Database (Inverted Index)', componentType: 'database', properties: { dbType: 'nosql' } } },
+      { id: 'gg-storage', type: 'architecture', position: { x: 1000, y: 1050 }, data: { label: 'Storage (HTML)', componentType: 'storage', properties: { storageClass: 'standard' } } },
+    ]
+
+    const edgeStyle = { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }
+
+    const googleEdges: Edge[] = [
+      // Request Flow
+      { id: 'e-gg-client-dns', source: 'gg-client', target: 'gg-dns', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'dns' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-gg-client-cdn', source: 'gg-client', target: 'gg-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-gg-client-lb', source: 'gg-client', target: 'gg-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-gg-lb-apigw', source: 'gg-lb', target: 'gg-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      
+      // Gateway to Services
+      { id: 'e-gg-apigw-auto', source: 'gg-apigw', target: 'gg-auto-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-gg-apigw-query', source: 'gg-apigw', target: 'gg-query-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      
+      // Query Chain (Sync)
+      { id: 'e-gg-query-cache', source: 'gg-query-srv', target: 'gg-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-gg-query-db', source: 'gg-query-srv', target: 'gg-db-index', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-gg-query-ranking', source: 'gg-query-srv', target: 'gg-ranking-srv', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'grpc' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-gg-ranking-ads', source: 'gg-ranking-srv', target: 'gg-ads-srv', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'grpc' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-gg-ads-snippet', source: 'gg-ads-srv', target: 'gg-snippet-srv', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'grpc' }, style: edgeStyle, type: 'default', animated: true },
+      
+      // Autocomplete (Heavy Cache)
+      { id: 'e-gg-auto-cache', source: 'gg-auto-srv', target: 'gg-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'default', animated: true },
+      
+      // Crawler & Indexing Flow (Async)
+      { id: 'e-gg-crawler-storage', source: 'gg-crawler-srv', target: 'gg-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-gg-crawler-mq', source: 'gg-crawler-srv', target: 'gg-mq', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-gg-mq-indexing', source: 'gg-mq', target: 'gg-indexing-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-gg-indexing-db', source: 'gg-indexing-srv', target: 'gg-db-index', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'default', animated: true },
+    ]
+
+    setNodes(googleNodes)
+    setEdges(googleEdges)
+
+    setTimeout(() => {
+      if (rfInstance) {
+        rfInstance.fitView({ padding: 0.2, duration: 500 })
+      }
+    }, 50)
+  }, [pushHistory, setNodes, setEdges, isDarkMode, rfInstance])
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, backgroundColor: 'var(--bg-primary)' }}>
       <div
@@ -886,7 +1118,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
             <Controls />
             <Background gap={16} size={1} color={isDarkMode ? '#4b5563' : '#81818a'} />
             
-            <div style={{ position: 'absolute', bottom: 16, left: 70, zIndex: 10 }}>
+            <div style={{ position: 'absolute', bottom: 16, left: 70, zIndex: 10, display: 'flex', gap: 8 }}>
               <button
                 onClick={handleDemo}
                 style={{
@@ -902,6 +1134,54 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
                 }}
               >
                 Demo
+              </button>
+              <button
+                onClick={handleTwitter}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 6,
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
+              >
+                Twitter
+              </button>
+              <button
+                onClick={handleYouTube}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 6,
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
+              >
+                YouTube
+              </button>
+              <button
+                onClick={handleGoogle}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 6,
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
+              >
+                Google
               </button>
             </div>
           </ReactFlow>
