@@ -100,7 +100,7 @@ func validate(t model.SystemTopology) []Warning {
 	warnings = append(warnings, checkVerticalPartitioning(nodeByID, outgoing)...)
 	warnings = append(warnings, checkCacheConsistency(nodeByID, outgoing)...)
 	warnings = append(warnings, checkCAP(t.Nodes)...)
-	warnings = append(warnings, checkCDNUsage(t.Nodes)...)
+	warnings = append(warnings, checkCDNUsage(nodeByID, outgoing)...)
 	warnings = append(warnings, checkAsyncDecoupling(nodeByID, outgoing)...)
 	warnings = append(warnings, checkLBSPOF(t.Nodes)...)
 	warnings = append(warnings, checkReadWriteSeparation(t.Nodes)...)
@@ -115,21 +115,20 @@ func validate(t model.SystemTopology) []Warning {
 	return warnings
 }
 
-// checkCDNUsage warns if a Client exists but no CDN is found.
-func checkCDNUsage(nodes []model.SystemNode) []Warning {
-	hasClient := false
-	hasCDN := false
+// checkCDNUsage warns if a Client exists but no CDN is found, or if both exist but are not connected.
+func checkCDNUsage(nodes map[string]model.SystemNode, outgoing map[string][]string) []Warning {
 	var clientIDs []string
-	for _, node := range nodes {
+	var cdnIDs []string
+	for id, node := range nodes {
 		if node.ComponentType == "client" {
-			hasClient = true
-			clientIDs = append(clientIDs, node.ID)
+			clientIDs = append(clientIDs, id)
 		}
 		if node.ComponentType == "cdn" {
-			hasCDN = true
+			cdnIDs = append(cdnIDs, id)
 		}
 	}
-	if hasClient && !hasCDN {
+
+	if len(clientIDs) > 0 && len(cdnIDs) == 0 {
 		return []Warning{{
 			Rule:     "cdn_usage",
 			Message:  "🌐 CDN 全球加速建議：拓撲中存在 Client 但缺乏 CDN 節點。",
@@ -137,21 +136,53 @@ func checkCDNUsage(nodes []model.SystemNode) []Warning {
 			NodeIDs:  clientIDs,
 		}}
 	}
+
+	if len(clientIDs) > 0 && len(cdnIDs) > 0 {
+		// Check if any client connects to a cdn
+		connected := false
+		for _, clientID := range clientIDs {
+			targets := outgoing[clientID]
+			for _, targetID := range targets {
+				if nodes[targetID].ComponentType == "cdn" {
+					connected = true
+					break
+				}
+			}
+			if connected {
+				break
+			}
+		}
+
+		if !connected {
+			return []Warning{{
+				Rule:     "cdn_usage",
+				Message:  "🌐 CDN 全球加速建議：拓撲中存在 Client 與 CDN 但兩者未連線。",
+				Solution: "建議將 Client 連接至 CDN 節點，以發揮其內容快取與全球加速的優勢。",
+				NodeIDs:  append(clientIDs, cdnIDs...),
+			}}
+		}
+	}
+
 	return nil
 }
 
 // checkAsyncDecoupling suggests Message Queues for time-consuming operations.
 func checkAsyncDecoupling(nodes map[string]model.SystemNode, outgoing map[string][]string) []Warning {
 	var warnings []Warning
-	// Keywords that suggest a service might be performing time-consuming or background tasks.
-	// Using substrings like "mail" instead of "Email" to match "Gmail", "Mailer", etc.
 	keywords := []string{
 		"mail", "img", "image", "photo", "pic",
 		"vid", "video", "media", "stream", "transcode",
 		"report", "pdf", "export", "csv", "excel",
 		"task", "worker", "job", "batch", "process",
 		"notify", "sms", "push", "upload", "download",
+		"ai", "ml", "inference", "prediction", "training",
+		"payment", "billing", "checkout", "payout",
+		"index", "search", "crawl", "scrape",
+		"sync", "migration", "archive", "cleanup",
+		"audit", "analytics", "stats",
+		"webhook", "slack", "discord", "telegram",
 	}
+
 	for id, node := range nodes {
 		if node.ComponentType != "service" {
 			continue
@@ -166,18 +197,35 @@ func checkAsyncDecoupling(nodes map[string]model.SystemNode, outgoing map[string
 		}
 
 		if isTimeConsuming {
-			// Check if it's called synchronously
+			// Find who is calling this service
+			var synchronousCallers []string
+			isDecoupled := false
+
 			for sourceID, targets := range outgoing {
 				for _, targetID := range targets {
 					if targetID == id {
-						warnings = append(warnings, Warning{
-							Rule:     "async_decoupling",
-							Message:  fmt.Sprintf("📬 異步解耦提醒：服務 %q 似乎涉及耗時操作且為同步呼叫。", node.Label),
-							Solution: "建議使用 Message Queue (MQ) 將此類操作改為異步處理，以提高系統吞吐量與穩定性。",
-							NodeIDs:  []string{sourceID, id},
-						})
+						sourceNode := nodes[sourceID]
+						// If any caller is a Message Queue, we consider it decoupled!
+						if sourceNode.ComponentType == "message_queue" {
+							isDecoupled = true
+							break
+						}
+						synchronousCallers = append(synchronousCallers, sourceID)
 					}
 				}
+				if isDecoupled {
+					break
+				}
+			}
+
+			// If called synchronously and not through an MQ, issue warning
+			if isTimeConsuming && !isDecoupled && len(synchronousCallers) > 0 {
+				warnings = append(warnings, Warning{
+					Rule:     "async_decoupling",
+					Message:  fmt.Sprintf("📬 異步解耦提醒：服務 %q 似乎涉及耗時操作且目前接收同步呼叫。", node.Label),
+					Solution: "建議在呼叫方與此服務之間加入 Message Queue (MQ)，將操作改為異步處理，以提高系統吞吐量。",
+					NodeIDs:  append([]string{id}, synchronousCallers...),
+				})
 			}
 		}
 	}
@@ -188,20 +236,31 @@ func contains(s, substr string) bool {
 	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }
 
-// checkLBSPOF warns if there is only one Load Balancer in the entire system.
+// checkLBSPOF warns if there is only one Load Balancer in the entire system,
+// but suppresses the warning if that Load Balancer has Replicas > 1.
 func checkLBSPOF(nodes []model.SystemNode) []Warning {
-	var lbNodes []string
+	var lbNodes []model.SystemNode
 	for _, node := range nodes {
 		if node.ComponentType == "load_balancer" {
-			lbNodes = append(lbNodes, node.ID)
+			lbNodes = append(lbNodes, node)
 		}
 	}
+
 	if len(lbNodes) == 1 {
+		node := lbNodes[0]
+		props, err := model.ParseNodeProperties(node)
+		if err == nil {
+			if lbProps, ok := props.(*model.LoadBalancerProperties); ok && lbProps.Replicas > 1 {
+				// Multiple replicas of the same LB node solve the SPOF
+				return nil
+			}
+		}
+
 		return []Warning{{
 			Rule:     "lb_spof",
 			Message:  "⚖️ 入口單點故障：整體架構中僅存在 1 個 Load Balancer。",
-			Solution: "生產環境建議部署多個 LB 並結合 DNS 負載均衡 (如 Round Robin) 或使用 Active-Passive 備援機制。",
-			NodeIDs:  lbNodes,
+			Solution: "生產環境建議部署多個 LB，或在屬性面板中將 Replicas 複本數設為 2 以上。",
+			NodeIDs:  []string{node.ID},
 		}}
 	}
 	return nil
@@ -261,7 +320,8 @@ func checkCacheEviction(nodes []model.SystemNode) []Warning {
 	return warnings
 }
 
-// checkSPOF detects load balancers with only one downstream service node.
+// checkSPOF detects load balancers with only one downstream service node,
+// but suppresses the warning if that service node has Replicas > 1.
 func checkSPOF(nodes map[string]model.SystemNode, outgoing map[string][]string) []Warning {
 	var warnings []Warning
 	for id, node := range nodes {
@@ -270,19 +330,36 @@ func checkSPOF(nodes map[string]model.SystemNode, outgoing map[string][]string) 
 		}
 		targets := outgoing[id]
 		var serviceIDs []string
+		isRedundant := false
+
 		for _, targetID := range targets {
-			if target, ok := nodes[targetID]; ok && target.ComponentType == "service" {
-				serviceIDs = append(serviceIDs, targetID)
+			target, ok := nodes[targetID]
+			if !ok || target.ComponentType != "service" {
+				continue
+			}
+			serviceIDs = append(serviceIDs, targetID)
+
+			// Check if this specific service node has multiple replicas
+			props, err := model.ParseNodeProperties(target)
+			if err == nil {
+				if svcProps, ok := props.(*model.ServiceProperties); ok && svcProps.Replicas > 1 {
+					isRedundant = true
+				}
 			}
 		}
-		if len(serviceIDs) == 1 {
+
+		// If there's only 1 distinct service node AND its replicas = 1, it's a SPOF
+		if len(serviceIDs) == 1 && !isRedundant {
 			warnings = append(warnings, Warning{
 				Rule: "spof",
-				Message: fmt.Sprintf("⚠️ 檢測到單點故障 (SPOF)：Load Balancer %q 後方僅連接 1 個 Service 節點。",
+				Message: fmt.Sprintf("⚠️ 檢測到單點故障 (SPOF)：Load Balancer %q 後方僅連接 1 個 Service 節點複本。",
 					node.Label),
-				Solution: "增加 Service 節點數量或在屬性面板中提高 Replicas 複本數，並確保連線正確。",
+				Solution: "增加 Service 節點數量或在屬性面板中提高 Replicas 複本數。",
 				NodeIDs:  append([]string{id}, serviceIDs...),
 			})
+		} else if len(serviceIDs) > 1 {
+			// Multiple distinct nodes also solve the SPOF
+			isRedundant = true
 		}
 	}
 	return warnings
@@ -379,6 +456,7 @@ func checkVerticalPartitioning(nodes map[string]model.SystemNode, outgoing map[s
 }
 
 // checkCacheConsistency detects services connected to both cache and database.
+// The warning is suppressed if at least one connected cache node has a non-zero TTLSeconds configured.
 func checkCacheConsistency(nodes map[string]model.SystemNode, outgoing map[string][]string) []Warning {
 	var warnings []Warning
 	for id, node := range nodes {
@@ -389,19 +467,29 @@ func checkCacheConsistency(nodes map[string]model.SystemNode, outgoing map[strin
 		var involvedIDs []string
 		hasCache := false
 		hasDB := false
+		anyCacheHasTTL := false
+
 		for _, targetID := range targets {
 			if target, ok := nodes[targetID]; ok {
 				switch target.ComponentType {
 				case "cache":
 					hasCache = true
 					involvedIDs = append(involvedIDs, targetID)
+
+					// Check if this cache node has a TTL configured
+					props, err := model.ParseNodeProperties(target)
+					if err == nil {
+						if cacheProps, ok := props.(*model.CacheProperties); ok && cacheProps.TTLSeconds > 0 {
+							anyCacheHasTTL = true
+						}
+					}
 				case "database":
 					hasDB = true
 					involvedIDs = append(involvedIDs, targetID)
 				}
 			}
 		}
-		if hasCache && hasDB {
+		if hasCache && hasDB && !anyCacheHasTTL {
 			warnings = append(warnings, Warning{
 				Rule: "cache_consistency",
 				Message: fmt.Sprintf("⚡ 快取一致性權衡：Service %q 同時連接 Cache 與 Database。",
@@ -429,12 +517,31 @@ func checkCAP(nodes []model.SystemNode) []Warning {
 		if !ok {
 			continue
 		}
+
 		if model.APProducts[dbProps.Product] {
+			// If user explicitly chose Eventual Consistency, they acknowledge the AP nature.
+			if dbProps.ConsistencyLevel == "eventual" {
+				continue
+			}
+
+			// If user chose Strong Consistency on an AP system, warn about performance.
+			if dbProps.ConsistencyLevel == "strong" {
+				warnings = append(warnings, Warning{
+					Rule: "cap_theorem",
+					Message: fmt.Sprintf("🚀 效能與一致性權衡：%q (%s) 為 AP 系統，但您要求強一致性。",
+						node.Label, dbProps.Product),
+					Solution: "在 AP 系統上實施強一致性 (如 Quorum R/W) 將顯著增加延遲並降低可用性。請評估是否必要。",
+					NodeIDs:  []string{node.ID},
+				})
+				continue
+			}
+
+			// Default warning if no explicit choice is made.
 			warnings = append(warnings, Warning{
 				Rule: "cap_theorem",
 				Message: fmt.Sprintf("📐 CAP 定理：%q (%s) 為 AP 系統。",
 					node.Label, dbProps.Product),
-				Solution: "注意 AP 系統僅提供最終一致性，若需強一致性（如金流）請更換為 CP 系統（如 RDBMS）。",
+				Solution: "注意 AP 系統僅提供最終一致性。若需強一致性，請在屬性中選擇 'Strong' (注意效能) 或更換為 CP 系統 (如 RDBMS)。",
 				NodeIDs:  []string{node.ID},
 			})
 		}

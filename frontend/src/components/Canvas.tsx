@@ -15,7 +15,7 @@ import {
 import '@xyflow/react/dist/style.css'
 
 import ArchitectureNode from '../nodes/ArchitectureNode'
-import PropertyPanel from './PropertyPanel'
+import ComponentPropertyPanel from './ComponentPropertyPanel'
 import EdgePropertyPanel from './EdgePropertyPanel'
 import { NODE_TYPE_CONFIG } from '../nodes/nodeConfig'
 import { analyzeTopology } from '../api/topologyApi'
@@ -38,6 +38,9 @@ function generateNodeId(): string {
 
 interface CanvasProps {
   isDarkMode: boolean;
+  initialNodes?: Node[];
+  initialEdges?: Edge[];
+  onStateChange?: (nodes: Node[], edges: Edge[]) => void;
 }
 
 const PROTOCOL_LABELS: Record<string, string> = {
@@ -54,10 +57,10 @@ const PROTOCOL_LABELS: Record<string, string> = {
   dns: 'DNS',
 }
 
-function Canvas({ isDarkMode }: CanvasProps) {
+function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChange }: CanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>(initialNodes)
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges)
   const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
@@ -66,6 +69,7 @@ function Canvas({ isDarkMode }: CanvasProps) {
   )
   const [analyzing, setAnalyzing] = useState(false)
   const [showWarnings, setShowWarnings] = useState(false)
+  const [dismissedWarnings, setDismissedWarnings] = useState<Set<number>>(new Set())
 
   const [panelHeight, setPanelHeight] = useState(250)
   const isDraggingRef = useRef(false)
@@ -118,9 +122,14 @@ function Canvas({ isDarkMode }: CanvasProps) {
     return map
   }, [])
 
+  const activeWarnings = useMemo(() => {
+    if (!analysisResult?.warnings) return []
+    return analysisResult.warnings.filter((_, idx) => !dismissedWarnings.has(idx))
+  }, [analysisResult?.warnings, dismissedWarnings])
+
   const warningsByNode = useMemo(
-    () => buildWarningsByNode(analysisResult?.warnings ?? []),
-    [analysisResult, buildWarningsByNode]
+    () => buildWarningsByNode(activeWarnings),
+    [activeWarnings, buildWarningsByNode]
   )
 
   const fitViewToNode = useCallback((nodeId: string) => {
@@ -161,7 +170,11 @@ function Canvas({ isDarkMode }: CanvasProps) {
     
     prevNodesRef.current = [...nodes]
     prevEdgesRef.current = [...edges]
-  }, [nodes, edges])
+
+    if (onStateChange) {
+      onStateChange(nodes, edges)
+    }
+  }, [nodes, edges, onStateChange])
 
   const pushHistory = useCallback(() => {
     if (isUndoRedoRef.current) return
@@ -409,6 +422,7 @@ function Canvas({ isDarkMode }: CanvasProps) {
     if (nodes.length === 0) return
 
     setAnalyzing(true)
+    setDismissedWarnings(new Set()) // Reset dismissed warnings for new analysis
     try {
       const topology: SystemTopology = {
         id: 'current-design',
@@ -585,7 +599,7 @@ function Canvas({ isDarkMode }: CanvasProps) {
               {analysisResult.success
                 ? `${analysisResult.nodeCount} nodes, ${analysisResult.edgeCount} edges`
                 : 'Analysis failed'}
-              {analysisResult.warnings && analysisResult.warnings.length > 0 && (
+              {activeWarnings.length > 0 && (
                 <span 
                   onClick={() => setShowWarnings((prev) => !prev)}
                   style={{ 
@@ -596,12 +610,10 @@ function Canvas({ isDarkMode }: CanvasProps) {
                     textUnderlineOffset: 2,
                   }}
                 >
-                  {analysisResult.warnings.length} warning(s)
+                  {activeWarnings.length} warning(s)
                 </span>
               )}
             </span>
-
-
           </div>
         )}
       </div>
@@ -695,7 +707,7 @@ function Canvas({ isDarkMode }: CanvasProps) {
           </div>
 
           {/* Warning Panel terminal style */}
-          {showWarnings && analysisResult?.warnings && analysisResult.warnings.length > 0 && (
+          {showWarnings && activeWarnings.length > 0 && (
             <div
               style={{
                 height: panelHeight,
@@ -731,7 +743,7 @@ function Canvas({ isDarkMode }: CanvasProps) {
               }}>
                 <div style={{ display: 'flex', gap: 16 }}>
                   <h3 style={{ margin: 0, fontSize: 12, textTransform: 'uppercase', color: 'var(--text-primary)', letterSpacing: 0.5, borderBottom: '1px solid #3b82f6', paddingBottom: 6 }}>
-                    PROBLEMS <span style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', padding: '2px 6px', borderRadius: 10, marginLeft: 6, fontSize: 11 }}>{analysisResult.warnings.length}</span>
+                    PROBLEMS <span style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', padding: '2px 6px', borderRadius: 10, marginLeft: 6, fontSize: 11 }}>{activeWarnings.length}</span>
                   </h3>
                 </div>
                 <button 
@@ -755,65 +767,98 @@ function Canvas({ isDarkMode }: CanvasProps) {
               </div>
               <div style={{ padding: '0 12px 12px 12px', display: 'flex', flexDirection: 'column', gap: 12, flex: 1, overflowY: 'auto' }}>
                 <div style={{ marginTop: 12 }} />
-                {analysisResult.warnings.map((w, idx) => (
-                  <div 
-                    key={idx} 
-                    onClick={() => {
-                      if (w.nodeIds && w.nodeIds.length > 0) {
-                        fitViewToNode(w.nodeIds[0])
-                      }
-                    }}
-                    style={{
-                      padding: 12,
-                      backgroundColor: 'var(--bg-primary)',
-                      borderLeft: '4px solid #f59e0b',
-                      borderRadius: 6,
-                      cursor: w.nodeIds && w.nodeIds.length > 0 ? 'pointer' : 'default',
-                    }}
-                  >
-                    <div style={{ 
-                      fontSize: 12, 
-                      fontWeight: 600, 
-                      color: 'var(--text-primary)',
-                      marginBottom: 6,
-                      textTransform: 'uppercase',
-                      letterSpacing: 0.5,
-                    }}>
-                      {w.rule.replace(/_/g, ' ')}
-                    </div>
-                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                      {w.message}
-                    </div>
-                    <div style={{ 
-                      fontSize: 12, 
-                      color: '#b45309', 
-                      marginTop: 8, 
-                      padding: '6px 8px', 
-                      backgroundColor: 'rgba(245, 158, 11, 0.1)', 
-                      borderRadius: 4,
-                      borderLeft: '3px solid #f59e0b',
-                      fontStyle: 'italic'
-                    }}>
-                      <strong>建議：</strong>{w.solution}
-                    </div>
-                    {w.nodeIds && w.nodeIds.length > 0 && (
+                {analysisResult?.warnings?.map((w, idx) => {
+                  if (dismissedWarnings.has(idx)) return null
+                  return (
+                    <div 
+                      key={idx} 
+                      onClick={() => {
+                        if (w.nodeIds && w.nodeIds.length > 0) {
+                          fitViewToNode(w.nodeIds[0])
+                        }
+                      }}
+                      style={{
+                        padding: '12px 12px 12px 28px', // Extra padding on the left for the close button
+                        backgroundColor: 'var(--bg-primary)',
+                        borderLeft: '4px solid #f59e0b',
+                        borderRadius: 6,
+                        cursor: w.nodeIds && w.nodeIds.length > 0 ? 'pointer' : 'default',
+                        position: 'relative',
+                      }}
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setDismissedWarnings(prev => {
+                            const next = new Set(prev)
+                            next.add(idx)
+                            return next
+                          })
+                        }}
+                        style={{
+                          position: 'absolute',
+                          top: 4,
+                          left: 4,
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-secondary)',
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          padding: 2,
+                          lineHeight: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          zIndex: 5,
+                        }}
+                        title="Dismiss warning"
+                      >
+                        ×
+                      </button>
                       <div style={{ 
-                        fontSize: 11, 
-                        color: '#f59e0b', 
-                        marginTop: 8,
-                        fontFamily: 'monospace',
-                        wordBreak: 'break-all'
+                        fontSize: 12, 
+                        fontWeight: 600, 
+                        color: 'var(--text-primary)',
+                        marginBottom: 6,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
                       }}>
-                        Nodes: {w.nodeIds.join(', ')}
+                        {w.rule.replace(/_/g, ' ')}
                       </div>
-                    )}
-                  </div>
-                ))}
+                      <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                        {w.message}
+                      </div>
+                      <div style={{ 
+                        fontSize: 12, 
+                        color: '#b45309', 
+                        marginTop: 8, 
+                        padding: '6px 8px', 
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)', 
+                        borderRadius: 4,
+                        borderLeft: '3px solid #f59e0b',
+                        fontStyle: 'italic'
+                      }}>
+                        <strong>建議：</strong>{w.solution}
+                      </div>
+                      {w.nodeIds && w.nodeIds.length > 0 && (
+                        <div style={{ 
+                          fontSize: 11, 
+                          color: '#f59e0b', 
+                          marginTop: 8,
+                          fontFamily: 'monospace',
+                          wordBreak: 'break-all'
+                        }}>
+                          Nodes: {w.nodeIds.join(', ')}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
         </div>
-        <PropertyPanel
+        <ComponentPropertyPanel
           selectedNode={selectedNode}
           onNodeDataChange={onNodeDataChange}
         />

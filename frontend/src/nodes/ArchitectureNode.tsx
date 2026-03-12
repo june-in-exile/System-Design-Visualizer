@@ -19,13 +19,13 @@ function ArchitectureNode({ data }: NodeProps) {
 
   const properties = nodeData.properties || {}
   const replicas = (properties.replicas as number) || 1
-  const extraLayers = Math.min(Math.max(0, replicas - 1), 3) // max 3 layers behind
+  const extraLayers = Math.min(Math.max(0, replicas - 1), 29) // max 29 layers behind
 
   const nodeStyle: React.CSSProperties = {
     position: 'relative',
     padding: '12px 16px',
     borderRadius: 8,
-    border: `2px solid ${config.color}`,
+    border: `2px solid transparent`,
     minWidth: 140,
     textAlign: 'center',
     fontSize: 13,
@@ -43,24 +43,28 @@ function ArchitectureNode({ data }: NodeProps) {
       style={nodeStyle}
     >
       {/* Front card background */}
-      <div 
-        style={{ 
-          position: 'absolute', 
-          inset: 0, 
-          borderRadius: 6, 
-          backgroundColor: 'var(--bg-primary)', 
-          zIndex: -1 
-        }} 
-      />
-      <div 
-        style={{ 
-          position: 'absolute', 
-          inset: 0, 
-          borderRadius: 6, 
-          backgroundColor: `${config.color}15`, 
-          zIndex: -1 
-        }} 
-      />
+      <div
+        style={{
+          position: 'absolute',
+          top: -2,
+          left: -2,
+          right: -2,
+          bottom: -2,
+          borderRadius: 8,
+          border: `2px solid ${config.color}`,
+          backgroundColor: 'var(--bg-primary)',
+          zIndex: -1
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: 6,
+            backgroundColor: `${config.color}15`,
+          }}
+        />
+      </div>
 
       {/* Extra layers for replicas */}
       {extraLayers > 0 && Array.from({ length: extraLayers }).map((_, i) => {
@@ -70,23 +74,23 @@ function ArchitectureNode({ data }: NodeProps) {
             key={i}
             style={{
               position: 'absolute',
-              top: offset,
-              left: offset,
-              width: '100%',
-              height: '100%',
+              top: offset - 2,
+              left: offset - 2,
+              right: -offset - 2,
+              bottom: -offset - 2,
               borderRadius: 8,
               border: `2px solid ${config.color}`,
               backgroundColor: 'var(--bg-primary)',
               zIndex: -2 - i,
             }}
           >
-            <div 
-              style={{ 
-                width: '100%', 
-                height: '100%', 
-                borderRadius: 6, 
-                backgroundColor: `${config.color}15` 
-              }} 
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                borderRadius: 6,
+                backgroundColor: `${config.color}15`
+              }}
             />
           </div>
         )
@@ -129,13 +133,13 @@ function ArchitectureNode({ data }: NodeProps) {
 
       <Handle type="target" position={Position.Top} id="top-target" />
       <Handle type="source" position={Position.Top} id="top-source" />
-      
+
       <Handle type="target" position={Position.Right} id="right-target" />
       <Handle type="source" position={Position.Right} id="right-source" />
-      
+
       <Handle type="target" position={Position.Bottom} id="bottom-target" />
       <Handle type="source" position={Position.Bottom} id="bottom-source" />
-      
+
       <Handle type="target" position={Position.Left} id="left-target" />
       <Handle type="source" position={Position.Left} id="left-source" />
 

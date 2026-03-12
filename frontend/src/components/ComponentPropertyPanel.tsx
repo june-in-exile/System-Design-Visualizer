@@ -72,6 +72,11 @@ const DB_CATEGORIES = [
   { value: 'nosql', label: 'NoSQL (Non-Relational)', description: 'Flexible schema, optimized for scale and specific use cases' },
 ]
 
+const CONSISTENCY_LEVELS = [
+  { value: 'eventual', label: 'Eventual Consistency', description: 'Data will be consistent eventually, prioritizes availability (AP)' },
+  { value: 'strong', label: 'Strong Consistency', description: 'Guarantees immediate consistency, may impact availability during partitions (CP)' },
+]
+
 const STORAGE_ACCESS_LEVELS = [
   { value: 'public', label: 'Public', description: 'Publicly accessible, suitable for static websites and CDN origins' },
   { value: 'private', label: 'Private', description: 'Private access only, suitable for internal data and backups' },
@@ -184,7 +189,7 @@ export default function PropertyPanel({
       }}
     >
       <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
-        Properties
+        Component Properties
       </h3>
 
       {/* Label - Common for all nodes */}
@@ -242,6 +247,26 @@ export default function PropertyPanel({
                 ))
               )}
             </select>
+          </div>
+
+          {/* Consistency Level - Added for CAP Theorem Rule 5 */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+              Consistency Requirement
+            </label>
+            <select
+              value={(properties.consistencyLevel as string) || ''}
+              onChange={(e) => handlePropertyChange('consistencyLevel', e.target.value)}
+              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+            >
+              <option value="">Default (Auto-detect)</option>
+              {CONSISTENCY_LEVELS.map((opt) => (
+                <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+              ))}
+            </select>
+            <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>
+              Explicitly choosing a level acknowledges the CAP trade-offs.
+            </p>
           </div>
 
           {/* Read/Write Ratio - Only shown for SQL (Rule 2) */}
@@ -484,6 +509,23 @@ export default function PropertyPanel({
                 <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
               ))}
             </select>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+              TTL (Seconds)
+            </label>
+            <input
+              type="number"
+              min="0"
+              placeholder="0 (No Expiration)"
+              value={(properties.ttlSeconds as number) || 0}
+              onChange={(e) => handlePropertyChange('ttlSeconds', parseInt(e.target.value, 10))}
+              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+            />
+            <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>
+              Setting a TTL helps maintain data consistency by expiring old cache entries.
+            </p>
           </div>
         </>
       )}

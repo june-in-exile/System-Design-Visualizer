@@ -5,6 +5,7 @@ interface WarningsPanelProps {
   warnings: Warning[]
   onWarningClick: (nodeIds: string[]) => void
   onWarningHover: (nodeIds: string[]) => void
+  onDismiss?: (index: number) => void
 }
 
 const RULE_COLORS: Record<string, string> = {
@@ -25,6 +26,7 @@ function WarningsPanel({
   warnings,
   onWarningClick,
   onWarningHover,
+  onDismiss,
 }: WarningsPanelProps) {
   const [collapsed, setCollapsed] = useState(false)
 
@@ -85,8 +87,35 @@ function WarningsPanel({
                     verticalAlign: 'top',
                   }}
                 >
-                  <td style={{ padding: '8px 16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <td style={{ padding: '8px 16px', position: 'relative' }}>
+                    {onDismiss && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onDismiss(i)
+                        }}
+                        style={{
+                          position: 'absolute',
+                          top: 4,
+                          left: 4,
+                          background: 'none',
+                          border: 'none',
+                          color: '#b45309',
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          padding: 0,
+                          lineHeight: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          zIndex: 5,
+                        }}
+                        title="忽略警告"
+                      >
+                        ×
+                      </button>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, paddingLeft: onDismiss ? 12 : 0 }}>
                       <span
                         style={{
                           display: 'inline-block',

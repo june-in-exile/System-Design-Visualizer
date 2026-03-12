@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Sidebar from './components/Sidebar'
 import Canvas from './components/Canvas'
+import TabBar from './components/TabBar'
+import { useCanvasTabs } from './hooks/useCanvasTabs'
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -20,6 +22,24 @@ function App() {
 
   const toggleDarkMode = () => setIsDarkMode(prev => !prev)
 
+  const {
+    tabs,
+    activeTab,
+    activeTabId,
+    addTab,
+    switchTab,
+    closeTab,
+    renameTab,
+    updateCanvasStateRef,
+  } = useCanvasTabs()
+
+  const handleCanvasStateChange = useCallback(
+    (nodes: import('@xyflow/react').Node[], edges: import('@xyflow/react').Edge[]) => {
+      updateCanvasStateRef(nodes, edges)
+    },
+    [updateCanvasStateRef]
+  )
+
   return (
     <div
       style={{
@@ -32,7 +52,23 @@ function App() {
       }}
     >
       <Sidebar isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
-      <Canvas isDarkMode={isDarkMode} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <TabBar
+          tabs={tabs}
+          activeTabId={activeTabId}
+          onSwitchTab={switchTab}
+          onAddTab={addTab}
+          onCloseTab={closeTab}
+          onRenameTab={renameTab}
+        />
+        <Canvas
+          key={activeTabId}
+          isDarkMode={isDarkMode}
+          initialNodes={[...activeTab.nodes]}
+          initialEdges={[...activeTab.edges]}
+          onStateChange={handleCanvasStateChange}
+        />
+      </div>
     </div>
   )
 }
