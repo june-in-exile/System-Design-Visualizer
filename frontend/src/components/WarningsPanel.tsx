@@ -58,37 +58,51 @@ function WarningsPanel({
       </div>
       {!collapsed && (
         <div style={{ overflowY: 'auto', flex: 1 }}>
-          {warnings.map((w, i) => (
-            <div
-              key={i}
-              onClick={() => onWarningClick(w.nodeIds)}
-              onMouseEnter={() => onWarningHover(w.nodeIds)}
-              onMouseLeave={() => onWarningHover([])}
-              style={{
-                padding: '8px 16px',
-                fontSize: 13,
-                lineHeight: 1.5,
-                cursor: 'pointer',
-                borderBottom: '1px solid #fef3c7',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 8,
-              }}
-            >
-              <span
-                style={{
-                  display: 'inline-block',
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  backgroundColor: RULE_COLORS[w.rule] ?? '#6b7280',
-                  marginTop: 7,
-                  flexShrink: 0,
-                }}
-              />
-              <span style={{ color: '#78350f' }}>{w.message}</span>
-            </div>
-          ))}
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead style={{ position: 'sticky', top: 0, backgroundColor: '#fef3c7', zIndex: 1 }}>
+              <tr style={{ textAlign: 'left', fontSize: 11, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <th style={{ padding: '8px 16px', fontWeight: 600 }}>警告訊息</th>
+                <th style={{ padding: '8px 16px', fontWeight: 600 }}>建議解決方式</th>
+              </tr>
+            </thead>
+            <tbody>
+              {warnings.map((w, i) => (
+                <tr
+                  key={i}
+                  onClick={() => onWarningClick(w.nodeIds)}
+                  onMouseEnter={() => onWarningHover(w.nodeIds)}
+                  onMouseLeave={() => onWarningHover([])}
+                  style={{
+                    fontSize: 13,
+                    lineHeight: 1.5,
+                    cursor: 'pointer',
+                    borderBottom: '1px solid #fef3c7',
+                    verticalAlign: 'top',
+                  }}
+                >
+                  <td style={{ padding: '8px 16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: 6,
+                          height: 6,
+                          borderRadius: '50%',
+                          backgroundColor: RULE_COLORS[w.rule] ?? '#6b7280',
+                          marginTop: 7,
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span style={{ color: '#78350f' }}>{w.message}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '8px 16px', color: '#b45309', fontStyle: 'italic' }}>
+                    {w.solution}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>

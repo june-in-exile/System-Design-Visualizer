@@ -81,6 +81,7 @@ export interface SystemTopology {
 export interface Warning {
   rule: string
   message: string
+  solution: string
   nodeIds: string[]
 }
 

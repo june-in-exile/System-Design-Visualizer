@@ -480,6 +480,18 @@ function Canvas({ isDarkMode }: CanvasProps) {
                       <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                         {w.message}
                       </div>
+                      <div style={{ 
+                        fontSize: 12, 
+                        color: '#b45309', 
+                        marginTop: 8, 
+                        padding: '6px 8px', 
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)', 
+                        borderRadius: 4,
+                        borderLeft: '3px solid #f59e0b',
+                        fontStyle: 'italic'
+                      }}>
+                        <strong>建議：</strong>{w.solution}
+                      </div>
                       {w.nodeIds && w.nodeIds.length > 0 && (
                         <div style={{ 
                           fontSize: 11, 
@@ -515,7 +527,13 @@ function Canvas({ isDarkMode }: CanvasProps) {
             })}
             edges={edges.map(e => ({
               ...e,
-              style: { ...e.style, stroke: isDarkMode ? '#d1d5db' : '#b1b1b7' }
+              style: { 
+                ...e.style, 
+                stroke: e.selected 
+                  ? '#3b82f6' 
+                  : isDarkMode ? '#d1d5db' : '#b1b1b7',
+                strokeWidth: e.selected ? 3 : 2,
+              }
             }))}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}

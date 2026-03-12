@@ -10,9 +10,10 @@ import (
 
 // Warning represents a structured linting result with associated node IDs.
 type Warning struct {
-	Rule    string   `json:"rule"`
-	Message string   `json:"message"`
-	NodeIDs []string `json:"nodeIds"`
+	Rule     string   `json:"rule"`
+	Message  string   `json:"message"`
+	Solution string   `json:"solution"`
+	NodeIDs  []string `json:"nodeIds"`
 }
 
 // AnalyzeResponse is returned after parsing and validating the topology.
@@ -54,9 +55,10 @@ func validate(t model.SystemTopology) []Warning {
 	for _, node := range t.Nodes {
 		if !model.ValidComponentTypes[node.ComponentType] {
 			warnings = append(warnings, Warning{
-				Rule:    "schema",
-				Message: fmt.Sprintf("unknown component type %q on node %q", node.ComponentType, node.ID),
-				NodeIDs: []string{node.ID},
+				Rule:     "schema",
+				Message:  fmt.Sprintf("unknown component type %q on node %q", node.ComponentType, node.ID),
+				Solution: "請在節點屬性中選擇正確的組件類型 (Component Type)。",
+				NodeIDs:  []string{node.ID},
 			})
 		}
 		nodeByID[node.ID] = node
@@ -67,23 +69,26 @@ func validate(t model.SystemTopology) []Warning {
 	for _, edge := range t.Edges {
 		if !model.ValidConnectionTypes[edge.ConnectionType] {
 			warnings = append(warnings, Warning{
-				Rule:    "schema",
-				Message: fmt.Sprintf("unknown connection type %q on edge %q", edge.ConnectionType, edge.ID),
-				NodeIDs: []string{},
+				Rule:     "schema",
+				Message:  fmt.Sprintf("unknown connection type %q on edge %q", edge.ConnectionType, edge.ID),
+				Solution: "請在連線屬性中選擇正確的連線類型 (Connection Type)。",
+				NodeIDs:  []string{},
 			})
 		}
 		if _, ok := nodeByID[edge.Source]; !ok {
 			warnings = append(warnings, Warning{
-				Rule:    "schema",
-				Message: fmt.Sprintf("edge %q references unknown source node %q", edge.ID, edge.Source),
-				NodeIDs: []string{},
+				Rule:     "schema",
+				Message:  fmt.Sprintf("edge %q references unknown source node %q", edge.ID, edge.Source),
+				Solution: "請確保連線的出發點已連接到有效的節點。",
+				NodeIDs:  []string{},
 			})
 		}
 		if _, ok := nodeByID[edge.Target]; !ok {
 			warnings = append(warnings, Warning{
-				Rule:    "schema",
-				Message: fmt.Sprintf("edge %q references unknown target node %q", edge.ID, edge.Target),
-				NodeIDs: []string{},
+				Rule:     "schema",
+				Message:  fmt.Sprintf("edge %q references unknown target node %q", edge.ID, edge.Target),
+				Solution: "請確保連線的目標點已連接到有效的節點。",
+				NodeIDs:  []string{},
 			})
 		}
 		outgoing[edge.Source] = append(outgoing[edge.Source], edge.Target)
@@ -115,9 +120,10 @@ func checkSPOF(nodes map[string]model.SystemNode, outgoing map[string][]string) 
 		if len(serviceIDs) == 1 {
 			warnings = append(warnings, Warning{
 				Rule: "spof",
-				Message: fmt.Sprintf("⚠️ 檢測到單點故障 (SPOF)：Load Balancer %q 後方僅連接 1 個 Service 節點。建議增加冗餘實例以提升可用性 (Availability)。",
+				Message: fmt.Sprintf("⚠️ 檢測到單點故障 (SPOF)：Load Balancer %q 後方僅連接 1 個 Service 節點。",
 					node.Label),
-				NodeIDs: append([]string{id}, serviceIDs...),
+				Solution: "增加 Service 節點數量或在屬性面板中提高 Replicas 複本數，並確保連線正確。",
+				NodeIDs:  append([]string{id}, serviceIDs...),
 			})
 		}
 	}
@@ -142,9 +148,10 @@ func checkDBSelection(nodes []model.SystemNode) []Warning {
 		if dbProps.DBType == "sql" && dbProps.ReadWriteRatio < 0.5 {
 			warnings = append(warnings, Warning{
 				Rule: "db_selection",
-				Message: fmt.Sprintf("⚖️ SQL 擴展性取捨：%q 為高寫入壓力 (讀寫比 %.0f%%)，建議考慮 Master-Slave 讀寫分離，或評估是否切換至 NoSQL 以獲得更好的寫入擴展性。",
+				Message: fmt.Sprintf("⚖️ SQL 擴展性取捨：%q 為高寫入壓力 (讀寫比 %.0f%%)。",
 					node.Label, dbProps.ReadWriteRatio*100),
-				NodeIDs: []string{node.ID},
+				Solution: "實施 Master-Slave 讀寫分離，或考慮切換為寫入性能更好的 NoSQL 資料庫。",
+				NodeIDs:  []string{node.ID},
 			})
 		}
 	}
@@ -168,9 +175,10 @@ func checkVerticalPartitioning(nodes []model.SystemNode) []Warning {
 		}
 		return []Warning{{
 			Rule: "federation",
-			Message: fmt.Sprintf("🔍 垂直拆分 (Federation) 提醒：偵測到 %d 個資料庫節點 (%s)。此架構無法執行跨庫 Join，應用層需處理資料聚合，並注意跨庫事務的一致性 (Distributed Transactions)。",
+			Message: fmt.Sprintf("🔍 垂直拆分 (Federation) 提醒：偵測到 %d 個資料庫節點 (%s)。",
 				len(dbNodes), joinLabels(labels)),
-			NodeIDs: ids,
+			Solution: "確保應用層支援跨庫資料聚合，並注意跨庫事務的一致性問題。",
+			NodeIDs:  ids,
 		}}
 	}
 	return nil
@@ -202,9 +210,10 @@ func checkCacheConsistency(nodes map[string]model.SystemNode, outgoing map[strin
 		if hasCache && hasDB {
 			warnings = append(warnings, Warning{
 				Rule: "cache_consistency",
-				Message: fmt.Sprintf("⚡ 快取權衡：Service %q 同時連接 Cache 與 Database。請選擇更新策略（Write-through, Write-back 或 Cache-aside）。注意 Write-back 效能最高但有遺失資料風險。",
+				Message: fmt.Sprintf("⚡ 快取一致性權衡：Service %q 同時連接 Cache 與 Database。",
 					node.Label),
-				NodeIDs: append([]string{id}, involvedIDs...),
+				Solution: "明確快取更新策略（如 Cache-aside），並設定合理的 TTL 以防數據過期。",
+				NodeIDs:  append([]string{id}, involvedIDs...),
 			})
 		}
 	}
@@ -229,9 +238,10 @@ func checkCAP(nodes []model.SystemNode) []Warning {
 		if model.APProducts[dbProps.Product] {
 			warnings = append(warnings, Warning{
 				Rule: "cap_theorem",
-				Message: fmt.Sprintf("📐 CAP 定理：%q (%s) 為 AP 系統。優點是高可用性，但需接受「最終一致性 (Eventual Consistency)」，不建議用於金流結算。",
+				Message: fmt.Sprintf("📐 CAP 定理：%q (%s) 為 AP 系統。",
 					node.Label, dbProps.Product),
-				NodeIDs: []string{node.ID},
+				Solution: "注意 AP 系統僅提供最終一致性，若需強一致性（如金流）請更換為 CP 系統（如 RDBMS）。",
+				NodeIDs:  []string{node.ID},
 			})
 		}
 	}

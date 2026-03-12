@@ -63,7 +63,10 @@ function ArchitectureNode({ data }: NodeProps) {
               <div style={{ fontWeight: 600, color: '#f59e0b', marginBottom: 2 }}>
                 {w.rule.replace(/_/g, ' ')}
               </div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: 11 }}>{w.message}</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: 11, marginBottom: 4 }}>{w.message}</div>
+              <div style={{ color: '#b45309', fontSize: 10.5, fontStyle: 'italic', fontWeight: 500 }}>
+                💡 {w.solution}
+              </div>
             </div>
           ))}
         </div>

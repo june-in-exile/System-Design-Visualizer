@@ -1,30 +1,56 @@
-import { useState } from 'react'
 import type { Node } from '@xyflow/react'
 import type { ComponentType } from '../types/topology'
-
-const COMMON_PRODUCTS = [
-  'MySQL',
-  'PostgreSQL',
-  'MongoDB',
-  'Cassandra',
-  'DynamoDB',
-  'Redis',
-  'Elasticsearch',
-  'Neo4j',
-  'InfluxDB',
-]
 
 interface PropertyPanelProps {
   selectedNode: Node | null
   onNodeDataChange: (nodeId: string, newData: Record<string, unknown>) => void
 }
 
+const SQL_PRODUCTS = [
+  { value: 'postgresql', label: 'PostgreSQL' },
+  { value: 'mysql', label: 'MySQL' },
+  { value: 'mariadb', label: 'MariaDB' },
+  { value: 'sql_server', label: 'SQL Server' },
+  { value: 'oracle', label: 'Oracle' },
+]
+
+const NOSQL_GROUPS = [
+  {
+    label: 'Document',
+    products: [
+      { value: 'mongodb', label: 'MongoDB' },
+      { value: 'couchdb', label: 'CouchDB (AP)' },
+    ],
+  },
+  {
+    label: 'Key-Value / Wide Column',
+    products: [
+      { value: 'redis', label: 'Redis' },
+      { value: 'dynamodb', label: 'DynamoDB (AP)' },
+      { value: 'cassandra', label: 'Cassandra (AP)' },
+      { value: 'riak', label: 'Riak (AP)' },
+    ],
+  },
+  {
+    label: 'Graph',
+    products: [
+      { value: 'neo4j', label: 'Neo4j' },
+      { value: 'arangodb', label: 'ArangoDB' },
+    ],
+  },
+  {
+    label: 'Time Series',
+    products: [
+      { value: 'influxdb', label: 'InfluxDB' },
+      { value: 'prometheus', label: 'Prometheus' },
+    ],
+  },
+]
+
 export default function PropertyPanel({
   selectedNode,
   onNodeDataChange,
 }: PropertyPanelProps) {
-  const [showOtherInput, setShowOtherInput] = useState(false)
-
   if (!selectedNode) {
     return null
   }
@@ -32,9 +58,6 @@ export default function PropertyPanel({
   const data = selectedNode.data as Record<string, unknown>
   const properties = (data.properties as Record<string, unknown>) ?? {}
   const componentType = data.componentType as ComponentType
-
-  const currentProduct = (properties.product as string) || ''
-  const isOtherProduct = showOtherInput || (currentProduct !== '' && !COMMON_PRODUCTS.includes(currentProduct))
 
   const handleLabelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onNodeDataChange(selectedNode.id, { ...data, label: e.target.value })
@@ -44,6 +67,18 @@ export default function PropertyPanel({
     onNodeDataChange(selectedNode.id, {
       ...data,
       properties: { ...properties, [key]: value },
+    })
+  }
+
+  const handleDBTypeChange = (newType: string) => {
+    // 切換類型時，自動選取該類型下的第一個產品以維持一致性
+    const firstProduct = newType === 'sql' 
+      ? SQL_PRODUCTS[0].value 
+      : NOSQL_GROUPS[0].products[0].value
+
+    onNodeDataChange(selectedNode.id, {
+      ...data,
+      properties: { ...properties, dbType: newType, product: firstProduct },
     })
   }
 
@@ -57,225 +92,113 @@ export default function PropertyPanel({
         overflowY: 'auto',
       }}
     >
-      <h3
-        style={{
-          margin: '0 0 16px',
-          fontSize: 16,
-          fontWeight: 600,
-          color: 'var(--text-primary)',
-        }}
-      >
+      <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
         Properties
       </h3>
 
+      {/* Label - Common for all nodes */}
       <div style={{ marginBottom: 16 }}>
-        <label
-          style={{
-            display: 'block',
-            marginBottom: 4,
-            fontSize: 13,
-            fontWeight: 500,
-            color: 'var(--text-secondary)',
-          }}
-        >
+        <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
           Label
         </label>
         <input
           type="text"
           value={(data.label as string) || ''}
           onChange={handleLabelChange}
-          style={{
-            width: '100%',
-            padding: '6px 8px',
-            border: '1px solid var(--border-color)',
-            borderRadius: 4,
-            fontSize: 13,
-            backgroundColor: 'var(--bg-primary)',
-            color: 'var(--text-primary)',
-          }}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
         />
       </div>
 
       {componentType === 'database' && (
         <>
+          {/* Database Category */}
           <div style={{ marginBottom: 16 }}>
-            <label
-              style={{
-                display: 'block',
-                marginBottom: 4,
-                fontSize: 13,
-                fontWeight: 500,
-                color: 'var(--text-secondary)',
-              }}
-            >
-              Database Type
+            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+              Database Category
             </label>
             <select
               value={(properties.dbType as string) || 'sql'}
-              onChange={(e) => handlePropertyChange('dbType', e.target.value)}
-              style={{
-                width: '100%',
-                padding: '6px 8px',
-                border: '1px solid var(--border-color)',
-                borderRadius: 4,
-                fontSize: 13,
-                backgroundColor: 'var(--bg-primary)',
-                color: 'var(--text-primary)',
-              }}
+              onChange={(e) => handleDBTypeChange(e.target.value)}
+              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
             >
-              <option value="sql">SQL</option>
-              <option value="nosql">NoSQL</option>
-              <option value="graph">Graph</option>
-              <option value="timeseries">Time Series</option>
+              <option value="sql">SQL (Relational)</option>
+              <option value="nosql">NoSQL (Non-Relational)</option>
             </select>
           </div>
+
+          {/* Product Selection - Filtered by DB Type */}
           <div style={{ marginBottom: 16 }}>
-            <label
-              style={{
-                display: 'block',
-                marginBottom: 4,
-                fontSize: 13,
-                fontWeight: 500,
-                color: 'var(--text-secondary)',
-              }}
-            >
-              Read/Write Ratio ({(properties.readWriteRatio as number) || 0})
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={(properties.readWriteRatio as number) || 0}
-              onChange={(e) =>
-                handlePropertyChange('readWriteRatio', parseFloat(e.target.value))
-              }
-              style={{ width: '100%' }}
-            />
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <label
-              style={{
-                display: 'block',
-                marginBottom: 4,
-                fontSize: 13,
-                fontWeight: 500,
-                color: 'var(--text-secondary)',
-              }}
-            >
+            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
               Product
             </label>
             <select
-              value={isOtherProduct ? '___other___' : currentProduct}
-              onChange={(e) => {
-                const val = e.target.value
-                if (val === '___other___') {
-                  setShowOtherInput(true)
-                  if (COMMON_PRODUCTS.includes(currentProduct)) {
-                    handlePropertyChange('product', '')
-                  }
-                } else {
-                  setShowOtherInput(false)
-                  handlePropertyChange('product', val)
-                }
-              }}
-              style={{
-                width: '100%',
-                padding: '6px 8px',
-                border: '1px solid var(--border-color)',
-                borderRadius: 4,
-                fontSize: 13,
-                backgroundColor: 'var(--bg-primary)',
-                color: 'var(--text-primary)',
-                marginBottom: isOtherProduct ? 8 : 0,
-              }}
+              value={(properties.product as string) || ''}
+              onChange={(e) => handlePropertyChange('product', e.target.value)}
+              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
             >
-              <option value="">Select a product...</option>
-              {COMMON_PRODUCTS.map(product => (
-                <option key={product} value={product}>{product}</option>
-              ))}
-              <option value="___other___">其它 / Other</option>
+              {properties.dbType === 'sql' ? (
+                SQL_PRODUCTS.map((p) => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))
+              ) : (
+                NOSQL_GROUPS.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.products.map((p) => (
+                      <option key={p.value} value={p.value}>{p.label}</option>
+                    ))}
+                  </optgroup>
+                ))
+              )}
             </select>
-            
-            {isOtherProduct && (
-              <input
-                type="text"
-                value={currentProduct}
-                onChange={(e) => handlePropertyChange('product', e.target.value)}
-                placeholder="Enter custom product name"
-                style={{
-                  width: '100%',
-                  padding: '6px 8px',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: 4,
-                  fontSize: 13,
-                  backgroundColor: 'var(--bg-primary)',
-                  color: 'var(--text-primary)',
-                }}
-              />
-            )}
           </div>
+
+          {/* Read/Write Ratio - Only shown for SQL (Rule 2) */}
+          {properties.dbType === 'sql' && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+                Read/Write Ratio ({(properties.readWriteRatio as number) || 0})
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={(properties.readWriteRatio as number) || 0}
+                onChange={(e) => handlePropertyChange('readWriteRatio', parseFloat(e.target.value))}
+                style={{ width: '100%' }}
+              />
+              <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>
+                Lower values mean higher write pressure.
+              </p>
+            </div>
+          )}
         </>
       )}
 
       {componentType === 'service' && (
         <div style={{ marginBottom: 16 }}>
-          <label
-            style={{
-              display: 'block',
-              marginBottom: 4,
-              fontSize: 13,
-              fontWeight: 500,
-              color: 'var(--text-secondary)',
-            }}
-          >
+          <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
             Replicas
           </label>
           <input
             type="number"
             min="1"
             value={(properties.replicas as number) || 1}
-            onChange={(e) =>
-              handlePropertyChange('replicas', parseInt(e.target.value, 10))
-            }
-            style={{
-              width: '100%',
-              padding: '6px 8px',
-              border: '1px solid var(--border-color)',
-              borderRadius: 4,
-              fontSize: 13,
-              backgroundColor: 'var(--bg-primary)',
-              color: 'var(--text-primary)',
-            }}
+            onChange={(e) => handlePropertyChange('replicas', parseInt(e.target.value, 10))}
+            style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
           />
         </div>
       )}
 
       {componentType === 'load_balancer' && (
         <div style={{ marginBottom: 16 }}>
-          <label
-            style={{
-              display: 'block',
-              marginBottom: 4,
-              fontSize: 13,
-              fontWeight: 500,
-              color: 'var(--text-secondary)',
-            }}
-          >
+          <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
             Algorithm
           </label>
           <select
             value={(properties.algorithm as string) || 'round_robin'}
             onChange={(e) => handlePropertyChange('algorithm', e.target.value)}
-            style={{
-              width: '100%',
-              padding: '6px 8px',
-              border: '1px solid var(--border-color)',
-              borderRadius: 4,
-              fontSize: 13,
-              backgroundColor: 'var(--bg-primary)',
-              color: 'var(--text-primary)',
-            }}
+            style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
           >
             <option value="round_robin">Round Robin</option>
             <option value="least_connections">Least Connections</option>
