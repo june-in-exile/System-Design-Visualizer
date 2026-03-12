@@ -133,6 +133,14 @@ const ALGORITHMS = [
   { value: 'weighted', label: 'Weighted', description: 'Distributes based on server capacity weights' },
 ]
 
+const getTooltip = (label: string, description?: string) => {
+  const lowerLabel = label.toLowerCase()
+  if (!description || lowerLabel.includes('unspecified') || lowerLabel.includes('default') || lowerLabel.includes('auto-detect')) {
+    return undefined
+  }
+  return description
+}
+
 export default function PropertyPanel({
   selectedNode,
   onNodeDataChange,
@@ -194,7 +202,10 @@ export default function PropertyPanel({
 
       {/* Label - Common for all nodes */}
       <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="The display name of this component on the canvas."
+        >
           Label
         </label>
         <input
@@ -209,12 +220,19 @@ export default function PropertyPanel({
         <>
           {/* Database Category */}
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+            <label 
+              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+              title="Choose between relational (SQL) or non-relational (NoSQL) database types."
+            >
               Database Category
             </label>
             <select
               value={(properties.dbType as string) || 'sql'}
               onChange={(e) => handleDBTypeChange(e.target.value)}
+              title={getTooltip(
+                DB_CATEGORIES.find(opt => opt.value === ((properties.dbType as string) || 'sql'))?.label || '',
+                DB_CATEGORIES.find(opt => opt.value === ((properties.dbType as string) || 'sql'))?.description
+              )}
               style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
             >
               {DB_CATEGORIES.map((opt) => (
@@ -225,12 +243,25 @@ export default function PropertyPanel({
 
           {/* Product Selection - Filtered by DB Type */}
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+            <label 
+              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+              title="The specific database product or engine to use."
+            >
               Product
             </label>
             <select
               value={(properties.product as string) || ''}
               onChange={(e) => handlePropertyChange('product', e.target.value)}
+              title={properties.dbType === 'sql' 
+                ? getTooltip(
+                    SQL_PRODUCTS.find(p => p.value === (properties.product as string))?.label || '',
+                    SQL_PRODUCTS.find(p => p.value === (properties.product as string))?.description
+                  )
+                : getTooltip(
+                    NOSQL_GROUPS.flatMap(g => g.products).find(p => p.value === (properties.product as string))?.label || '',
+                    NOSQL_GROUPS.flatMap(g => g.products).find(p => p.value === (properties.product as string))?.description
+                  )
+              }
               style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
             >
               {properties.dbType === 'sql' ? (
@@ -251,12 +282,19 @@ export default function PropertyPanel({
 
           {/* Consistency Level - Added for CAP Theorem Rule 5 */}
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+            <label 
+              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+              title="Desired data consistency model (CAP theorem trade-offs)."
+            >
               Consistency Requirement
             </label>
             <select
               value={(properties.consistencyLevel as string) || ''}
               onChange={(e) => handlePropertyChange('consistencyLevel', e.target.value)}
+              title={getTooltip(
+                CONSISTENCY_LEVELS.find(opt => opt.value === (properties.consistencyLevel as string))?.label || 'Default',
+                CONSISTENCY_LEVELS.find(opt => opt.value === (properties.consistencyLevel as string))?.description
+              )}
               style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
             >
               <option value="">Default (Auto-detect)</option>
@@ -272,7 +310,10 @@ export default function PropertyPanel({
           {/* Read/Write Ratio - Only shown for SQL (Rule 2) */}
           {properties.dbType === 'sql' && (
             <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+              <label 
+                style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+                title="The estimated balance between read and write operations. High read ratios favor caching and replicas."
+              >
                 Read/Write Ratio ({(properties.readWriteRatio as number) || 0})
               </label>
               <input
@@ -294,7 +335,10 @@ export default function PropertyPanel({
 
       {['service', 'database', 'load_balancer', 'cache'].includes(componentType) && (
         <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+          <label 
+            style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+            title="Number of running instances for high availability and load distribution."
+          >
             Replicas
           </label>
           <input
@@ -309,12 +353,19 @@ export default function PropertyPanel({
 
       {componentType === 'load_balancer' && (
         <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+          <label 
+            style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+            title="The policy used to distribute incoming traffic across healthy backend instances."
+          >
             Algorithm
           </label>
           <select
             value={(properties.algorithm as string) || 'round_robin'}
             onChange={(e) => handlePropertyChange('algorithm', e.target.value)}
+            title={getTooltip(
+              ALGORITHMS.find(opt => opt.value === ((properties.algorithm as string) || 'round_robin'))?.label || '',
+              ALGORITHMS.find(opt => opt.value === ((properties.algorithm as string) || 'round_robin'))?.description
+            )}
             style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
           >
             {ALGORITHMS.map((opt) => (
@@ -327,12 +378,19 @@ export default function PropertyPanel({
       {componentType === 'storage' && (
         <>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+            <label 
+              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+              title="Visibility and permission level for the stored objects."
+            >
               Access Level
             </label>
             <select
               value={(properties.accessLevel as string) || 'private'}
               onChange={(e) => handlePropertyChange('accessLevel', e.target.value)}
+              title={getTooltip(
+                STORAGE_ACCESS_LEVELS.find(opt => opt.value === ((properties.accessLevel as string) || 'private'))?.label || '',
+                STORAGE_ACCESS_LEVELS.find(opt => opt.value === ((properties.accessLevel as string) || 'private'))?.description
+              )}
               style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
             >
               {STORAGE_ACCESS_LEVELS.map((opt) => (
@@ -342,12 +400,19 @@ export default function PropertyPanel({
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+            <label 
+              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+              title="Data storage tier, balancing access frequency, latency, and cost."
+            >
               Storage Class
             </label>
             <select
               value={(properties.storageClass as string) || 'standard'}
               onChange={(e) => handlePropertyChange('storageClass', e.target.value)}
+              title={getTooltip(
+                STORAGE_CLASSES.find(opt => opt.value === ((properties.storageClass as string) || 'standard'))?.label || '',
+                STORAGE_CLASSES.find(opt => opt.value === ((properties.storageClass as string) || 'standard'))?.description
+              )}
               style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
             >
               {STORAGE_CLASSES.map((opt) => (
@@ -357,7 +422,10 @@ export default function PropertyPanel({
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+            <label 
+              style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}
+              title="Preserve multiple versions of an object to protect against accidental deletions or overwrites."
+            >
               <input
                 type="checkbox"
                 checked={(properties.versioning as boolean) || false}
@@ -375,12 +443,19 @@ export default function PropertyPanel({
       {componentType === 'message_queue' && (
         <>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+            <label 
+              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+              title="The architectural pattern of the messaging system."
+            >
               Category
             </label>
             <select
               value={(properties.category as string) || 'broker'}
               onChange={(e) => handleMQCategoryChange(e.target.value)}
+              title={getTooltip(
+                MQ_CATEGORIES.find(opt => opt.value === ((properties.category as string) || 'broker'))?.label || '',
+                MQ_CATEGORIES.find(opt => opt.value === ((properties.category as string) || 'broker'))?.description
+              )}
               style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
             >
               {MQ_CATEGORIES.map((opt) => (
@@ -390,12 +465,19 @@ export default function PropertyPanel({
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+            <label 
+              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+              title="The specific messaging product or managed service."
+            >
               Product
             </label>
             <select
               value={(properties.product as string) || ''}
               onChange={(e) => handlePropertyChange('product', e.target.value)}
+              title={getTooltip(
+                (MQ_PRODUCT_GROUPS[(properties.category as string) || 'broker'] ?? []).find(p => p.value === (properties.product as string))?.label || '',
+                (MQ_PRODUCT_GROUPS[(properties.category as string) || 'broker'] ?? []).find(p => p.value === (properties.product as string))?.description
+              )}
               style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
             >
               {(MQ_PRODUCT_GROUPS[(properties.category as string) || 'broker'] ?? []).map((p) => (
@@ -405,12 +487,19 @@ export default function PropertyPanel({
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+            <label 
+              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+              title="Defines how messages are distributed to consumers (one-to-one vs one-to-many)."
+            >
               Queue Type
             </label>
             <select
               value={(properties.queueType as string) || 'pub_sub'}
               onChange={(e) => handlePropertyChange('queueType', e.target.value)}
+              title={getTooltip(
+                MQ_QUEUE_TYPES.find(opt => opt.value === ((properties.queueType as string) || 'pub_sub'))?.label || '',
+                MQ_QUEUE_TYPES.find(opt => opt.value === ((properties.queueType as string) || 'pub_sub'))?.description
+              )}
               style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
             >
               {MQ_QUEUE_TYPES.map((opt) => (
@@ -420,12 +509,19 @@ export default function PropertyPanel({
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+            <label 
+              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+              title="The reliability guarantee for message handoff between producer and consumer."
+            >
               Delivery Guarantee
             </label>
             <select
               value={(properties.deliveryGuarantee as string) || 'at_least_once'}
               onChange={(e) => handlePropertyChange('deliveryGuarantee', e.target.value)}
+              title={getTooltip(
+                MQ_DELIVERY_GUARANTEES.find(opt => opt.value === ((properties.deliveryGuarantee as string) || 'at_least_once'))?.label || '',
+                MQ_DELIVERY_GUARANTEES.find(opt => opt.value === ((properties.deliveryGuarantee as string) || 'at_least_once'))?.description
+              )}
               style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
             >
               {MQ_DELIVERY_GUARANTEES.map((opt) => (
@@ -435,7 +531,10 @@ export default function PropertyPanel({
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+            <label 
+              style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}
+              title="Ensures that messages are processed in the exact order they were sent."
+            >
               <input
                 type="checkbox"
                 checked={(properties.ordered as boolean) || false}
@@ -449,7 +548,10 @@ export default function PropertyPanel({
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+            <label 
+              style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}
+              title="A secondary queue for messages that cannot be processed, allowing for offline inspection and manual retry."
+            >
               <input
                 type="checkbox"
                 checked={(properties.hasDLQ as boolean) || false}
@@ -467,12 +569,19 @@ export default function PropertyPanel({
       {componentType === 'cache' && (
         <>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+            <label 
+              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+              title="Defines whether the cache is local to an instance or shared across a cluster."
+            >
               Cache Type
             </label>
             <select
               value={(properties.cacheType as string) || 'distributed'}
               onChange={(e) => handlePropertyChange('cacheType', e.target.value)}
+              title={getTooltip(
+                CACHE_TYPES.find(opt => opt.value === ((properties.cacheType as string) || 'distributed'))?.label || '',
+                CACHE_TYPES.find(opt => opt.value === ((properties.cacheType as string) || 'distributed'))?.description
+              )}
               style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
             >
               {CACHE_TYPES.map((opt) => (
@@ -482,12 +591,19 @@ export default function PropertyPanel({
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+            <label 
+              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+              title="The specific caching engine or product."
+            >
               Product
             </label>
             <select
               value={(properties.product as string) || 'redis'}
               onChange={(e) => handlePropertyChange('product', e.target.value)}
+              title={getTooltip(
+                CACHE_PRODUCTS.find(p => p.value === ((properties.product as string) || 'redis'))?.label || '',
+                CACHE_PRODUCTS.find(p => p.value === ((properties.product as string) || 'redis'))?.description
+              )}
               style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
             >
               {CACHE_PRODUCTS.map((p) => (
@@ -497,12 +613,19 @@ export default function PropertyPanel({
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+            <label 
+              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+              title="The logic used to decide which items to remove when the cache is full."
+            >
               Eviction Policy
             </label>
             <select
               value={(properties.evictionPolicy as string) || 'lru'}
               onChange={(e) => handlePropertyChange('evictionPolicy', e.target.value)}
+              title={getTooltip(
+                EVICTION_POLICIES.find(opt => opt.value === ((properties.evictionPolicy as string) || 'lru'))?.label || '',
+                EVICTION_POLICIES.find(opt => opt.value === ((properties.evictionPolicy as string) || 'lru'))?.description
+              )}
               style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
             >
               {EVICTION_POLICIES.map((opt) => (
@@ -512,7 +635,10 @@ export default function PropertyPanel({
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+            <label 
+              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+              title="Time-To-Live: Duration after which a cache entry is automatically invalidated."
+            >
               TTL (Seconds)
             </label>
             <input
