@@ -14,6 +14,7 @@ export type ConnectionType = 'sync' | 'async' | 'replication' | 'cdn_origin'
 
 export interface DatabaseProperties {
   dbType: 'sql' | 'nosql' | 'graph' | 'timeseries'
+  product?: string
   acidRequired: boolean
   readWriteRatio: number
   scalingStrategy: 'vertical' | 'horizontal' | 'none'
