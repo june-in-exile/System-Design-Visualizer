@@ -290,7 +290,7 @@ function Canvas({ isDarkMode }: CanvasProps) {
         nodeCount: 0,
         edgeCount: 0,
         warnings: [
-          { rule: 'error', message, nodeIds: [] } as Warning,
+          { rule: 'error', message, solution: '請檢查後端服務是否正常啟動，並重試。', nodeIds: [] } as Warning,
         ],
       })
     } finally {
