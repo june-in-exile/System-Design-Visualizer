@@ -14,10 +14,10 @@ function generateTabId(): string {
   return `tab-${Date.now()}-${tabCounter}`
 }
 
-function createEmptyTab(name?: string): CanvasTab {
+function createEmptyTab(name: string): CanvasTab {
   return {
     id: generateTabId(),
-    name: name ?? `Untitled ${tabCounter}`,
+    name: name,
     nodes: [],
     edges: [],
   }
@@ -25,8 +25,7 @@ function createEmptyTab(name?: string): CanvasTab {
 
 export function useCanvasTabs() {
   const [tabs, setTabs] = useState<CanvasTab[]>(() => {
-    const initial = createEmptyTab('Untitled 1')
-    return [initial]
+    return [createEmptyTab('Untitled 1')]
   })
   const [activeTabId, setActiveTabId] = useState<string>(() => tabs[0].id)
   const canvasStateRef = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null)
@@ -47,10 +46,11 @@ export function useCanvasTabs() {
 
   const addTab = useCallback(() => {
     saveCurrentCanvasState()
-    const newTab = createEmptyTab()
+    const nextName = `Untitled ${tabs.length + 1}`
+    const newTab = createEmptyTab(nextName)
     setTabs((prev) => [...prev, newTab])
     setActiveTabId(newTab.id)
-  }, [saveCurrentCanvasState])
+  }, [saveCurrentCanvasState, tabs.length])
 
   const switchTab = useCallback(
     (tabId: string) => {

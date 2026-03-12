@@ -156,11 +156,32 @@ function ArchitectureNode({ data }: NodeProps) {
       <Handle type="target" position={Position.Left} id="left-target" />
       <Handle type="source" position={Position.Left} id="left-source" />
 
-      <div style={{ fontSize: 22, marginBottom: 4 }}>
-        {roles ? mergedConfig!.icons.join(' ') : config.icon}
+      <div style={{ fontSize: 22, marginBottom: 4, display: 'flex', justifyContent: 'center', gap: 6 }}>
+        {roles 
+          ? mergedConfig!.icons.map((icon, i) => (
+              <span key={i} title={mergedConfig!.descriptions[i]} style={{ cursor: 'help' }}>{icon}</span>
+            ))
+          : <span title={config.description} style={{ cursor: 'help' }}>{config.icon}</span>
+        }
       </div>
-      <div style={{ fontWeight: 600, color: hasWarnings ? '#f59e0b' : primaryColor, marginBottom: 2 }}>
-        {roles ? mergedConfig!.label : config.label}
+      <div style={{ fontWeight: 600, color: hasWarnings ? '#f59e0b' : primaryColor, marginBottom: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+        {config.label}
+        {roles && (
+          <span
+            style={{
+              fontSize: 10,
+              padding: '2px 6px',
+              borderRadius: 12,
+              backgroundColor: 'var(--bg-secondary)',
+              color: 'var(--text-secondary)',
+              border: `1px solid ${secondaryColor}60`,
+              cursor: 'help'
+            }}
+            title={`Merged with: ${roles.filter((r) => r !== nodeData.componentType).map((r) => NODE_TYPE_CONFIG[r].label).join(', ')}`}
+          >
+            +{roles.length - 1}
+          </span>
+        )}
       </div>
       <div style={{ color: 'var(--node-text-secondary)', fontSize: 12 }}>{nodeData.label}</div>
     </div>
