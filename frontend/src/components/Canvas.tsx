@@ -6,6 +6,7 @@ import {
   useNodesState,
   useEdgesState,
   SelectionMode,
+  MarkerType,
   type OnConnect,
   type Node,
   type Edge,
@@ -15,6 +16,7 @@ import '@xyflow/react/dist/style.css'
 
 import ArchitectureNode from '../nodes/ArchitectureNode'
 import PropertyPanel from './PropertyPanel'
+import EdgePropertyPanel from './EdgePropertyPanel'
 import { NODE_TYPE_CONFIG } from '../nodes/nodeConfig'
 import { analyzeTopology } from '../api/topologyApi'
 import type {
@@ -44,6 +46,7 @@ function Canvas({ isDarkMode }: CanvasProps) {
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
   const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
   const [analysisResult, setAnalysisResult] = useState<AnalyzeResponse | null>(
     null
   )
@@ -228,7 +231,19 @@ function Canvas({ isDarkMode }: CanvasProps) {
     [setNodes, pushHistory]
   )
 
-  const onSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: Node[]; edges: Edge[] }) => {
+  const onEdgeDataChange = useCallback(
+    (edgeId: string, newData: Record<string, unknown>) => {
+      pushHistory()
+      setEdges((eds) =>
+        eds.map((edge) =>
+          edge.id === edgeId ? { ...edge, data: newData } : edge
+        )
+      )
+    },
+    [setEdges, pushHistory]
+  )
+
+  const onSelectionChange = useCallback(({ nodes: selectedNodes, edges: selectedEdges }: { nodes: Node[]; edges: Edge[] }) => {
     if (selectedNodes.length > 0) {
       const selectedNodeIds = new Set(selectedNodes.map(n => n.id))
       setEdges(eds => eds.map(edge => ({
@@ -237,6 +252,7 @@ function Canvas({ isDarkMode }: CanvasProps) {
       })))
     }
     setSelectedNodeId(selectedNodes.length > 0 ? selectedNodes[0].id : null)
+    setSelectedEdgeId(selectedEdges.length > 0 ? selectedEdges[0].id : null)
   }, [setEdges])
 
   const onConnect: OnConnect = useCallback(
@@ -249,8 +265,9 @@ function Canvas({ isDarkMode }: CanvasProps) {
         target: params.target,
         sourceHandle: params.sourceHandle,
         targetHandle: params.targetHandle,
-        data: { connectionType: 'sync' },
+        data: { connectionType: 'sync', protocol: 'http' },
         style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 },
+        markerEnd: { type: MarkerType.ArrowClosed, color: isDarkMode ? '#d1d5db' : '#b1b1b7' },
       }
       setEdges((eds) => [...eds, newEdge])
     },
@@ -337,6 +354,9 @@ function Canvas({ isDarkMode }: CanvasProps) {
           connectionType:
             ((e.data as Record<string, unknown>)?.connectionType as string ??
             'sync') as SystemTopology['edges'][number]['connectionType'],
+          protocol:
+            ((e.data as Record<string, unknown>)?.protocol as string ??
+            'http') as SystemTopology['edges'][number]['protocol'],
         })),
       }
 
@@ -377,6 +397,42 @@ function Canvas({ isDarkMode }: CanvasProps) {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [nodes.length, analyzing, handleAnalyze, duplicateSelectedNode, undo])
+
+  const handleDemo = useCallback(() => {
+    pushHistory()
+    
+    const demoNodes: Node[] = [
+      { id: 'demo-client', type: 'architecture', position: { x: 400, y: 50 }, data: { label: 'Client', componentType: 'client', properties: {} } },
+      { id: 'demo-dns', type: 'architecture', position: { x: 700, y: 50 }, data: { label: 'DNS', componentType: 'dns', properties: {} } },
+      { id: 'demo-cdn', type: 'architecture', position: { x: 600, y: 250 }, data: { label: 'CDN', componentType: 'cdn', properties: {} } },
+      { id: 'demo-lb', type: 'architecture', position: { x: 400, y: 250 }, data: { label: 'Load Balancer', componentType: 'load_balancer', properties: { algorithm: 'round_robin', layer: 'l7' } } },
+      { id: 'demo-service', type: 'architecture', position: { x: 400, y: 450 }, data: { label: 'Service', componentType: 'service', properties: { replicas: 3 } } },
+      { id: 'demo-db-master', type: 'architecture', position: { x: 250, y: 650 }, data: { label: 'Database', componentType: 'database', properties: { dbType: 'sql' } } },
+      { id: 'demo-db-slave', type: 'architecture', position: { x: 450, y: 650 }, data: { label: 'Database', componentType: 'database', properties: { dbType: 'sql' } } },
+      { id: 'demo-cache', type: 'architecture', position: { x: 650, y: 650 }, data: { label: 'Cache', componentType: 'cache', properties: { cacheType: 'distributed' } } },
+      { id: 'demo-storage', type: 'architecture', position: { x: 800, y: 450 }, data: { label: 'Storage', componentType: 'storage', properties: {} } }
+    ]
+
+    const demoEdges: Edge[] = [
+      { id: 'e-client-dns', source: 'demo-client', target: 'demo-dns', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
+      { id: 'e-client-cdn', source: 'demo-client', target: 'demo-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
+      { id: 'e-client-lb', source: 'demo-client', target: 'demo-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
+      { id: 'e-cdn-storage', source: 'demo-cdn', target: 'demo-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
+      { id: 'e-lb-service', source: 'demo-lb', target: 'demo-service', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
+      { id: 'e-service-dbm', source: 'demo-service', target: 'demo-db-master', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
+      { id: 'e-service-dbs', source: 'demo-service', target: 'demo-db-slave', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
+      { id: 'e-service-cache', source: 'demo-service', target: 'demo-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true }
+    ]
+
+    setNodes(demoNodes)
+    setEdges(demoEdges)
+
+    setTimeout(() => {
+      if (rfInstance) {
+        rfInstance.fitView({ padding: 0.2, duration: 500 })
+      }
+    }, 50)
+  }, [pushHistory, setNodes, setEdges, isDarkMode, rfInstance])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, backgroundColor: 'var(--bg-primary)' }}>
@@ -484,6 +540,7 @@ function Canvas({ isDarkMode }: CanvasProps) {
             edges={edges.map(e => ({
               ...e,
               selectable: true,
+              markerEnd: { type: MarkerType.ArrowClosed, color: e.selected ? '#3b82f6' : isDarkMode ? '#d1d5db' : '#b1b1b7' },
               style: { 
                 ...e.style, 
                 stroke: e.selected 
@@ -517,6 +574,25 @@ function Canvas({ isDarkMode }: CanvasProps) {
           >
             <Controls />
             <Background gap={16} size={1} color={isDarkMode ? '#4b5563' : '#81818a'} />
+            
+            <div style={{ position: 'absolute', bottom: 16, left: 70, zIndex: 10 }}>
+              <button
+                onClick={handleDemo}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 6,
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
+              >
+                Demo
+              </button>
+            </div>
           </ReactFlow>
           </div>
 
@@ -642,6 +718,11 @@ function Canvas({ isDarkMode }: CanvasProps) {
         <PropertyPanel
           selectedNode={selectedNode}
           onNodeDataChange={onNodeDataChange}
+        />
+        <EdgePropertyPanel
+          selectedEdgeId={selectedEdgeId}
+          edges={edges}
+          onEdgeDataChange={onEdgeDataChange}
         />
       </div>
     </div>

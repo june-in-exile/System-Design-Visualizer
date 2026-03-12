@@ -12,6 +12,19 @@ export type ComponentType =
 
 export type ConnectionType = 'sync' | 'async' | 'replication' | 'cdn_origin'
 
+export type EdgeProtocol = 
+  | 'http' 
+  | 'https' 
+  | 'grpc' 
+  | 'websocket' 
+  | 'ssh' 
+  | 'tcp' 
+  | 'udp' 
+  | 'amqp' 
+  | 'mqtt' 
+  | 'database' 
+  | 'dns'
+
 export interface DatabaseProperties {
   dbType: 'sql' | 'nosql' | 'graph' | 'timeseries'
   product?: string
@@ -66,7 +79,7 @@ export interface SystemEdge {
   source: string
   target: string
   connectionType: ConnectionType
-  protocol?: string
+  protocol: EdgeProtocol
   label?: string
 }
 
