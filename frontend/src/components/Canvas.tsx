@@ -1,12 +1,10 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ReactFlow,
   Controls,
   Background,
   useNodesState,
   useEdgesState,
-  useReactFlow,
-  ReactFlowProvider,
   type OnConnect,
   type Node,
   type Edge,
@@ -15,7 +13,6 @@ import {
 import '@xyflow/react/dist/style.css'
 
 import ArchitectureNode from '../nodes/ArchitectureNode'
-import WarningsPanel from './WarningsPanel'
 import { NODE_TYPE_CONFIG } from '../nodes/nodeConfig'
 import { analyzeTopology } from '../api/topologyApi'
 import type {
@@ -35,18 +32,11 @@ function generateNodeId(): string {
   return `node-${nodeIdCounter}`
 }
 
-function buildWarningsByNode(warnings: Warning[]): Map<string, string[]> {
-  const map = new Map<string, string[]>()
-  for (const w of warnings) {
-    for (const nodeId of w.nodeIds) {
-      const existing = map.get(nodeId) ?? []
-      map.set(nodeId, [...existing, w.message])
-    }
-  }
-  return map
+interface CanvasProps {
+  isDarkMode: boolean;
 }
 
-function CanvasInner() {
+function Canvas({ isDarkMode }: CanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
@@ -55,43 +45,10 @@ function CanvasInner() {
     null
   )
   const [analyzing, setAnalyzing] = useState(false)
-  const [hoveredNodeIds, setHoveredNodeIds] = useState<string[]>([])
-  const { fitView } = useReactFlow()
-
-  const warningsByNode = useMemo(
-    () => buildWarningsByNode(analysisResult?.warnings ?? []),
-    [analysisResult]
-  )
-
-  const nodesWithWarnings = useMemo(() => {
-    return nodes.map((node) => {
-      const nodeWarnings = warningsByNode.get(node.id) ?? []
-      const isHovered = hoveredNodeIds.includes(node.id)
-      const currentData = node.data as Record<string, unknown>
-      const currentWarnings = currentData.warnings as string[] | undefined
-      const currentHighlighted = currentData.highlighted as boolean | undefined
-
-      if (
-        JSON.stringify(currentWarnings ?? []) ===
-          JSON.stringify(nodeWarnings) &&
-        (currentHighlighted ?? false) === isHovered
-      ) {
-        return node
-      }
-
-      return {
-        ...node,
-        data: {
-          ...currentData,
-          warnings: nodeWarnings,
-          highlighted: isHovered,
-        },
-      }
-    })
-  }, [nodes, warningsByNode, hoveredNodeIds])
 
   const onConnect: OnConnect = useCallback(
     (params) => {
+      if (!params.source || !params.target) return
       const newEdge: Edge = {
         id: `edge-${params.source}-${params.target}`,
         source: params.source,
@@ -99,8 +56,19 @@ function CanvasInner() {
         sourceHandle: params.sourceHandle,
         targetHandle: params.targetHandle,
         data: { connectionType: 'sync' },
+        style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 },
       }
       setEdges((eds) => [...eds, newEdge])
+    },
+    [setEdges, isDarkMode]
+  )
+
+  const onNodesDelete = useCallback(
+    (deletedNodes: Node[]) => {
+      const deletedIds = new Set(deletedNodes.map((n) => n.id))
+      setEdges((eds) =>
+        eds.filter((e) => !deletedIds.has(e.source) && !deletedIds.has(e.target))
+      )
     },
     [setEdges]
   )
@@ -136,7 +104,6 @@ function CanvasInner() {
           label: config.label,
           componentType,
           properties: { ...config.defaultProperties },
-          warnings: [],
         },
       }
 
@@ -178,17 +145,13 @@ function CanvasInner() {
       const result = await analyzeTopology(topology)
       setAnalysisResult(result)
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Analysis failed'
       setAnalysisResult({
         success: false,
         nodeCount: 0,
         edgeCount: 0,
         warnings: [
-          {
-            rule: 'error',
-            message:
-              error instanceof Error ? error.message : 'Analysis failed',
-            nodeIds: [],
-          },
+          { rule: 'error', message, nodeIds: [] } as Warning,
         ],
       })
     } finally {
@@ -196,29 +159,29 @@ function CanvasInner() {
     }
   }, [nodes, edges])
 
-  const handleWarningClick = useCallback(
-    (nodeIds: string[]) => {
-      if (nodeIds.length === 0) return
-      fitView({ nodes: nodeIds.map((id) => ({ id })), duration: 400, padding: 0.5 })
-    },
-    [fitView]
-  )
-
-  const handleWarningHover = useCallback((nodeIds: string[]) => {
-    setHoveredNodeIds(nodeIds)
-  }, [])
-
-  const warnings = analysisResult?.warnings ?? []
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+        e.preventDefault()
+        if (nodes.length > 0 && !analyzing) {
+          handleAnalyze()
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [nodes.length, analyzing, handleAnalyze])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, backgroundColor: 'var(--bg-primary)' }}>
       <div
         style={{
           padding: '8px 16px',
-          borderBottom: '1px solid #e5e7eb',
+          borderBottom: '1px solid var(--border-color)',
           display: 'flex',
           alignItems: 'center',
           gap: 12,
+          backgroundColor: 'var(--bg-primary)'
         }}
       >
         <button
@@ -228,8 +191,8 @@ function CanvasInner() {
             padding: '6px 16px',
             borderRadius: 6,
             border: 'none',
-            backgroundColor: nodes.length === 0 ? '#d1d5db' : '#3b82f6',
-            color: '#fff',
+            backgroundColor: nodes.length === 0 ? 'var(--btn-disabled-bg)' : 'var(--btn-primary-bg)',
+            color: 'var(--btn-primary-text)',
             fontSize: 13,
             fontWeight: 600,
             cursor: nodes.length === 0 ? 'not-allowed' : 'pointer',
@@ -238,13 +201,13 @@ function CanvasInner() {
           {analyzing ? 'Analyzing...' : 'Analyze'}
         </button>
         {analysisResult && (
-          <span style={{ fontSize: 13, color: '#6b7280' }}>
+          <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
             {analysisResult.success
               ? `${analysisResult.nodeCount} nodes, ${analysisResult.edgeCount} edges`
               : 'Analysis failed'}
-            {warnings.length > 0 && (
+            {analysisResult.warnings && analysisResult.warnings.length > 0 && (
               <span style={{ color: '#f59e0b', marginLeft: 8 }}>
-                {warnings.length} warning(s)
+                {analysisResult.warnings.length} warning(s)
               </span>
             )}
           </span>
@@ -252,37 +215,29 @@ function CanvasInner() {
       </div>
       <div ref={reactFlowWrapper} style={{ flex: 1 }}>
         <ReactFlow
-          nodes={nodesWithWarnings}
-          edges={edges}
+          nodes={nodes}
+          edges={edges.map(e => ({
+            ...e,
+            style: { ...e.style, stroke: isDarkMode ? '#d1d5db' : '#b1b1b7' }
+          }))}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onInit={setRfInstance}
           onDrop={onDrop}
           onDragOver={onDragOver}
+          onNodesDelete={onNodesDelete}
           nodeTypes={nodeTypes}
+          colorMode={isDarkMode ? 'dark' : 'light'}
           fitView
           snapToGrid
           snapGrid={[16, 16]}
         >
           <Controls />
-          <Background gap={16} size={1} />
+          <Background gap={16} size={1} color={isDarkMode ? '#4b5563' : '#81818a'} />
         </ReactFlow>
       </div>
-      <WarningsPanel
-        warnings={warnings}
-        onWarningClick={handleWarningClick}
-        onWarningHover={handleWarningHover}
-      />
     </div>
-  )
-}
-
-function Canvas() {
-  return (
-    <ReactFlowProvider>
-      <CanvasInner />
-    </ReactFlowProvider>
   )
 }
 

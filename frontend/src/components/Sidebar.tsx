@@ -3,7 +3,12 @@ import { NODE_TYPE_CONFIG } from '../nodes/nodeConfig'
 
 const COMPONENT_TYPES = Object.keys(NODE_TYPE_CONFIG) as ComponentType[]
 
-function Sidebar() {
+interface SidebarProps {
+  isDarkMode: boolean;
+  toggleDarkMode: () => void;
+}
+
+function Sidebar({ isDarkMode, toggleDarkMode }: SidebarProps) {
   const onDragStart = (
     event: React.DragEvent,
     componentType: ComponentType
@@ -17,9 +22,11 @@ function Sidebar() {
       style={{
         width: 200,
         padding: 16,
-        borderRight: '1px solid #e5e7eb',
-        backgroundColor: '#f9fafb',
+        borderRight: '1px solid var(--border-color)',
+        backgroundColor: 'var(--bg-secondary)',
         overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       <h3
@@ -27,36 +34,60 @@ function Sidebar() {
           margin: '0 0 12px',
           fontSize: 14,
           fontWeight: 600,
-          color: '#374151',
+          color: 'var(--text-secondary)',
         }}
       >
         Components
       </h3>
-      {COMPONENT_TYPES.map((type) => {
-        const config = NODE_TYPE_CONFIG[type]
-        return (
-          <div
-            key={type}
-            draggable
-            onDragStart={(e) => onDragStart(e, type)}
-            style={{
-              padding: '8px 12px',
-              marginBottom: 8,
-              borderRadius: 6,
-              border: `1px solid ${config.color}40`,
-              backgroundColor: '#ffffff',
-              cursor: 'grab',
-              fontSize: 13,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-            }}
-          >
-            <span>{config.icon}</span>
-            <span>{config.label}</span>
-          </div>
-        )
-      })}
+      <div style={{ flex: 1 }}>
+        {COMPONENT_TYPES.map((type) => {
+          const config = NODE_TYPE_CONFIG[type]
+          return (
+            <div
+              key={type}
+              draggable
+              onDragStart={(e) => onDragStart(e, type)}
+              style={{
+                padding: '8px 12px',
+                marginBottom: 8,
+                borderRadius: 6,
+                border: `1px solid ${config.color}40`,
+                backgroundColor: 'var(--bg-primary)',
+                cursor: 'grab',
+                fontSize: 13,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                color: 'var(--text-primary)',
+              }}
+            >
+              <span>{config.icon}</span>
+              <span>{config.label}</span>
+            </div>
+          )
+        })}
+      </div>
+      
+      <button
+        onClick={toggleDarkMode}
+        style={{
+          marginTop: 'auto',
+          padding: '8px 12px',
+          borderRadius: 6,
+          border: '1px solid var(--border-color)',
+          backgroundColor: 'var(--bg-primary)',
+          color: 'var(--text-primary)',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          fontSize: 13,
+          fontWeight: 500,
+        }}
+      >
+        {isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
+      </button>
     </aside>
   )
 }
