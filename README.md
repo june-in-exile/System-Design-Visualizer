@@ -35,7 +35,27 @@ git clone <your-repo-url>
 cd "System Design Visualizer"
 ```
 
-### 2. 啟動後端 (Go)
+### 2. 快速啟動 (Quick Start)
+
+專案根目錄提供了一個便利的腳本，可同時啟動後端與前端開發伺服器：
+
+```bash
+# 賦予執行權限 (若需要)
+chmod +x start-dev.sh
+
+# 執行啟動腳本
+./start-dev.sh
+```
+
+啟動後：
+- 前端：`http://localhost:5173`
+- 後端：`http://localhost:8080`
+
+### 3. 分別啟動 (Manual Start)
+
+如果你需要分別查看日誌或進行除錯，可以手動啟動：
+
+#### A. 啟動後端 (Go)
 
 後端預設執行於 `http://localhost:8080`。
 
@@ -45,7 +65,7 @@ go mod download
 go run main.go
 ```
 
-### 3. 啟動前端 (React)
+#### B. 啟動前端 (React)
 
 前端預設執行於 `http://localhost:5173`。
 
@@ -59,7 +79,7 @@ npm run dev
 
 1. **一鍵生成預設架構 (Demo)**：
    - 點擊工具列上的 **Demo** 按鈕，畫布將自動載入一個包含 Client、LB、Service、Database 與 Cache 的經典架構，方便進行測試。
-   
+
 2. **繪製與編輯 (Duplicate & Edit)**：
    - 從左側側邊欄拖曳組件至中央畫布。
    - 選取節點後點擊 **Duplicate** (或按 `Cmd/Ctrl + D`) 快速複製相同類型的組件。
@@ -74,7 +94,6 @@ npm run dev
 
 5. **定位警告**：
    - 若出現警告，點擊警告面板中的項目可自動將畫布縮放並定位至有問題的節點。
-
 
 ## 🔍 架構驗證規則 (Validation Rules)
 
@@ -97,10 +116,3 @@ npm run dev
 
 - `/frontend`: 包含 React 原始碼、React Flow 組件、自定義 Hook 與 API 調用邏輯。
 - `/backend`: 包含 Go API 處理程序 (Handlers)、數據模型 (Models) 與驗證引擎。
-- `GEMINI.md`: 專案的進階技術上下文與開發規範。
-
-## 🛠 開發規範
-
-- **新增組件**：若需新增系統組件類型，請同時更新 `backend/model/topology.go` 中的 `ValidComponentTypes` 以及前端的 `nodeConfig.ts`。
-- **屬性擴充**：在 `backend/model/properties.go` 定義新的屬性結構，並確保前端 `PropertyPanel.tsx` 能夠正確渲染對應欄位。
-- **快捷鍵實作**：全域快捷鍵定義在 `frontend/src/components/Canvas.tsx` 的 `useEffect` 中。
