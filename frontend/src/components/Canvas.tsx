@@ -40,6 +40,20 @@ interface CanvasProps {
   isDarkMode: boolean;
 }
 
+const PROTOCOL_LABELS: Record<string, string> = {
+  http: 'HTTP',
+  https: 'HTTPS',
+  grpc: 'gRPC',
+  websocket: 'WebSocket',
+  ssh: 'SSH',
+  tcp: 'TCP',
+  udp: 'UDP',
+  amqp: 'AMQP',
+  mqtt: 'MQTT',
+  database: 'Database',
+  dns: 'DNS',
+}
+
 function Canvas({ isDarkMode }: CanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
@@ -443,17 +457,17 @@ function Canvas({ isDarkMode }: CanvasProps) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+      if (e.ctrlKey && e.key === 'a') {
         e.preventDefault()
         if (nodes.length > 0 && !analyzing) {
           handleAnalyze()
         }
       }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'd') {
+      if (e.ctrlKey && e.key === 'd') {
         e.preventDefault()
         duplicateSelectedNode()
       }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+      if (e.ctrlKey && e.key === 'z') {
         e.preventDefault()
         undo()
       }
@@ -527,6 +541,7 @@ function Canvas({ isDarkMode }: CanvasProps) {
             fontWeight: 600,
             cursor: nodes.length === 0 ? 'not-allowed' : 'pointer',
           }}
+          title="Analyze (Ctrl+A)"
         >
           {analyzing ? 'Analyzing...' : 'Analyze'}
         </button>
@@ -543,7 +558,7 @@ function Canvas({ isDarkMode }: CanvasProps) {
             fontWeight: 500,
             cursor: selectedNode ? 'pointer' : 'not-allowed',
           }}
-          title="Duplicate selected (Cmd+D)"
+          title="Duplicate selected (Ctrl+D)"
         >
           Duplicate
         </button>
@@ -560,7 +575,7 @@ function Canvas({ isDarkMode }: CanvasProps) {
             fontWeight: 500,
             cursor: historyRef.current.length > 0 ? 'pointer' : 'not-allowed',
           }}
-          title="Undo (Cmd+Z)"
+          title="Undo (Ctrl+Z)"
         >
           Undo
         </button>
@@ -609,7 +624,7 @@ function Canvas({ isDarkMode }: CanvasProps) {
               const edgeData = (e.data as Record<string, unknown>) ?? {}
               const protocol = edgeData.protocol as string | undefined
               const edgeLabel = edgeData.label as string | undefined
-              const displayLabel = edgeLabel || (protocol ? protocol.toUpperCase() : undefined)
+              const displayLabel = edgeLabel || (protocol ? (PROTOCOL_LABELS[protocol] || protocol) : undefined)
               const color = e.selected ? '#3b82f6' : isDarkMode ? '#d1d5db' : '#b1b1b7'
               const direction = edgeData.direction as string | undefined
               const arrowMarker = { type: MarkerType.ArrowClosed, color }

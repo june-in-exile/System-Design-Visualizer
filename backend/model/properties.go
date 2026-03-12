@@ -4,13 +4,13 @@ import "encoding/json"
 
 // DatabaseProperties holds attributes for database nodes.
 type DatabaseProperties struct {
-	DBType            string  `json:"dbType"`
-	Product           string  `json:"product,omitempty"`
-	ACIDRequired      bool    `json:"acidRequired"`
-	ReadWriteRatio    float64 `json:"readWriteRatio"`
-	ScalingStrategy   string  `json:"scalingStrategy"`
-	ReplicationFactor int     `json:"replicationFactor,omitempty"`
-	ConsistencyLevel  string  `json:"consistencyLevel,omitempty"`
+	DBType           string  `json:"dbType"`
+	Product          string  `json:"product,omitempty"`
+	ACIDRequired     bool    `json:"acidRequired"`
+	ReadWriteRatio   float64 `json:"readWriteRatio"`
+	ScalingStrategy  string  `json:"scalingStrategy"`
+	Replicas         int     `json:"replicas,omitempty"`
+	ConsistencyLevel string  `json:"consistencyLevel,omitempty"`
 }
 
 // APProducts lists database products that follow AP (Availability + Partition tolerance) in CAP.
@@ -26,6 +26,7 @@ type LoadBalancerProperties struct {
 	Algorithm   string `json:"algorithm"`
 	HealthCheck bool   `json:"healthCheck"`
 	Layer       string `json:"layer"`
+	Replicas    int    `json:"replicas,omitempty"`
 }
 
 // CacheProperties holds attributes for cache nodes.
@@ -33,6 +34,7 @@ type CacheProperties struct {
 	CacheType      string `json:"cacheType"`
 	EvictionPolicy string `json:"evictionPolicy"`
 	TTLSeconds     int    `json:"ttlSeconds,omitempty"`
+	Replicas       int    `json:"replicas,omitempty"`
 }
 
 // MessageQueueProperties holds attributes for message queue nodes.

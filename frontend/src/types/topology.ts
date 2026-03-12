@@ -33,7 +33,7 @@ export interface DatabaseProperties {
   acidRequired: boolean
   readWriteRatio: number
   scalingStrategy: 'vertical' | 'horizontal' | 'none'
-  replicationFactor?: number
+  replicas?: number
   consistencyLevel?: 'strong' | 'eventual'
 }
 
@@ -41,6 +41,7 @@ export interface LoadBalancerProperties {
   algorithm: 'round_robin' | 'least_connections' | 'ip_hash' | 'weighted'
   healthCheck: boolean
   layer: 'l4' | 'l7'
+  replicas?: number
 }
 
 export interface CacheProperties {
@@ -48,6 +49,7 @@ export interface CacheProperties {
   product?: string
   evictionPolicy: 'lru' | 'lfu' | 'fifo' | 'tiny_lfu'
   ttlSeconds?: number
+  replicas?: number
 }
 
 export type MQCategory = 'broker' | 'log_streaming' | 'in_memory' | 'managed'

@@ -7,6 +7,7 @@ interface ArchitectureNodeData {
   label: string
   componentType: ComponentType
   warnings?: Warning[]
+  properties?: Record<string, unknown>
   [key: string]: unknown
 }
 
@@ -16,16 +17,20 @@ function ArchitectureNode({ data }: NodeProps) {
   const hasWarnings = nodeData.warnings && nodeData.warnings.length > 0
   const [showTooltip, setShowTooltip] = useState(false)
 
+  const properties = nodeData.properties || {}
+  const replicas = (properties.replicas as number) || 1
+  const extraLayers = Math.min(Math.max(0, replicas - 1), 3) // max 3 layers behind
+
   const nodeStyle: React.CSSProperties = {
     position: 'relative',
     padding: '12px 16px',
     borderRadius: 8,
     border: `2px solid ${config.color}`,
-    backgroundColor: `${config.color}15`,
     minWidth: 140,
     textAlign: 'center',
     fontSize: 13,
     fontFamily: 'system-ui, sans-serif',
+    isolation: 'isolate',
     ...(hasWarnings && {
       animation: 'warningPulse 2s ease-in-out infinite',
     }),
@@ -37,6 +42,55 @@ function ArchitectureNode({ data }: NodeProps) {
       onMouseLeave={() => setShowTooltip(false)}
       style={nodeStyle}
     >
+      {/* Front card background */}
+      <div 
+        style={{ 
+          position: 'absolute', 
+          inset: 0, 
+          borderRadius: 6, 
+          backgroundColor: 'var(--bg-primary)', 
+          zIndex: -1 
+        }} 
+      />
+      <div 
+        style={{ 
+          position: 'absolute', 
+          inset: 0, 
+          borderRadius: 6, 
+          backgroundColor: `${config.color}15`, 
+          zIndex: -1 
+        }} 
+      />
+
+      {/* Extra layers for replicas */}
+      {extraLayers > 0 && Array.from({ length: extraLayers }).map((_, i) => {
+        const offset = (i + 1) * 5;
+        return (
+          <div
+            key={i}
+            style={{
+              position: 'absolute',
+              top: offset,
+              left: offset,
+              width: '100%',
+              height: '100%',
+              borderRadius: 8,
+              border: `2px solid ${config.color}`,
+              backgroundColor: 'var(--bg-primary)',
+              zIndex: -2 - i,
+            }}
+          >
+            <div 
+              style={{ 
+                width: '100%', 
+                height: '100%', 
+                borderRadius: 6, 
+                backgroundColor: `${config.color}15` 
+              }} 
+            />
+          </div>
+        )
+      })}
       {showTooltip && hasWarnings && (
         <div
           style={{

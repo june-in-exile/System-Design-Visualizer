@@ -267,7 +267,7 @@ export default function PropertyPanel({
         </>
       )}
 
-      {componentType === 'service' && (
+      {['service', 'database', 'load_balancer', 'cache'].includes(componentType) && (
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
             Replicas

@@ -474,14 +474,14 @@ func checkProtocolMismatch(nodes map[string]model.SystemNode, edges []model.Syst
 
 		protoName := protocolDisplayName[edge.Protocol]
 		if protoName == "" {
-			protoName = strings.ToUpper(edge.Protocol)
+			protoName = edge.Protocol
 		}
 
 		var suggestion []string
 		for p := range allowed {
 			name := protocolDisplayName[p]
 			if name == "" {
-				name = strings.ToUpper(p)
+				name = p
 			}
 			suggestion = append(suggestion, name)
 		}
