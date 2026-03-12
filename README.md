@@ -116,6 +116,7 @@ npm run dev
 | 13 | **異步削峰實踐建議** | 流量入口直接連線至高負載寫入節點（如 Database）而未經過 MQ 緩衝。 | 從 **API Gateway** 或 **LB** 直接連線至 **Database**，且寫入比例高。 |
 | 14 | **禁止 Client 直接連線資料庫** | Client 節點直接連線至 Database，跳過了 API Gateway 或 Service 抽象層。 | 建立從 **Client** 直連 **Database** 的連線區域。 |
 | 15 | **禁止 Client 直接連線快取** | Client 節點直接連線至 Cache，可能導致安全風險或快取穿透。 | 建立從 **Client** 直連 **Cache** 的連線。 |
+| 16 | **協定不匹配 (Protocol Mismatch)** | 連線使用了與目標組件類型不匹配的協議（如對 SQL Database 使用 HTTP 而非 Database Protocol）。 | 建立連線，並在連線屬性中設定與目標不符的 **Protocol**（例如選取 RESP 連接到 SQL 資料庫）。 |
 
 ## 📂 專案結構
 

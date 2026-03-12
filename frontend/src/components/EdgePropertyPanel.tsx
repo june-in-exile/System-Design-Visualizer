@@ -20,7 +20,10 @@ const PROTOCOL_OPTIONS: { value: EdgeProtocol; label: string; description: strin
   { value: 'udp', label: 'UDP', description: 'User Datagram Protocol (Connectionless)' },
   { value: 'amqp', label: 'AMQP', description: 'Advanced Message Queuing Protocol' },
   { value: 'mqtt', label: 'MQTT', description: 'Message Queuing Telemetry Transport (IoT)' },
-  { value: 'database', label: 'Database', description: 'Direct database connection protocol (JDBC/ODBC/Native)' },
+  { value: 'database', label: 'Database (Generic)', description: 'Direct database connection protocol (JDBC/ODBC/Native)' },
+  { value: 'resp', label: 'RESP', description: 'REdis Serialization Protocol (used by Redis)' },
+  { value: 'binary', label: 'Binary Protocol', description: 'Custom binary protocol for high-performance communication' },
+  { value: 'uds', label: 'UDS', description: 'Unix Domain Socket (Inter-process communication)' },
   { value: 'dns', label: 'DNS', description: 'Domain Name System query/response' },
 ]
 

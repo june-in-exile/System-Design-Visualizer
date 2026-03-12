@@ -25,6 +25,9 @@ export type EdgeProtocol =
   | 'amqp' 
   | 'mqtt' 
   | 'database' 
+  | 'resp'
+  | 'binary'
+  | 'uds'
   | 'dns'
 
 export interface DatabaseProperties {

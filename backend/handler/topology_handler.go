@@ -97,7 +97,7 @@ func validate(t model.SystemTopology) []Warning {
 
 	warnings = append(warnings, checkSPOF(nodeByID, outgoing)...)
 	warnings = append(warnings, checkDBSelection(t.Nodes)...)
-	warnings = append(warnings, checkVerticalPartitioning(t.Nodes)...)
+	warnings = append(warnings, checkVerticalPartitioning(nodeByID, outgoing)...)
 	warnings = append(warnings, checkCacheConsistency(nodeByID, outgoing)...)
 	warnings = append(warnings, checkCAP(t.Nodes)...)
 	warnings = append(warnings, checkCDNUsage(t.Nodes)...)
@@ -316,15 +316,50 @@ func checkDBSelection(nodes []model.SystemNode) []Warning {
 	return warnings
 }
 
-// checkVerticalPartitioning warns when multiple database nodes exist (federation pattern).
-func checkVerticalPartitioning(nodes []model.SystemNode) []Warning {
+// checkVerticalPartitioning warns when multiple database nodes exist (federation pattern),
+// but suppresses the warning if a "Service" node is found connecting to two or more different database nodes,
+// which indicates that the application layer is handling the data aggregation.
+func checkVerticalPartitioning(nodes map[string]model.SystemNode, outgoing map[string][]string) []Warning {
 	var dbNodes []model.SystemNode
+	dbSet := make(map[string]bool)
 	for _, node := range nodes {
 		if node.ComponentType == "database" {
 			dbNodes = append(dbNodes, node)
+			dbSet[node.ID] = true
 		}
 	}
-	if len(dbNodes) >= 2 {
+
+	// Only proceed if there are at least 2 database nodes
+	if len(dbNodes) < 2 {
+		return nil
+	}
+
+	// Search for an "Aggregator" service:
+	// A service node that has outgoing edges to at least two different database nodes.
+	isAggregated := false
+	for id, node := range nodes {
+		if node.ComponentType != "service" {
+			continue
+		}
+
+		connectedDBCount := 0
+		targets := outgoing[id]
+		seenDBs := make(map[string]bool)
+		for _, targetID := range targets {
+			if dbSet[targetID] && !seenDBs[targetID] {
+				connectedDBCount++
+				seenDBs[targetID] = true
+			}
+		}
+
+		if connectedDBCount >= 2 {
+			isAggregated = true
+			break
+		}
+	}
+
+	// If no aggregator is found, show the warning
+	if !isAggregated {
 		labels := make([]string, len(dbNodes))
 		ids := make([]string, len(dbNodes))
 		for i, n := range dbNodes {
@@ -339,6 +374,7 @@ func checkVerticalPartitioning(nodes []model.SystemNode) []Warning {
 			NodeIDs:  ids,
 		}}
 	}
+
 	return nil
 }
 
@@ -411,16 +447,27 @@ func checkCAP(nodes []model.SystemNode) []Warning {
 var expectedProtocols = map[string]map[string]bool{
 	"database": {
 		"database": true,
+		"resp":     true,
+		"binary":   true,
+		"uds":      true,
+		"tcp":      true,
 	},
 	"cache": {
 		"database": true,
+		"resp":     true,
+		"binary":   true,
+		"uds":      true,
+		"tcp":      true,
+		"http":     true, // Couchbase/Elasticsearch
 	},
 	"message_queue": {
 		"amqp": true,
 		"mqtt": true,
+		"tcp":  true,
 	},
 	"dns": {
 		"dns": true,
+		"udp": true,
 	},
 	"client": {
 		"http":      true,
@@ -449,6 +496,9 @@ var protocolDisplayName = map[string]string{
 	"amqp":      "AMQP",
 	"mqtt":      "MQTT",
 	"database":  "Database Protocol",
+	"resp":      "RESP (Redis)",
+	"binary":    "Binary Protocol",
+	"uds":       "UDS (Unix Domain Socket)",
 	"dns":       "DNS",
 }
 
