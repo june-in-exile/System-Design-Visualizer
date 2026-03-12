@@ -109,6 +109,8 @@ func validate(t model.SystemTopology) []Warning {
 	warnings = append(warnings, checkMQConsumer(nodeByID, outgoing)...)
 	warnings = append(warnings, checkMQDLQ(t.Nodes)...)
 	warnings = append(warnings, checkAsyncPeakShaving(nodeByID, outgoing)...)
+	warnings = append(warnings, checkClientToDB(nodeByID, t.Edges)...)
+	warnings = append(warnings, checkClientToCache(nodeByID, t.Edges)...)
 
 	return warnings
 }
@@ -154,7 +156,7 @@ func checkAsyncDecoupling(nodes map[string]model.SystemNode, outgoing map[string
 		if node.ComponentType != "service" {
 			continue
 		}
-		
+
 		isTimeConsuming := false
 		for _, kw := range keywords {
 			if contains(node.Label, kw) {
@@ -197,7 +199,7 @@ func checkLBSPOF(nodes []model.SystemNode) []Warning {
 	if len(lbNodes) == 1 {
 		return []Warning{{
 			Rule:     "lb_spof",
-			Message:  "⚖️ 入口高可用性：整體架構中僅存在 1 個 Load Balancer。",
+			Message:  "⚖️ 入口單點故障：整體架構中僅存在 1 個 Load Balancer。",
 			Solution: "生產環境建議部署多個 LB 並結合 DNS 負載均衡 (如 Round Robin) 或使用 Active-Passive 備援機制。",
 			NodeIDs:  lbNodes,
 		}}
@@ -561,7 +563,7 @@ func checkAsyncPeakShaving(nodes map[string]model.SystemNode, outgoing map[strin
 		if node.ComponentType != "load_balancer" && node.ComponentType != "api_gateway" {
 			continue
 		}
-		
+
 		targets := outgoing[id]
 		for _, targetID := range targets {
 			target, ok := nodes[targetID]
@@ -592,3 +594,48 @@ func checkAsyncPeakShaving(nodes map[string]model.SystemNode, outgoing map[strin
 	return warnings
 }
 
+// checkClientToDB prohibits direct connection from Client to Database.
+func checkClientToDB(nodes map[string]model.SystemNode, edges []model.SystemEdge) []Warning {
+	var warnings []Warning
+	for _, edge := range edges {
+		source, okSource := nodes[edge.Source]
+		target, okTarget := nodes[edge.Target]
+
+		if !okSource || !okTarget {
+			continue
+		}
+
+		if source.ComponentType == "client" && target.ComponentType == "database" {
+			warnings = append(warnings, Warning{
+				Rule:     "client_direct_db",
+				Message:  fmt.Sprintf("🚫 安全風險：禁止從 %q 直接連線至 %q。", source.Label, target.Label),
+				Solution: "Client 不應直接操作資料庫。請在兩者之間加入 API Gateway 或 Service 層進行身份驗證與數據抽象。",
+				NodeIDs:  []string{source.ID, target.ID},
+			})
+		}
+	}
+	return warnings
+}
+
+// checkClientToCache prohibits direct connection from Client to Cache.
+func checkClientToCache(nodes map[string]model.SystemNode, edges []model.SystemEdge) []Warning {
+	var warnings []Warning
+	for _, edge := range edges {
+		source, okSource := nodes[edge.Source]
+		target, okTarget := nodes[edge.Target]
+
+		if !okSource || !okTarget {
+			continue
+		}
+
+		if source.ComponentType == "client" && target.ComponentType == "cache" {
+			warnings = append(warnings, Warning{
+				Rule:     "client_direct_cache",
+				Message:  fmt.Sprintf("🧊 暴露風險：不建議從 %q 直接連線至 %q。", source.Label, target.Label),
+				Solution: "不建議 Client 直接操作快取。這可能導致快取穿透風險或數據洩漏。應透過後端 Service 進行快取邏輯封裝。",
+				NodeIDs:  []string{source.ID, target.ID},
+			})
+		}
+	}
+	return warnings
+}
