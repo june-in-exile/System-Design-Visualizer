@@ -58,6 +58,7 @@ export interface MessageQueueProperties {
   queueType: 'point_to_point' | 'pub_sub'
   deliveryGuarantee: 'at_most_once' | 'at_least_once' | 'exactly_once'
   ordered: boolean
+  hasDLQ: boolean
 }
 
 export interface StorageProperties {

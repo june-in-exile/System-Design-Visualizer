@@ -71,6 +71,7 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
       queueType: 'pub_sub',
       deliveryGuarantee: 'at_least_once',
       ordered: false,
+      hasDLQ: false,
     },
   },
   cdn: {

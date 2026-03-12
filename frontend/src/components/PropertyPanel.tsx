@@ -422,6 +422,20 @@ export default function PropertyPanel({
               Guarantee message ordering within a partition or queue.
             </p>
           </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={(properties.hasDLQ as boolean) || false}
+                onChange={(e) => handlePropertyChange('hasDLQ', e.target.checked)}
+              />
+              Enable Dead Letter Queue (DLQ)
+            </label>
+            <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>
+              Automatically move failed messages to a separate queue for inspection.
+            </p>
+          </div>
         </>
       )}
 

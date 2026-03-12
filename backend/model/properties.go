@@ -42,6 +42,7 @@ type MessageQueueProperties struct {
 	QueueType         string `json:"queueType"`
 	DeliveryGuarantee string `json:"deliveryGuarantee"`
 	Ordered           bool   `json:"ordered"`
+	HasDLQ            bool   `json:"hasDLQ"`
 }
 
 // StorageProperties holds attributes for object storage nodes.

@@ -106,6 +106,9 @@ func validate(t model.SystemTopology) []Warning {
 	warnings = append(warnings, checkReadWriteSeparation(t.Nodes)...)
 	warnings = append(warnings, checkCacheEviction(t.Nodes)...)
 	warnings = append(warnings, checkProtocolMismatch(nodeByID, t.Edges)...)
+	warnings = append(warnings, checkMQConsumer(nodeByID, outgoing)...)
+	warnings = append(warnings, checkMQDLQ(t.Nodes)...)
+	warnings = append(warnings, checkAsyncPeakShaving(nodeByID, outgoing)...)
 
 	return warnings
 }
@@ -503,3 +506,89 @@ func joinLabels(labels []string) string {
 	}
 	return result
 }
+
+// checkMQConsumer warns if a Message Queue node has no outgoing connections.
+func checkMQConsumer(nodes map[string]model.SystemNode, outgoing map[string][]string) []Warning {
+	var warnings []Warning
+	for id, node := range nodes {
+		if node.ComponentType != "message_queue" {
+			continue
+		}
+		if len(outgoing[id]) == 0 {
+			warnings = append(warnings, Warning{
+				Rule:     "mq_consumer_missing",
+				Message:  fmt.Sprintf("📥 MQ 消費者缺失檢查：%q 目前沒有任何消費者 (Consumer)。", node.Label),
+				Solution: "Message Queue 節點缺乏輸出連線，訊息將在隊列中堆積。請將此節點連接至處理訊息的 Service。",
+				NodeIDs:  []string{id},
+			})
+		}
+	}
+	return warnings
+}
+
+// checkMQDLQ warns if a Message Queue node does not have a dead letter queue configured.
+func checkMQDLQ(nodes []model.SystemNode) []Warning {
+	var warnings []Warning
+	for _, node := range nodes {
+		if node.ComponentType != "message_queue" {
+			continue
+		}
+		props, err := model.ParseNodeProperties(node)
+		if err != nil {
+			continue
+		}
+		mqProps, ok := props.(*model.MessageQueueProperties)
+		if !ok {
+			continue
+		}
+		if !mqProps.HasDLQ {
+			warnings = append(warnings, Warning{
+				Rule:     "mq_dlq_missing",
+				Message:  fmt.Sprintf("💀 死信隊列 (DLQ) 提醒：%q 未配置死信隊列或重試機制。", node.Label),
+				Solution: "使用 Message Queue 但未配置死信隊列 (Dead Letter Queue)，可能導致處理失敗的訊息直接丟失。建議在屬性中啟用 DLQ。",
+				NodeIDs:  []string{node.ID},
+			})
+		}
+	}
+	return warnings
+}
+
+// checkAsyncPeakShaving suggests using MQ for high-load direct database writes from entry points.
+func checkAsyncPeakShaving(nodes map[string]model.SystemNode, outgoing map[string][]string) []Warning {
+	var warnings []Warning
+	for id, node := range nodes {
+		// Entry points: LB or API Gateway
+		if node.ComponentType != "load_balancer" && node.ComponentType != "api_gateway" {
+			continue
+		}
+		
+		targets := outgoing[id]
+		for _, targetID := range targets {
+			target, ok := nodes[targetID]
+			if !ok || target.ComponentType != "database" {
+				continue
+			}
+
+			// Check for high write ratio
+			props, err := model.ParseNodeProperties(target)
+			if err != nil {
+				continue
+			}
+			dbProps, ok := props.(*model.DatabaseProperties)
+			if !ok {
+				continue
+			}
+
+			if dbProps.ReadWriteRatio < 0.5 {
+				warnings = append(warnings, Warning{
+					Rule:     "async_peak_shaving",
+					Message:  fmt.Sprintf("🌊 異步削峰實踐建議：流量入口 %q 直接連線至高負載寫入資料庫 %q。", node.Label, target.Label),
+					Solution: "高頻寫入建議先將請求發送至 Message Queue (MQ) 進行削峰填谷 (Load Leveling)，再由後端異步寫入資料庫，以減輕資料庫壓力並提升系統穩定性。",
+					NodeIDs:  []string{id, targetID},
+				})
+			}
+		}
+	}
+	return warnings
+}
+
