@@ -1,10 +1,12 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   ReactFlow,
   Controls,
   Background,
   useNodesState,
   useEdgesState,
+  useReactFlow,
+  ReactFlowProvider,
   type OnConnect,
   type Node,
   type Edge,
@@ -13,12 +15,14 @@ import {
 import '@xyflow/react/dist/style.css'
 
 import ArchitectureNode from '../nodes/ArchitectureNode'
+import WarningsPanel from './WarningsPanel'
 import { NODE_TYPE_CONFIG } from '../nodes/nodeConfig'
 import { analyzeTopology } from '../api/topologyApi'
 import type {
   ComponentType,
   SystemTopology,
   AnalyzeResponse,
+  Warning,
 } from '../types/topology'
 
 const nodeTypes = {
@@ -31,7 +35,18 @@ function generateNodeId(): string {
   return `node-${nodeIdCounter}`
 }
 
-function Canvas() {
+function buildWarningsByNode(warnings: Warning[]): Map<string, string[]> {
+  const map = new Map<string, string[]>()
+  for (const w of warnings) {
+    for (const nodeId of w.nodeIds) {
+      const existing = map.get(nodeId) ?? []
+      map.set(nodeId, [...existing, w.message])
+    }
+  }
+  return map
+}
+
+function CanvasInner() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
@@ -40,6 +55,40 @@ function Canvas() {
     null
   )
   const [analyzing, setAnalyzing] = useState(false)
+  const [hoveredNodeIds, setHoveredNodeIds] = useState<string[]>([])
+  const { fitView } = useReactFlow()
+
+  const warningsByNode = useMemo(
+    () => buildWarningsByNode(analysisResult?.warnings ?? []),
+    [analysisResult]
+  )
+
+  const nodesWithWarnings = useMemo(() => {
+    return nodes.map((node) => {
+      const nodeWarnings = warningsByNode.get(node.id) ?? []
+      const isHovered = hoveredNodeIds.includes(node.id)
+      const currentData = node.data as Record<string, unknown>
+      const currentWarnings = currentData.warnings as string[] | undefined
+      const currentHighlighted = currentData.highlighted as boolean | undefined
+
+      if (
+        JSON.stringify(currentWarnings ?? []) ===
+          JSON.stringify(nodeWarnings) &&
+        (currentHighlighted ?? false) === isHovered
+      ) {
+        return node
+      }
+
+      return {
+        ...node,
+        data: {
+          ...currentData,
+          warnings: nodeWarnings,
+          highlighted: isHovered,
+        },
+      }
+    })
+  }, [nodes, warningsByNode, hoveredNodeIds])
 
   const onConnect: OnConnect = useCallback(
     (params) => {
@@ -87,6 +136,7 @@ function Canvas() {
           label: config.label,
           componentType,
           properties: { ...config.defaultProperties },
+          warnings: [],
         },
       }
 
@@ -133,13 +183,32 @@ function Canvas() {
         nodeCount: 0,
         edgeCount: 0,
         warnings: [
-          error instanceof Error ? error.message : 'Analysis failed',
+          {
+            rule: 'error',
+            message:
+              error instanceof Error ? error.message : 'Analysis failed',
+            nodeIds: [],
+          },
         ],
       })
     } finally {
       setAnalyzing(false)
     }
   }, [nodes, edges])
+
+  const handleWarningClick = useCallback(
+    (nodeIds: string[]) => {
+      if (nodeIds.length === 0) return
+      fitView({ nodes: nodeIds.map((id) => ({ id })), duration: 400, padding: 0.5 })
+    },
+    [fitView]
+  )
+
+  const handleWarningHover = useCallback((nodeIds: string[]) => {
+    setHoveredNodeIds(nodeIds)
+  }, [])
+
+  const warnings = analysisResult?.warnings ?? []
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -173,9 +242,9 @@ function Canvas() {
             {analysisResult.success
               ? `${analysisResult.nodeCount} nodes, ${analysisResult.edgeCount} edges`
               : 'Analysis failed'}
-            {analysisResult.warnings && analysisResult.warnings.length > 0 && (
+            {warnings.length > 0 && (
               <span style={{ color: '#f59e0b', marginLeft: 8 }}>
-                {analysisResult.warnings.length} warning(s)
+                {warnings.length} warning(s)
               </span>
             )}
           </span>
@@ -183,7 +252,7 @@ function Canvas() {
       </div>
       <div ref={reactFlowWrapper} style={{ flex: 1 }}>
         <ReactFlow
-          nodes={nodes}
+          nodes={nodesWithWarnings}
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
@@ -200,7 +269,20 @@ function Canvas() {
           <Background gap={16} size={1} />
         </ReactFlow>
       </div>
+      <WarningsPanel
+        warnings={warnings}
+        onWarningClick={handleWarningClick}
+        onWarningHover={handleWarningHover}
+      />
     </div>
+  )
+}
+
+function Canvas() {
+  return (
+    <ReactFlowProvider>
+      <CanvasInner />
+    </ReactFlowProvider>
   )
 }
 

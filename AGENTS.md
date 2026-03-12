@@ -22,6 +22,8 @@ A full-stack system design visualizer with a React frontend (using React Flow) a
 
 ## Build, Lint & Development Commands
 
+| `./start-dev.sh` | Start both frontend and backend (Ctrl+C to stop) |
+
 ### Frontend (React + TypeScript + Vite)
 
 | Command | Description |
@@ -219,7 +221,6 @@ Currently there are no tests. To add tests:
 
 ## Development Workflow
 
-1. **Start backend**: `cd backend && go run .`
-2. **Start frontend**: `cd frontend && npm run dev`
-3. **Lint before committing**: `cd frontend && npm run lint`
-4. **Build to verify**: `cd frontend && npm run build`
+1. **Start both servers**: `./start-dev.sh` (Ctrl+C to stop)
+2. **Lint before committing**: `cd frontend && npm run lint`
+3. **Build to verify**: `cd frontend && npm run build`

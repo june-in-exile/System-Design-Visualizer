@@ -78,9 +78,15 @@ export interface SystemTopology {
   edges: SystemEdge[]
 }
 
+export interface Warning {
+  rule: string
+  message: string
+  nodeIds: string[]
+}
+
 export interface AnalyzeResponse {
   success: boolean
   nodeCount: number
   edgeCount: number
-  warnings?: string[]
+  warnings?: Warning[]
 }
