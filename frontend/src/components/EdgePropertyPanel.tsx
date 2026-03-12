@@ -29,6 +29,7 @@ const PROTOCOL_OPTIONS: { value: EdgeProtocol; label: string; description: strin
 ]
 
 const CONNECTION_TYPE_OPTIONS: { value: ConnectionType; label: string; description: string }[] = [
+  { value: 'unspecified', label: '(Unspecified)', description: 'No specific connection type defined' },
   { value: 'sync', label: 'Synchronous', description: 'Request-response, client waits for server to process' },
   { value: 'async', label: 'Asynchronous', description: 'Fire-and-forget or callback-based, client doesn\'t wait' },
   { value: 'replication', label: 'Replication', description: 'Data synchronization between primary and replicas' },
@@ -58,7 +59,8 @@ export default function EdgePropertyPanel({
   const edgeData = (selectedEdge.data as Record<string, unknown>) ?? {}
   const rawProtocol = edgeData.protocol as string | undefined
   const protocol = (rawProtocol === 'unspecified' ? '' : (rawProtocol ?? '')) as EdgeProtocol
-  const connectionType = (edgeData.connectionType as ConnectionType) ?? 'sync'
+  const rawConnectionType = edgeData.connectionType as string | undefined
+  const connectionType = (!rawConnectionType ? 'unspecified' : rawConnectionType) as ConnectionType
   const label = edgeData.label as string | undefined
   const direction = (edgeData.direction as EdgeDirection) ?? 'uni'
   const isAnimated = selectedEdge.animated ?? false

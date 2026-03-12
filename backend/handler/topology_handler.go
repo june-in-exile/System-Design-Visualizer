@@ -96,14 +96,14 @@ func validate(t model.SystemTopology) []Warning {
 	}
 
 	warnings = append(warnings, checkSPOF(nodeByID, outgoing)...)
-	warnings = append(warnings, checkDBSelection(t.Nodes)...)
+	warnings = append(warnings, checkDBSelection(t.Nodes, t.Edges)...)
 	warnings = append(warnings, checkVerticalPartitioning(nodeByID, outgoing)...)
 	warnings = append(warnings, checkCacheConsistency(nodeByID, outgoing)...)
 	warnings = append(warnings, checkCAP(t.Nodes)...)
 	warnings = append(warnings, checkCDNUsage(nodeByID, outgoing)...)
 	warnings = append(warnings, checkAsyncDecoupling(nodeByID, t.Edges)...)
 	warnings = append(warnings, checkLBSPOF(t.Nodes)...)
-	warnings = append(warnings, checkReadWriteSeparation(t.Nodes)...)
+	warnings = append(warnings, checkReadWriteSeparation(t.Nodes, t.Edges)...)
 	warnings = append(warnings, checkCacheEviction(t.Nodes)...)
 	warnings = append(warnings, checkProtocolMismatch(nodeByID, t.Edges)...)
 	warnings = append(warnings, checkConnectionTypeProtocolMismatch(nodeByID, t.Edges)...)
@@ -263,12 +263,25 @@ func checkLBSPOF(nodes []model.SystemNode) []Warning {
 }
 
 // checkReadWriteSeparation suggests master-slave if read ratio is extremely high.
-func checkReadWriteSeparation(nodes []model.SystemNode) []Warning {
+func checkReadWriteSeparation(nodes []model.SystemNode, edges []model.SystemEdge) []Warning {
 	var warnings []Warning
 	for _, node := range nodes {
 		if node.ComponentType != "database" {
 			continue
 		}
+
+		// Suppress warning if replication is already set up
+		hasReplication := false
+		for _, edge := range edges {
+			if (edge.Source == node.ID || edge.Target == node.ID) && edge.ConnectionType == "replication" {
+				hasReplication = true
+				break
+			}
+		}
+		if hasReplication {
+			continue
+		}
+
 		props, err := model.ParseNodeProperties(node)
 		if err != nil {
 			continue
@@ -362,12 +375,25 @@ func checkSPOF(nodes map[string]model.SystemNode, outgoing map[string][]string) 
 }
 
 // checkDBSelection flags SQL databases under high write pressure.
-func checkDBSelection(nodes []model.SystemNode) []Warning {
+func checkDBSelection(nodes []model.SystemNode, edges []model.SystemEdge) []Warning {
 	var warnings []Warning
 	for _, node := range nodes {
 		if node.ComponentType != "database" {
 			continue
 		}
+
+		// Suppress warning if replication is already set up
+		hasReplication := false
+		for _, edge := range edges {
+			if (edge.Source == node.ID || edge.Target == node.ID) && edge.ConnectionType == "replication" {
+				hasReplication = true
+				break
+			}
+		}
+		if hasReplication {
+			continue
+		}
+
 		props, err := model.ParseNodeProperties(node)
 		if err != nil {
 			continue

@@ -57,6 +57,14 @@ const PROTOCOL_LABELS: Record<string, string> = {
   dns: 'DNS',
 }
 
+const CONNECTION_TYPE_LABELS: Record<string, string> = {
+  sync: 'Sync',
+  async: 'Async',
+  replication: 'Replication',
+  cdn_origin: 'CDN Origin',
+  unspecified: '',
+}
+
 function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChange }: CanvasProps) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>(initialNodes)
@@ -355,7 +363,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
         target: params.target,
         sourceHandle: params.sourceHandle,
         targetHandle: params.targetHandle,
-        data: { connectionType: 'sync', protocol: '', direction: 'uni' },
+        data: { connectionType: 'unspecified', protocol: '', direction: 'uni' },
         style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 },
         markerEnd: { type: MarkerType.ArrowClosed, color: isDarkMode ? '#d1d5db' : '#b1b1b7' },
         animated: true,
@@ -635,8 +643,22 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
             edges={edges.map(e => {
               const edgeData = (e.data as Record<string, unknown>) ?? {}
               const protocol = edgeData.protocol as string | undefined
+              const connectionType = edgeData.connectionType as string | undefined
               const edgeLabel = edgeData.label as string | undefined
-              const displayLabel = edgeLabel || (protocol && protocol !== 'unspecified' ? (PROTOCOL_LABELS[protocol] || protocol) : undefined)
+              
+              let autoLabel = ''
+              const protocolLabel = protocol && protocol !== 'unspecified' ? (PROTOCOL_LABELS[protocol] || protocol) : ''
+              const connTypeLabel = connectionType && connectionType !== 'unspecified' ? (CONNECTION_TYPE_LABELS[connectionType] || connectionType) : ''
+              
+              if (protocolLabel && connTypeLabel) {
+                autoLabel = `${protocolLabel} (${connTypeLabel})`
+              } else if (protocolLabel) {
+                autoLabel = protocolLabel
+              } else if (connTypeLabel) {
+                autoLabel = connTypeLabel
+              }
+
+              const displayLabel = edgeLabel || autoLabel || undefined
               const color = e.selected ? '#3b82f6' : isDarkMode ? '#d1d5db' : '#b1b1b7'
               const direction = edgeData.direction as string | undefined
               const arrowMarker = { type: MarkerType.ArrowClosed, color }

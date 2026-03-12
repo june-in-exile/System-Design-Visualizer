@@ -54,4 +54,5 @@ var ValidConnectionTypes = map[string]bool{
 	"async":       true,
 	"replication": true,
 	"cdn_origin":  true,
+	"unspecified": true,
 }

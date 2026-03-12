@@ -10,7 +10,7 @@ export type ComponentType =
   | 'dns'
   | 'storage'
 
-export type ConnectionType = 'sync' | 'async' | 'replication' | 'cdn_origin'
+export type ConnectionType = 'sync' | 'async' | 'replication' | 'cdn_origin' | 'unspecified'
 
 export type EdgeDirection = 'uni' | 'bi' | 'none'
 
