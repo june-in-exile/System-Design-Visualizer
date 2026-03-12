@@ -47,6 +47,7 @@ function Sidebar({ isDarkMode, toggleDarkMode }: SidebarProps) {
               key={type}
               draggable
               onDragStart={(e) => onDragStart(e, type)}
+              title={config.description}
               style={{
                 padding: '8px 12px',
                 marginBottom: 8,
