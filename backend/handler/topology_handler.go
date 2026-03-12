@@ -138,7 +138,15 @@ func checkCDNUsage(nodes []model.SystemNode) []Warning {
 // checkAsyncDecoupling suggests Message Queues for time-consuming operations.
 func checkAsyncDecoupling(nodes map[string]model.SystemNode, outgoing map[string][]string) []Warning {
 	var warnings []Warning
-	keywords := []string{"Email", "Image", "Video", "Report", "Task", "Worker", "Process"}
+	// Keywords that suggest a service might be performing time-consuming or background tasks.
+	// Using substrings like "mail" instead of "Email" to match "Gmail", "Mailer", etc.
+	keywords := []string{
+		"mail", "img", "image", "photo", "pic",
+		"vid", "video", "media", "stream", "transcode",
+		"report", "pdf", "export", "csv", "excel",
+		"task", "worker", "job", "batch", "process",
+		"notify", "sms", "push", "upload", "download",
+	}
 	for id, node := range nodes {
 		if node.ComponentType != "service" {
 			continue

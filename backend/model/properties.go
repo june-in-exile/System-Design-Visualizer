@@ -37,6 +37,8 @@ type CacheProperties struct {
 
 // MessageQueueProperties holds attributes for message queue nodes.
 type MessageQueueProperties struct {
+	Category          string `json:"category"`
+	Product           string `json:"product,omitempty"`
 	QueueType         string `json:"queueType"`
 	DeliveryGuarantee string `json:"deliveryGuarantee"`
 	Ordered           bool   `json:"ordered"`

@@ -83,6 +83,44 @@ const STORAGE_CLASSES = [
   { value: 'glacier', label: 'Glacier (Archive)', description: 'Cold storage for archival data with retrieval delays' },
 ]
 
+const MQ_CATEGORIES = [
+  { value: 'broker', label: 'Broker-based', description: 'Central broker handles message routing, storage, and delivery' },
+  { value: 'log_streaming', label: 'Log Streaming', description: 'Append-only distributed log with consumer-managed offsets' },
+  { value: 'in_memory', label: 'In-Memory', description: 'Lightweight, ultra-fast messaging using memory-based stores' },
+  { value: 'managed', label: 'Cloud Managed', description: 'Fully managed cloud services with auto-scaling' },
+]
+
+const MQ_PRODUCT_GROUPS: Record<string, Array<{ value: string; label: string; description: string }>> = {
+  broker: [
+    { value: 'rabbitmq', label: 'RabbitMQ', description: 'Feature-rich AMQP broker with complex routing (Exchange/Binding)' },
+    { value: 'activemq', label: 'ActiveMQ', description: 'Java-based broker supporting JMS, STOMP, and multiple protocols' },
+  ],
+  log_streaming: [
+    { value: 'kafka', label: 'Apache Kafka', description: 'High-throughput distributed log with replay and stream processing' },
+    { value: 'pulsar', label: 'Apache Pulsar', description: 'Cloud-native streaming with separated storage and compute' },
+  ],
+  in_memory: [
+    { value: 'redis_mq', label: 'Redis (Pub/Sub / Streams)', description: 'Ultra-fast in-memory messaging, simple deployment' },
+  ],
+  managed: [
+    { value: 'aws_sqs', label: 'AWS SQS', description: 'Fully managed queue service deeply integrated with AWS ecosystem' },
+    { value: 'aws_sns', label: 'AWS SNS', description: 'Managed pub/sub notification service for fan-out messaging' },
+    { value: 'google_pubsub', label: 'Google Pub/Sub', description: 'Fully managed real-time messaging with auto-scaling' },
+    { value: 'azure_service_bus', label: 'Azure Service Bus', description: 'Enterprise messaging for .NET ecosystem with advanced features' },
+  ],
+}
+
+const MQ_QUEUE_TYPES = [
+  { value: 'point_to_point', label: 'Point-to-Point', description: 'Each message consumed by exactly one consumer' },
+  { value: 'pub_sub', label: 'Pub/Sub', description: 'Messages broadcast to all subscribed consumers' },
+]
+
+const MQ_DELIVERY_GUARANTEES = [
+  { value: 'at_most_once', label: 'At Most Once', description: 'Fire-and-forget, fastest but may lose messages' },
+  { value: 'at_least_once', label: 'At Least Once', description: 'Guaranteed delivery, consumers must handle duplicates' },
+  { value: 'exactly_once', label: 'Exactly Once', description: 'Strongest guarantee, higher latency and complexity' },
+]
+
 const ALGORITHMS = [
   { value: 'round_robin', label: 'Round Robin', description: 'Distributes requests evenly across all servers in sequence' },
   { value: 'least_connections', label: 'Least Connections', description: 'Routes to server with fewest active connections' },
@@ -110,6 +148,16 @@ export default function PropertyPanel({
     onNodeDataChange(selectedNode.id, {
       ...data,
       properties: { ...properties, [key]: value },
+    })
+  }
+
+  const handleMQCategoryChange = (newCategory: string) => {
+    const products = MQ_PRODUCT_GROUPS[newCategory] ?? []
+    const firstProduct = products.length > 0 ? products[0].value : ''
+
+    onNodeDataChange(selectedNode.id, {
+      ...data,
+      properties: { ...properties, category: newCategory, product: firstProduct },
     })
   }
 
@@ -294,6 +342,84 @@ export default function PropertyPanel({
             </label>
             <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>
               Keep multiple versions of objects for recovery and audit.
+            </p>
+          </div>
+        </>
+      )}
+
+      {componentType === 'message_queue' && (
+        <>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+              Category
+            </label>
+            <select
+              value={(properties.category as string) || 'broker'}
+              onChange={(e) => handleMQCategoryChange(e.target.value)}
+              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+            >
+              {MQ_CATEGORIES.map((opt) => (
+                <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+              Product
+            </label>
+            <select
+              value={(properties.product as string) || ''}
+              onChange={(e) => handlePropertyChange('product', e.target.value)}
+              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+            >
+              {(MQ_PRODUCT_GROUPS[(properties.category as string) || 'broker'] ?? []).map((p) => (
+                <option key={p.value} value={p.value} title={p.description}>{p.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+              Queue Type
+            </label>
+            <select
+              value={(properties.queueType as string) || 'pub_sub'}
+              onChange={(e) => handlePropertyChange('queueType', e.target.value)}
+              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+            >
+              {MQ_QUEUE_TYPES.map((opt) => (
+                <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+              Delivery Guarantee
+            </label>
+            <select
+              value={(properties.deliveryGuarantee as string) || 'at_least_once'}
+              onChange={(e) => handlePropertyChange('deliveryGuarantee', e.target.value)}
+              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+            >
+              {MQ_DELIVERY_GUARANTEES.map((opt) => (
+                <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={(properties.ordered as boolean) || false}
+                onChange={(e) => handlePropertyChange('ordered', e.target.checked)}
+              />
+              Ordered Delivery
+            </label>
+            <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>
+              Guarantee message ordering within a partition or queue.
             </p>
           </div>
         </>

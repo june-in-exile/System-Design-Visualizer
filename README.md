@@ -107,10 +107,13 @@ npm run dev
 | 4 | **快取一致性檢查** | 服務同時連接至快取 (Cache) 與資料庫 (Database)。 | 將同一個 **Service** 節點同時連線至 **Cache** 與 **Database**。 |
 | 5 | **CAP 定理提醒** | 使用特定的 NoSQL 產品（如 Cassandra, DynamoDB 等）。 | 選取 **Database**，將屬性中的 `product` 設為 `cassandra` 或 `dynamodb` 等。 |
 | 6 | **CDN 全球加速建議** | 拓撲中存在 Client 但缺乏 CDN 節點，可能導致靜態資源加載緩慢。 | 放置一個 **Client** 節點，但未在架構中加入 **CDN**。 |
-| 7 | **異步解耦提醒** | 服務間存在同步呼叫且涉及耗時操作（如標籤包含 Email, Image, Report）。 | 建立 **Service** 連線，並將目標服務命名為 **Email Service**。 |
+| 7 | **異步解耦提醒** | 服務間存在同步呼叫且涉及耗時操作（如標籤包含 mail, img, report, task 等關鍵字）。 | 建立 **Service** 連線，並將目標服務命名為 **Gmail Service** 或 **Image Processor**。 |
 | 8 | **入口高可用性 (LB SPOF)** | 整體架構中僅存在 1 個 Load Balancer，入口處存在單點故障風險。 | 在畫布上僅放置 **1 個 Load Balancer** 節點。 |
 | 9 | **讀寫分離實踐建議** | 資料庫讀取比例極高 (> 80%)，適合導入 Master-Slave 架構。 | 選取 **Database**，將屬性中的 `readWriteRatio` 設為大於 `0.8`。 |
 | 10 | **快取失效策略提醒** | 使用 Cache 節點但未配置適當的失效演算法 (Eviction Policy)。 | 放置一個 **Cache** 節點，並在屬性中將 `evictionPolicy` 留空。 |
+| 11 | **MQ 消費者缺失檢查** | Message Queue 節點缺乏輸出連線（無消費者），訊息將在隊列中堆積。 | 放置一個 **Message Queue** 節點但不連接任何輸出至 Service。 |
+| 12 | **死信隊列 (DLQ) 提醒** | 使用 Message Queue 但未配置死信隊列或重試機制，可能導致訊息丟失。 | 放置 **Message Queue** 節點，但在屬性中將 `hasDLQ` 設為 `false`。 |
+| 13 | **異步削峰實踐建議** | 流量入口直接連線至高負載寫入節點（如 Database）而未經過 MQ 緩衝。 | 從 **API Gateway** 或 **LB** 直接連線至 **Database**，且寫入比例高。 |
 
 ## 📂 專案結構
 

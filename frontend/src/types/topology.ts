@@ -50,7 +50,11 @@ export interface CacheProperties {
   ttlSeconds?: number
 }
 
+export type MQCategory = 'broker' | 'log_streaming' | 'in_memory' | 'managed'
+
 export interface MessageQueueProperties {
+  category: MQCategory
+  product?: string
   queueType: 'point_to_point' | 'pub_sub'
   deliveryGuarantee: 'at_most_once' | 'at_least_once' | 'exactly_once'
   ordered: boolean

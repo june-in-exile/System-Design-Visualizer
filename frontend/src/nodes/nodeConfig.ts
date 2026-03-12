@@ -66,6 +66,8 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
     color: '#ec4899',
     icon: '📨',
     defaultProperties: {
+      category: 'broker',
+      product: 'rabbitmq',
       queueType: 'pub_sub',
       deliveryGuarantee: 'at_least_once',
       ordered: false,

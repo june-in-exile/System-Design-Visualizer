@@ -10,31 +10,31 @@ interface EdgePropertyPanelProps {
   onEdgeReverse: (edgeId: string) => void
 }
 
-const PROTOCOL_OPTIONS: { value: EdgeProtocol; label: string }[] = [
-  { value: 'http', label: 'HTTP' },
-  { value: 'https', label: 'HTTPS' },
-  { value: 'grpc', label: 'gRPC' },
-  { value: 'websocket', label: 'WebSocket' },
-  { value: 'ssh', label: 'SSH' },
-  { value: 'tcp', label: 'TCP' },
-  { value: 'udp', label: 'UDP' },
-  { value: 'amqp', label: 'AMQP' },
-  { value: 'mqtt', label: 'MQTT' },
-  { value: 'database', label: 'Database' },
-  { value: 'dns', label: 'DNS' },
+const PROTOCOL_OPTIONS: { value: EdgeProtocol; label: string; description: string }[] = [
+  { value: 'http', label: 'HTTP', description: 'Hypertext Transfer Protocol (Unsecured)' },
+  { value: 'https', label: 'HTTPS', description: 'Hypertext Transfer Protocol Secure (TLS/SSL)' },
+  { value: 'grpc', label: 'gRPC', description: 'High-performance, open source universal RPC framework' },
+  { value: 'websocket', label: 'WebSocket', description: 'Full-duplex communication over a single TCP connection' },
+  { value: 'ssh', label: 'SSH', description: 'Secure Shell protocol for secure remote login' },
+  { value: 'tcp', label: 'TCP', description: 'Transmission Control Protocol (Connection-oriented)' },
+  { value: 'udp', label: 'UDP', description: 'User Datagram Protocol (Connectionless)' },
+  { value: 'amqp', label: 'AMQP', description: 'Advanced Message Queuing Protocol' },
+  { value: 'mqtt', label: 'MQTT', description: 'Message Queuing Telemetry Transport (IoT)' },
+  { value: 'database', label: 'Database', description: 'Direct database connection protocol (JDBC/ODBC/Native)' },
+  { value: 'dns', label: 'DNS', description: 'Domain Name System query/response' },
 ]
 
-const CONNECTION_TYPE_OPTIONS: { value: ConnectionType; label: string }[] = [
-  { value: 'sync', label: 'Synchronous' },
-  { value: 'async', label: 'Asynchronous' },
-  { value: 'replication', label: 'Replication' },
-  { value: 'cdn_origin', label: 'CDN Origin' },
+const CONNECTION_TYPE_OPTIONS: { value: ConnectionType; label: string; description: string }[] = [
+  { value: 'sync', label: 'Synchronous', description: 'Request-response, client waits for server to process' },
+  { value: 'async', label: 'Asynchronous', description: 'Fire-and-forget or callback-based, client doesn\'t wait' },
+  { value: 'replication', label: 'Replication', description: 'Data synchronization between primary and replicas' },
+  { value: 'cdn_origin', label: 'CDN Origin', description: 'Fetching content from origin server to edge cache' },
 ]
 
-const DIRECTION_OPTIONS: { value: EdgeDirection; label: string }[] = [
-  { value: 'uni', label: 'One-way (→)' },
-  { value: 'bi', label: 'Two-way (↔)' },
-  { value: 'none', label: 'No arrows (―)' },
+const DIRECTION_OPTIONS: { value: EdgeDirection; label: string; description: string }[] = [
+  { value: 'uni', label: 'One-way (→)', description: 'Unidirectional flow from source to target' },
+  { value: 'bi', label: 'Two-way (↔)', description: 'Bidirectional communication between nodes' },
+  { value: 'none', label: 'No arrows (―)', description: 'Connection without specific directionality' },
 ]
 
 export default function EdgePropertyPanel({
@@ -113,7 +113,7 @@ export default function EdgePropertyPanel({
           style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
         >
           {DIRECTION_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
           ))}
         </select>
       </div>
@@ -161,7 +161,7 @@ export default function EdgePropertyPanel({
           style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
         >
           {PROTOCOL_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
           ))}
         </select>
       </div>
@@ -176,7 +176,7 @@ export default function EdgePropertyPanel({
           style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
         >
           {CONNECTION_TYPE_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
           ))}
         </select>
       </div>
