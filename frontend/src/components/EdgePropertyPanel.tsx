@@ -42,6 +42,14 @@ const DIRECTION_OPTIONS: { value: EdgeDirection; label: string; description: str
   { value: 'none', label: 'No arrows (―)', description: 'Connection without specific directionality' },
 ]
 
+const getTooltip = (label: string, description?: string) => {
+  const lowerLabel = label.toLowerCase()
+  if (!description || lowerLabel.includes('unspecified') || lowerLabel.includes('default') || lowerLabel.includes('auto-detect')) {
+    return undefined
+  }
+  return description
+}
+
 export default function EdgePropertyPanel({
   selectedEdgeId,
   edges,
@@ -146,7 +154,10 @@ export default function EdgePropertyPanel({
       )}
 
       <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="The name of this connection, displayed on the edge."
+        >
           Label
         </label>
         <input
@@ -159,12 +170,19 @@ export default function EdgePropertyPanel({
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="The communication protocol used for this connection."
+        >
           Protocol
         </label>
         <select
           value={protocol}
           onChange={(e) => handleProtocolChange(e.target.value as EdgeProtocol)}
+          title={getTooltip(
+            PROTOCOL_OPTIONS.find(opt => opt.value === protocol)?.label || '',
+            PROTOCOL_OPTIONS.find(opt => opt.value === protocol)?.description
+          )}
           style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
         >
           {PROTOCOL_OPTIONS.map((opt) => (
@@ -174,12 +192,19 @@ export default function EdgePropertyPanel({
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="The logical nature of the connection (e.g., blocking vs non-blocking)."
+        >
           Connection Type
         </label>
         <select
           value={connectionType}
           onChange={(e) => handleConnectionTypeChange(e.target.value as ConnectionType)}
+          title={getTooltip(
+            CONNECTION_TYPE_OPTIONS.find(opt => opt.value === connectionType)?.label || '',
+            CONNECTION_TYPE_OPTIONS.find(opt => opt.value === connectionType)?.description
+          )}
           style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
         >
           {CONNECTION_TYPE_OPTIONS.map((opt) => (
@@ -189,7 +214,10 @@ export default function EdgePropertyPanel({
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+        <label 
+          style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+          title="Enable a visual animation to indicate data flow direction."
+        >
           <input
             type="checkbox"
             checked={isAnimated}
