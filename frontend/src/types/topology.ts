@@ -12,6 +12,8 @@ export type ComponentType =
 
 export type ConnectionType = 'sync' | 'async' | 'replication' | 'cdn_origin'
 
+export type EdgeDirection = 'uni' | 'bi' | 'none'
+
 export type EdgeProtocol = 
   | 'http' 
   | 'https' 
@@ -43,7 +45,8 @@ export interface LoadBalancerProperties {
 
 export interface CacheProperties {
   cacheType: 'in_memory' | 'distributed'
-  evictionPolicy: 'lru' | 'lfu' | 'ttl'
+  product?: string
+  evictionPolicy: 'lru' | 'lfu' | 'fifo' | 'tiny_lfu'
   ttlSeconds?: number
 }
 
@@ -51,6 +54,12 @@ export interface MessageQueueProperties {
   queueType: 'point_to_point' | 'pub_sub'
   deliveryGuarantee: 'at_most_once' | 'at_least_once' | 'exactly_once'
   ordered: boolean
+}
+
+export interface StorageProperties {
+  accessLevel: 'public' | 'private'
+  storageClass: 'standard' | 'infrequent_access' | 'glacier'
+  versioning: boolean
 }
 
 export interface ServiceProperties {
@@ -63,6 +72,7 @@ export type ComponentProperties =
   | LoadBalancerProperties
   | CacheProperties
   | MessageQueueProperties
+  | StorageProperties
   | ServiceProperties
   | Record<string, unknown>
 

@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/architectmind/backend/model"
 	"github.com/gin-gonic/gin"
@@ -99,7 +100,151 @@ func validate(t model.SystemTopology) []Warning {
 	warnings = append(warnings, checkVerticalPartitioning(t.Nodes)...)
 	warnings = append(warnings, checkCacheConsistency(nodeByID, outgoing)...)
 	warnings = append(warnings, checkCAP(t.Nodes)...)
+	warnings = append(warnings, checkCDNUsage(t.Nodes)...)
+	warnings = append(warnings, checkAsyncDecoupling(nodeByID, outgoing)...)
+	warnings = append(warnings, checkLBSPOF(t.Nodes)...)
+	warnings = append(warnings, checkReadWriteSeparation(t.Nodes)...)
+	warnings = append(warnings, checkCacheEviction(t.Nodes)...)
+	warnings = append(warnings, checkProtocolMismatch(nodeByID, t.Edges)...)
 
+	return warnings
+}
+
+// checkCDNUsage warns if a Client exists but no CDN is found.
+func checkCDNUsage(nodes []model.SystemNode) []Warning {
+	hasClient := false
+	hasCDN := false
+	var clientIDs []string
+	for _, node := range nodes {
+		if node.ComponentType == "client" {
+			hasClient = true
+			clientIDs = append(clientIDs, node.ID)
+		}
+		if node.ComponentType == "cdn" {
+			hasCDN = true
+		}
+	}
+	if hasClient && !hasCDN {
+		return []Warning{{
+			Rule:     "cdn_usage",
+			Message:  "🌐 CDN 全球加速建議：拓撲中存在 Client 但缺乏 CDN 節點。",
+			Solution: "考慮在 Client 與後端入口之間加入 CDN (Content Delivery Network) 以加速靜態資源分發並減少延遲。",
+			NodeIDs:  clientIDs,
+		}}
+	}
+	return nil
+}
+
+// checkAsyncDecoupling suggests Message Queues for time-consuming operations.
+func checkAsyncDecoupling(nodes map[string]model.SystemNode, outgoing map[string][]string) []Warning {
+	var warnings []Warning
+	keywords := []string{"Email", "Image", "Video", "Report", "Task", "Worker", "Process"}
+	for id, node := range nodes {
+		if node.ComponentType != "service" {
+			continue
+		}
+		
+		isTimeConsuming := false
+		for _, kw := range keywords {
+			if contains(node.Label, kw) {
+				isTimeConsuming = true
+				break
+			}
+		}
+
+		if isTimeConsuming {
+			// Check if it's called synchronously
+			for sourceID, targets := range outgoing {
+				for _, targetID := range targets {
+					if targetID == id {
+						warnings = append(warnings, Warning{
+							Rule:     "async_decoupling",
+							Message:  fmt.Sprintf("📬 異步解耦提醒：服務 %q 似乎涉及耗時操作且為同步呼叫。", node.Label),
+							Solution: "建議使用 Message Queue (MQ) 將此類操作改為異步處理，以提高系統吞吐量與穩定性。",
+							NodeIDs:  []string{sourceID, id},
+						})
+					}
+				}
+			}
+		}
+	}
+	return warnings
+}
+
+func contains(s, substr string) bool {
+	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
+}
+
+// checkLBSPOF warns if there is only one Load Balancer in the entire system.
+func checkLBSPOF(nodes []model.SystemNode) []Warning {
+	var lbNodes []string
+	for _, node := range nodes {
+		if node.ComponentType == "load_balancer" {
+			lbNodes = append(lbNodes, node.ID)
+		}
+	}
+	if len(lbNodes) == 1 {
+		return []Warning{{
+			Rule:     "lb_spof",
+			Message:  "⚖️ 入口高可用性：整體架構中僅存在 1 個 Load Balancer。",
+			Solution: "生產環境建議部署多個 LB 並結合 DNS 負載均衡 (如 Round Robin) 或使用 Active-Passive 備援機制。",
+			NodeIDs:  lbNodes,
+		}}
+	}
+	return nil
+}
+
+// checkReadWriteSeparation suggests master-slave if read ratio is extremely high.
+func checkReadWriteSeparation(nodes []model.SystemNode) []Warning {
+	var warnings []Warning
+	for _, node := range nodes {
+		if node.ComponentType != "database" {
+			continue
+		}
+		props, err := model.ParseNodeProperties(node)
+		if err != nil {
+			continue
+		}
+		dbProps, ok := props.(*model.DatabaseProperties)
+		if !ok {
+			continue
+		}
+		if dbProps.ReadWriteRatio > 0.8 {
+			warnings = append(warnings, Warning{
+				Rule:     "read_write_separation",
+				Message:  fmt.Sprintf("📖 讀寫分離建議：%q 讀取比例極高 (%.0f%%)。", node.Label, dbProps.ReadWriteRatio*100),
+				Solution: "建議導入 Master-Slave 讀寫分離架構，主庫負責寫入，複本庫負責讀取以提升效能。",
+				NodeIDs:  []string{node.ID},
+			})
+		}
+	}
+	return warnings
+}
+
+// checkCacheEviction warns if a Cache node lacks an eviction policy.
+func checkCacheEviction(nodes []model.SystemNode) []Warning {
+	var warnings []Warning
+	for _, node := range nodes {
+		if node.ComponentType != "cache" {
+			continue
+		}
+		props, err := model.ParseNodeProperties(node)
+		if err != nil {
+			continue
+		}
+		cacheProps, ok := props.(*model.CacheProperties)
+		if !ok {
+			continue
+		}
+		if cacheProps.EvictionPolicy == "" || cacheProps.EvictionPolicy == "none" {
+			warnings = append(warnings, Warning{
+				Rule:     "cache_eviction",
+				Message:  fmt.Sprintf("🧊 快取失效策略提醒：%q 未配置適當的失效演算法。", node.Label),
+				Solution: "請設定 Eviction Policy (如 LRU, LFU)，以確保在記憶體用罄時能正確處理舊數據。",
+				NodeIDs:  []string{node.ID},
+			})
+		}
+	}
 	return warnings
 }
 
@@ -244,6 +389,98 @@ func checkCAP(nodes []model.SystemNode) []Warning {
 				NodeIDs:  []string{node.ID},
 			})
 		}
+	}
+	return warnings
+}
+
+// expectedProtocols defines which protocols are appropriate for connections
+// targeting a given component type. A nil value means any protocol is acceptable.
+var expectedProtocols = map[string]map[string]bool{
+	"database": {
+		"database": true,
+	},
+	"cache": {
+		"database": true,
+	},
+	"message_queue": {
+		"amqp": true,
+		"mqtt": true,
+	},
+	"dns": {
+		"dns": true,
+	},
+	"client": {
+		"http":      true,
+		"https":     true,
+		"websocket": true,
+	},
+	"cdn": {
+		"http":  true,
+		"https": true,
+	},
+	"storage": {
+		"http":  true,
+		"https": true,
+	},
+}
+
+// protocolDisplayName maps protocol values to human-readable names.
+var protocolDisplayName = map[string]string{
+	"http":      "HTTP",
+	"https":     "HTTPS",
+	"grpc":      "gRPC",
+	"websocket": "WebSocket",
+	"ssh":       "SSH",
+	"tcp":       "TCP",
+	"udp":       "UDP",
+	"amqp":      "AMQP",
+	"mqtt":      "MQTT",
+	"database":  "Database Protocol",
+	"dns":       "DNS",
+}
+
+// checkProtocolMismatch warns when an edge uses a protocol that doesn't match
+// the target component type (e.g. HTTP to a Database).
+func checkProtocolMismatch(nodes map[string]model.SystemNode, edges []model.SystemEdge) []Warning {
+	var warnings []Warning
+	for _, edge := range edges {
+		if edge.Protocol == "" {
+			continue
+		}
+		target, ok := nodes[edge.Target]
+		if !ok {
+			continue
+		}
+		allowed, hasRule := expectedProtocols[target.ComponentType]
+		if !hasRule {
+			continue
+		}
+		if allowed[edge.Protocol] {
+			continue
+		}
+
+		protoName := protocolDisplayName[edge.Protocol]
+		if protoName == "" {
+			protoName = strings.ToUpper(edge.Protocol)
+		}
+
+		var suggestion []string
+		for p := range allowed {
+			name := protocolDisplayName[p]
+			if name == "" {
+				name = strings.ToUpper(p)
+			}
+			suggestion = append(suggestion, name)
+		}
+
+		source := nodes[edge.Source]
+		warnings = append(warnings, Warning{
+			Rule: "protocol_mismatch",
+			Message: fmt.Sprintf("🔌 協議不匹配：%s → %s 使用了 %s，但 %s 節點通常不使用此協議。",
+				source.Label, target.Label, protoName, target.Label),
+			Solution: fmt.Sprintf("建議將協議改為 %s。", strings.Join(suggestion, " 或 ")),
+			NodeIDs:  []string{edge.Source, edge.Target},
+		})
 	}
 	return warnings
 }

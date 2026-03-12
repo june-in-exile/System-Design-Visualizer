@@ -243,6 +243,69 @@ function Canvas({ isDarkMode }: CanvasProps) {
     [setEdges, pushHistory]
   )
 
+  const onEdgeAnimatedChange = useCallback(
+    (edgeId: string, animated: boolean) => {
+      pushHistory()
+      setEdges((eds) =>
+        eds.map((edge) =>
+          edge.id === edgeId ? { ...edge, animated } : edge
+        )
+      )
+    },
+    [setEdges, pushHistory]
+  )
+
+  const onEdgeDirectionChange = useCallback(
+    (edgeId: string, direction: 'uni' | 'bi' | 'none') => {
+      pushHistory()
+      setEdges((eds) =>
+        eds.map((edge) => {
+          if (edge.id !== edgeId) return edge
+          
+          const color = isDarkMode ? '#d1d5db' : '#b1b1b7'
+          let markerEnd: Edge['markerEnd'] = undefined
+          let markerStart: Edge['markerStart'] = undefined
+          
+          if (direction === 'uni') {
+            markerEnd = { type: MarkerType.ArrowClosed, color }
+          } else if (direction === 'bi') {
+            markerEnd = { type: MarkerType.ArrowClosed, color }
+            markerStart = { type: MarkerType.ArrowClosed, color }
+          }
+          
+          return {
+            ...edge,
+            data: { ...edge.data, direction },
+            markerEnd,
+            markerStart,
+          }
+        })
+      )
+    },
+    [setEdges, pushHistory, isDarkMode]
+  )
+
+  const onEdgeReverse = useCallback(
+    (edgeId: string) => {
+      pushHistory()
+      setEdges((eds) =>
+        eds.map((edge) => {
+          if (edge.id !== edgeId) return edge
+          const oldSourceHandle = edge.sourceHandle ?? ''
+          const oldTargetHandle = edge.targetHandle ?? ''
+          return {
+            ...edge,
+            source: edge.target,
+            target: edge.source,
+            sourceHandle: oldTargetHandle.replace('-target', '-source'),
+            targetHandle: oldSourceHandle.replace('-source', '-target'),
+          }
+        })
+      )
+    },
+    [setEdges, pushHistory]
+  )
+
   const onSelectionChange = useCallback(({ nodes: selectedNodes, edges: selectedEdges }: { nodes: Node[]; edges: Edge[] }) => {
     if (selectedNodes.length > 0) {
       const selectedNodeIds = new Set(selectedNodes.map(n => n.id))
@@ -265,9 +328,10 @@ function Canvas({ isDarkMode }: CanvasProps) {
         target: params.target,
         sourceHandle: params.sourceHandle,
         targetHandle: params.targetHandle,
-        data: { connectionType: 'sync', protocol: 'http' },
+        data: { connectionType: 'sync', protocol: 'http', direction: 'uni' },
         style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 },
         markerEnd: { type: MarkerType.ArrowClosed, color: isDarkMode ? '#d1d5db' : '#b1b1b7' },
+        animated: true,
       }
       setEdges((eds) => [...eds, newEdge])
     },
@@ -404,13 +468,15 @@ function Canvas({ isDarkMode }: CanvasProps) {
     const demoNodes: Node[] = [
       { id: 'demo-client', type: 'architecture', position: { x: 400, y: 50 }, data: { label: 'Client', componentType: 'client', properties: {} } },
       { id: 'demo-dns', type: 'architecture', position: { x: 700, y: 50 }, data: { label: 'DNS', componentType: 'dns', properties: {} } },
-      { id: 'demo-cdn', type: 'architecture', position: { x: 600, y: 250 }, data: { label: 'CDN', componentType: 'cdn', properties: {} } },
+      { id: 'demo-cdn', type: 'architecture', position: { x: 650, y: 250 }, data: { label: 'CDN', componentType: 'cdn', properties: {} } },
       { id: 'demo-lb', type: 'architecture', position: { x: 400, y: 250 }, data: { label: 'Load Balancer', componentType: 'load_balancer', properties: { algorithm: 'round_robin', layer: 'l7' } } },
-      { id: 'demo-service', type: 'architecture', position: { x: 400, y: 450 }, data: { label: 'Service', componentType: 'service', properties: { replicas: 3 } } },
-      { id: 'demo-db-master', type: 'architecture', position: { x: 250, y: 650 }, data: { label: 'Database', componentType: 'database', properties: { dbType: 'sql' } } },
-      { id: 'demo-db-slave', type: 'architecture', position: { x: 450, y: 650 }, data: { label: 'Database', componentType: 'database', properties: { dbType: 'sql' } } },
-      { id: 'demo-cache', type: 'architecture', position: { x: 650, y: 650 }, data: { label: 'Cache', componentType: 'cache', properties: { cacheType: 'distributed' } } },
-      { id: 'demo-storage', type: 'architecture', position: { x: 800, y: 450 }, data: { label: 'Storage', componentType: 'storage', properties: {} } }
+      { id: 'demo-apigw', type: 'architecture', position: { x: 400, y: 450 }, data: { label: 'API Gateway', componentType: 'api_gateway', properties: { rateLimit: 1000, authEnabled: true } } },
+      { id: 'demo-service', type: 'architecture', position: { x: 400, y: 650 }, data: { label: 'Service', componentType: 'service', properties: { replicas: 3 } } },
+      { id: 'demo-mq', type: 'architecture', position: { x: 700, y: 650 }, data: { label: 'Message Queue', componentType: 'message_queue', properties: { queueType: 'kafka' } } },
+      { id: 'demo-db-master', type: 'architecture', position: { x: 250, y: 850 }, data: { label: 'Database', componentType: 'database', properties: { dbType: 'sql' } } },
+      { id: 'demo-db-slave', type: 'architecture', position: { x: 450, y: 850 }, data: { label: 'Database', componentType: 'database', properties: { dbType: 'sql' } } },
+      { id: 'demo-cache', type: 'architecture', position: { x: 650, y: 850 }, data: { label: 'Cache', componentType: 'cache', properties: { cacheType: 'distributed' } } },
+      { id: 'demo-storage', type: 'architecture', position: { x: 850, y: 450 }, data: { label: 'Storage', componentType: 'storage', properties: {} } }
     ]
 
     const demoEdges: Edge[] = [
@@ -418,7 +484,9 @@ function Canvas({ isDarkMode }: CanvasProps) {
       { id: 'e-client-cdn', source: 'demo-client', target: 'demo-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
       { id: 'e-client-lb', source: 'demo-client', target: 'demo-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
       { id: 'e-cdn-storage', source: 'demo-cdn', target: 'demo-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
-      { id: 'e-lb-service', source: 'demo-lb', target: 'demo-service', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
+      { id: 'e-lb-apigw', source: 'demo-lb', target: 'demo-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
+      { id: 'e-apigw-service', source: 'demo-apigw', target: 'demo-service', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
+      { id: 'e-service-mq', source: 'demo-service', target: 'demo-mq', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'async' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
       { id: 'e-service-dbm', source: 'demo-service', target: 'demo-db-master', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
       { id: 'e-service-dbs', source: 'demo-service', target: 'demo-db-slave', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
       { id: 'e-service-cache', source: 'demo-service', target: 'demo-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true }
@@ -537,18 +605,33 @@ function Canvas({ isDarkMode }: CanvasProps) {
                 },
               }
             })}
-            edges={edges.map(e => ({
-              ...e,
-              selectable: true,
-              markerEnd: { type: MarkerType.ArrowClosed, color: e.selected ? '#3b82f6' : isDarkMode ? '#d1d5db' : '#b1b1b7' },
-              style: { 
-                ...e.style, 
-                stroke: e.selected 
-                  ? '#3b82f6' 
-                  : isDarkMode ? '#d1d5db' : '#b1b1b7',
-                strokeWidth: e.selected ? 3 : 2,
+            edges={edges.map(e => {
+              const edgeData = (e.data as Record<string, unknown>) ?? {}
+              const protocol = edgeData.protocol as string | undefined
+              const edgeLabel = edgeData.label as string | undefined
+              const displayLabel = edgeLabel || (protocol ? protocol.toUpperCase() : undefined)
+              const color = e.selected ? '#3b82f6' : isDarkMode ? '#d1d5db' : '#b1b1b7'
+              const direction = edgeData.direction as string | undefined
+              const arrowMarker = { type: MarkerType.ArrowClosed, color }
+              const markerEnd = direction === 'none' ? undefined : arrowMarker
+              const markerStart = direction === 'bi' ? arrowMarker : undefined
+              return {
+                ...e,
+                selectable: true,
+                label: displayLabel,
+                labelStyle: { fill: color, fontSize: 11, fontWeight: 600 },
+                labelBgStyle: { fill: isDarkMode ? '#1f2937' : '#ffffff', fillOpacity: 0.85 },
+                labelBgPadding: [6, 3] as [number, number],
+                labelBgBorderRadius: 3,
+                markerEnd,
+                markerStart,
+                style: {
+                  ...e.style,
+                  stroke: color,
+                  strokeWidth: e.selected ? 3 : 2,
+                },
               }
-            }))}
+            })}
             selectionMode={SelectionMode.Partial}
             selectionOnDrag
             panOnScroll
@@ -723,6 +806,9 @@ function Canvas({ isDarkMode }: CanvasProps) {
           selectedEdgeId={selectedEdgeId}
           edges={edges}
           onEdgeDataChange={onEdgeDataChange}
+          onEdgeAnimatedChange={onEdgeAnimatedChange}
+          onEdgeDirectionChange={onEdgeDirectionChange}
+          onEdgeReverse={onEdgeReverse}
         />
       </div>
     </div>

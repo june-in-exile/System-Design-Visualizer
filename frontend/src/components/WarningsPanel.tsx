@@ -9,10 +9,15 @@ interface WarningsPanelProps {
 
 const RULE_COLORS: Record<string, string> = {
   spof: '#ef4444',
+  lb_spof: '#f87171',
   db_selection: '#f59e0b',
+  read_write_separation: '#d97706',
   federation: '#8b5cf6',
   cache_consistency: '#3b82f6',
+  cache_eviction: '#60a5fa',
   cap_theorem: '#ec4899',
+  cdn_usage: '#10b981',
+  async_decoupling: '#84cc16',
   schema: '#6b7280',
 }
 

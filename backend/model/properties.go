@@ -42,6 +42,13 @@ type MessageQueueProperties struct {
 	Ordered           bool   `json:"ordered"`
 }
 
+// StorageProperties holds attributes for object storage nodes.
+type StorageProperties struct {
+	AccessLevel  string `json:"accessLevel"`
+	StorageClass string `json:"storageClass"`
+	Versioning   bool   `json:"versioning"`
+}
+
 // ServiceProperties holds attributes for service nodes.
 type ServiceProperties struct {
 	Replicas  int  `json:"replicas"`
@@ -68,6 +75,9 @@ func ParseNodeProperties(node SystemNode) (interface{}, error) {
 		return &props, json.Unmarshal(raw, &props)
 	case "message_queue":
 		var props MessageQueueProperties
+		return &props, json.Unmarshal(raw, &props)
+	case "storage":
+		var props StorageProperties
 		return &props, json.Unmarshal(raw, &props)
 	case "service":
 		var props ServiceProperties

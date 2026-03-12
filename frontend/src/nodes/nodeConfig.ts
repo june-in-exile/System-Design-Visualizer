@@ -56,6 +56,7 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
     icon: '⚡',
     defaultProperties: {
       cacheType: 'distributed',
+      product: 'redis',
       evictionPolicy: 'lru',
       ttlSeconds: 3600,
     },
@@ -86,6 +87,10 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
     label: 'Storage',
     color: '#f97316',
     icon: '💾',
-    defaultProperties: {},
+    defaultProperties: {
+      accessLevel: 'private',
+      storageClass: 'standard',
+      versioning: false,
+    },
   },
 }
