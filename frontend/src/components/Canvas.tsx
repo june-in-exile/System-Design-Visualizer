@@ -228,9 +228,16 @@ function Canvas({ isDarkMode }: CanvasProps) {
     [setNodes, pushHistory]
   )
 
-  const onSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: Node[] }) => {
+  const onSelectionChange = useCallback(({ nodes: selectedNodes }: { nodes: Node[]; edges: Edge[] }) => {
+    if (selectedNodes.length > 0) {
+      const selectedNodeIds = new Set(selectedNodes.map(n => n.id))
+      setEdges(eds => eds.map(edge => ({
+        ...edge,
+        selected: selectedNodeIds.has(edge.source) || selectedNodeIds.has(edge.target)
+      })))
+    }
     setSelectedNodeId(selectedNodes.length > 0 ? selectedNodes[0].id : null)
-  }, [])
+  }, [setEdges])
 
   const onConnect: OnConnect = useCallback(
     (params) => {
@@ -506,6 +513,7 @@ function Canvas({ isDarkMode }: CanvasProps) {
               selectable: true,
               type: 'default',
             }}
+            proOptions={{ hideAttribution: true }}
           >
             <Controls />
             <Background gap={16} size={1} color={isDarkMode ? '#4b5563' : '#81818a'} />
