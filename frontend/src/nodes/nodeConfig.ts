@@ -107,4 +107,31 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
       versioning: false,
     },
   },
+  reverse_proxy: {
+    label: 'Reverse Proxy',
+    color: '#0ea5e9',
+    icon: '🔀',
+    description: 'Sits between clients and backend servers, handling SSL termination, caching, compression, and request routing.',
+    defaultProperties: {
+      product: 'nginx',
+      sslTermination: true,
+      caching: false,
+      compression: false,
+      rateLimiting: false,
+    },
+  },
+}
+
+export function getMergedConfig(roles: ComponentType[]): {
+  label: string
+  icons: string[]
+  colors: string[]
+  descriptions: string[]
+} {
+  return {
+    label: roles.map(r => NODE_TYPE_CONFIG[r].label).join(' + '),
+    icons: roles.map(r => NODE_TYPE_CONFIG[r].icon),
+    colors: roles.map(r => NODE_TYPE_CONFIG[r].color),
+    descriptions: roles.map(r => NODE_TYPE_CONFIG[r].description),
+  }
 }

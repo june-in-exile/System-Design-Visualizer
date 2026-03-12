@@ -37,6 +37,7 @@ yarn-error.log*
 .serena/
 .claude/
 .gemini/
+docs/
 
 # --- Go Specific ---
 go.work

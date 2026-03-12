@@ -9,6 +9,7 @@ export type ComponentType =
   | 'cdn'
   | 'dns'
   | 'storage'
+  | 'reverse_proxy'
 
 export type ConnectionType = 'sync' | 'async' | 'replication' | 'cdn_origin' | 'unspecified'
 
@@ -78,6 +79,15 @@ export interface ServiceProperties {
   stateless: boolean
 }
 
+export interface ReverseProxyProperties {
+  product?: string
+  sslTermination: boolean
+  caching: boolean
+  compression: boolean
+  rateLimiting: boolean
+  replicas?: number
+}
+
 export type ComponentProperties =
   | DatabaseProperties
   | LoadBalancerProperties
@@ -85,6 +95,7 @@ export type ComponentProperties =
   | MessageQueueProperties
   | StorageProperties
   | ServiceProperties
+  | ReverseProxyProperties
   | Record<string, unknown>
 
 export interface SystemNode {
@@ -93,6 +104,7 @@ export interface SystemNode {
   label: string
   position: { x: number; y: number }
   properties: ComponentProperties
+  roles?: ComponentType[]
 }
 
 export interface SystemEdge {

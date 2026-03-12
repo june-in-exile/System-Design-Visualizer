@@ -71,6 +71,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges)
   const [rfInstance, setRfInstance] = useState<ReactFlowInstance | null>(null)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([])
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
   const [analysisResult, setAnalysisResult] = useState<AnalyzeResponse | null>(
     null
@@ -254,6 +255,139 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
     setSelectedNodeId(newNodeId)
   }, [selectedNode, edges, setNodes, setEdges])
 
+  const canMerge = selectedNodeIds.length === 2
+  const selectedNodeForSplit = selectedNode
+    ? ((selectedNode.data as Record<string, unknown>).roles as ComponentType[] | undefined)
+    : undefined
+  const canSplit = selectedNodeForSplit && selectedNodeForSplit.length > 1
+
+  const mergeSelectedNodes = useCallback(() => {
+    if (selectedNodeIds.length !== 2) return
+    const [primaryId, secondaryId] = selectedNodeIds
+    const primary = nodes.find(n => n.id === primaryId)
+    const secondary = nodes.find(n => n.id === secondaryId)
+    if (!primary || !secondary) return
+
+    pushHistory()
+
+    const primaryData = primary.data as Record<string, unknown>
+    const secondaryData = secondary.data as Record<string, unknown>
+    const primaryType = primaryData.componentType as ComponentType
+    const secondaryType = secondaryData.componentType as ComponentType
+    const primaryRoles = (primaryData.roles as ComponentType[] | undefined) ?? [primaryType]
+    const secondaryRoles = (secondaryData.roles as ComponentType[] | undefined) ?? [secondaryType]
+
+    // Union of roles (deduplicated)
+    const mergedRoles = [...new Set([...primaryRoles, ...secondaryRoles])]
+
+    // Merge properties: union, shared keys use primary's value except replicas (take max)
+    const primaryProps = (primaryData.properties as Record<string, unknown>) ?? {}
+    const secondaryProps = (secondaryData.properties as Record<string, unknown>) ?? {}
+    const mergedProps = { ...secondaryProps, ...primaryProps }
+    const primaryReplicas = (primaryProps.replicas as number) ?? 1
+    const secondaryReplicas = (secondaryProps.replicas as number) ?? 1
+    if (primaryReplicas > 1 || secondaryReplicas > 1) {
+      mergedProps.replicas = Math.max(primaryReplicas, secondaryReplicas)
+    }
+
+    const mergedData = {
+      ...primaryData,
+      label: `${primaryData.label}`,
+      roles: mergedRoles,
+      properties: mergedProps,
+      mergedFrom: {
+        primary: { id: primaryId, data: primaryData, position: primary.position },
+        secondary: { id: secondaryId, data: secondaryData, position: secondary.position },
+      },
+    }
+
+    // Update primary node with merged data
+    setNodes(nds => nds
+      .filter(n => n.id !== secondaryId)
+      .map(n => n.id === primaryId ? { ...n, data: mergedData } : n)
+    )
+
+    // Re-route edges from secondary to primary, remove duplicate edges between them
+    setEdges(eds => {
+      const rerouted = eds
+        .filter(e => !(
+          (e.source === primaryId && e.target === secondaryId) ||
+          (e.source === secondaryId && e.target === primaryId)
+        ))
+        .map(e => {
+          const newEdge = { ...e }
+          if (e.source === secondaryId) {
+            newEdge.source = primaryId
+            newEdge.id = `edge-${primaryId}-${e.target}-merged`
+          }
+          if (e.target === secondaryId) {
+            newEdge.target = primaryId
+            newEdge.id = `edge-${e.source}-${primaryId}-merged`
+          }
+          return newEdge
+        })
+
+      // Deduplicate edges (same source+target)
+      const seen = new Set<string>()
+      return rerouted.filter(e => {
+        const key = `${e.source}-${e.target}`
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+    })
+
+    setSelectedNodeIds([primaryId])
+    setSelectedNodeId(primaryId)
+  }, [selectedNodeIds, nodes, pushHistory, setNodes, setEdges])
+
+  const splitSelectedNode = useCallback(() => {
+    if (!selectedNode) return
+    const data = selectedNode.data as Record<string, unknown>
+    const mergedFrom = data.mergedFrom as {
+      primary: { id: string; data: Record<string, unknown>; position: { x: number; y: number } }
+      secondary: { id: string; data: Record<string, unknown>; position: { x: number; y: number } }
+    } | undefined
+
+    if (!mergedFrom) return
+
+    pushHistory()
+
+    // Restore original nodes
+    const restoredPrimary: Node = {
+      id: mergedFrom.primary.id,
+      type: 'architecture',
+      position: mergedFrom.primary.position,
+      data: mergedFrom.primary.data,
+    }
+    const restoredSecondary: Node = {
+      id: mergedFrom.secondary.id,
+      type: 'architecture',
+      position: mergedFrom.secondary.position,
+      data: mergedFrom.secondary.data,
+    }
+
+    setNodes(nds => [
+      ...nds.filter(n => n.id !== selectedNode.id),
+      restoredPrimary,
+      restoredSecondary,
+    ])
+
+    // Restore edges: redirect merged edges back
+    setEdges(eds => eds.map(e => {
+      if (e.source === selectedNode.id && e.id.endsWith('-merged')) {
+        return { ...e, source: mergedFrom.primary.id, id: e.id.replace('-merged', '') }
+      }
+      if (e.target === selectedNode.id && e.id.endsWith('-merged')) {
+        return { ...e, target: mergedFrom.primary.id, id: e.id.replace('-merged', '') }
+      }
+      return e
+    }))
+
+    setSelectedNodeId(null)
+    setSelectedNodeIds([])
+  }, [selectedNode, pushHistory, setNodes, setEdges])
+
   const onNodeDataChange = useCallback(
     (nodeId: string, newData: Record<string, unknown>) => {
       pushHistory()
@@ -343,12 +477,13 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
 
   const onSelectionChange = useCallback(({ nodes: selectedNodes, edges: selectedEdges }: { nodes: Node[]; edges: Edge[] }) => {
     if (selectedNodes.length > 0) {
-      const selectedNodeIds = new Set(selectedNodes.map(n => n.id))
+      const selIds = new Set(selectedNodes.map(n => n.id))
       setEdges(eds => eds.map(edge => ({
         ...edge,
-        selected: selectedNodeIds.has(edge.source) || selectedNodeIds.has(edge.target)
+        selected: selIds.has(edge.source) || selIds.has(edge.target)
       })))
     }
+    setSelectedNodeIds(selectedNodes.map(n => n.id))
     setSelectedNodeId(selectedNodes.length > 0 ? selectedNodes[0].id : null)
     setSelectedEdgeId(selectedEdges.length > 0 ? selectedEdges[0].id : null)
   }, [setEdges])
@@ -438,6 +573,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
         version: 1,
         nodes: nodes.map((n) => {
           const data = n.data as Record<string, unknown>
+          const roles = data.roles as ComponentType[] | undefined
           return {
             id: n.id,
             componentType: data.componentType as ComponentType,
@@ -445,6 +581,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
             position: n.position,
             properties:
               (data.properties as Record<string, unknown>) ?? {},
+            ...(roles && roles.length > 1 ? { roles } : {}),
           }
         }),
         edges: edges.map((e) => ({
@@ -493,10 +630,14 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
         e.preventDefault()
         undo()
       }
+      if (e.ctrlKey && e.key === 'm') {
+        e.preventDefault()
+        if (canMerge) mergeSelectedNodes()
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [nodes.length, analyzing, handleAnalyze, duplicateSelectedNode, undo])
+  }, [nodes.length, analyzing, handleAnalyze, duplicateSelectedNode, undo, canMerge, mergeSelectedNodes])
 
   const handleDemo = useCallback(() => {
     pushHistory()
@@ -506,13 +647,14 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
       { id: 'demo-dns', type: 'architecture', position: { x: 700, y: 50 }, data: { label: 'DNS', componentType: 'dns', properties: {} } },
       { id: 'demo-cdn', type: 'architecture', position: { x: 650, y: 250 }, data: { label: 'CDN', componentType: 'cdn', properties: {} } },
       { id: 'demo-lb', type: 'architecture', position: { x: 400, y: 250 }, data: { label: 'Load Balancer', componentType: 'load_balancer', properties: { algorithm: 'round_robin', layer: 'l7' } } },
-      { id: 'demo-apigw', type: 'architecture', position: { x: 400, y: 450 }, data: { label: 'API Gateway', componentType: 'api_gateway', properties: { rateLimit: 1000, authEnabled: true } } },
-      { id: 'demo-service', type: 'architecture', position: { x: 400, y: 650 }, data: { label: 'Service', componentType: 'service', properties: { replicas: 3 } } },
-      { id: 'demo-mq', type: 'architecture', position: { x: 700, y: 650 }, data: { label: 'Message Queue', componentType: 'message_queue', properties: { queueType: 'kafka' } } },
-      { id: 'demo-db-master', type: 'architecture', position: { x: 250, y: 850 }, data: { label: 'Database', componentType: 'database', properties: { dbType: 'sql' } } },
-      { id: 'demo-db-slave', type: 'architecture', position: { x: 450, y: 850 }, data: { label: 'Database', componentType: 'database', properties: { dbType: 'sql' } } },
-      { id: 'demo-cache', type: 'architecture', position: { x: 650, y: 850 }, data: { label: 'Cache', componentType: 'cache', properties: { cacheType: 'distributed' } } },
-      { id: 'demo-storage', type: 'architecture', position: { x: 850, y: 450 }, data: { label: 'Storage', componentType: 'storage', properties: {} } }
+      { id: 'demo-reverse-proxy', type: 'architecture', position: { x: 400, y: 450 }, data: { label: 'Reverse Proxy', componentType: 'reverse_proxy', properties: { product: 'nginx', sslTermination: true } } },
+      { id: 'demo-apigw', type: 'architecture', position: { x: 400, y: 650 }, data: { label: 'API Gateway', componentType: 'api_gateway', properties: { rateLimit: 1000, authEnabled: true } } },
+      { id: 'demo-service', type: 'architecture', position: { x: 400, y: 850 }, data: { label: 'Service', componentType: 'service', properties: { replicas: 3 } } },
+      { id: 'demo-mq', type: 'architecture', position: { x: 700, y: 850 }, data: { label: 'Message Queue', componentType: 'message_queue', properties: { queueType: 'kafka' } } },
+      { id: 'demo-db-master', type: 'architecture', position: { x: 250, y: 1050 }, data: { label: 'Database', componentType: 'database', properties: { dbType: 'sql' } } },
+      { id: 'demo-db-slave', type: 'architecture', position: { x: 450, y: 1050 }, data: { label: 'Database', componentType: 'database', properties: { dbType: 'sql' } } },
+      { id: 'demo-cache', type: 'architecture', position: { x: 650, y: 1050 }, data: { label: 'Cache', componentType: 'cache', properties: { cacheType: 'distributed' } } },
+      { id: 'demo-storage', type: 'architecture', position: { x: 850, y: 650 }, data: { label: 'Storage', componentType: 'storage', properties: {} } }
     ]
 
     const demoEdges: Edge[] = [
@@ -520,7 +662,8 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
       { id: 'e-client-cdn', source: 'demo-client', target: 'demo-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
       { id: 'e-client-lb', source: 'demo-client', target: 'demo-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
       { id: 'e-cdn-storage', source: 'demo-cdn', target: 'demo-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
-      { id: 'e-lb-apigw', source: 'demo-lb', target: 'demo-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
+      { id: 'e-lb-rp', source: 'demo-lb', target: 'demo-reverse-proxy', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
+      { id: 'e-rp-apigw', source: 'demo-reverse-proxy', target: 'demo-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
       { id: 'e-apigw-service', source: 'demo-apigw', target: 'demo-service', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
       { id: 'e-service-mq', source: 'demo-service', target: 'demo-mq', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'async' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
       { id: 'e-service-dbm', source: 'demo-service', target: 'demo-db-master', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
@@ -601,6 +744,42 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
         >
           Undo
         </button>
+        {canMerge && (
+          <button
+            onClick={mergeSelectedNodes}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 6,
+              border: '1px solid var(--border-color)',
+              backgroundColor: 'var(--bg-secondary)',
+              color: 'var(--text-primary)',
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
+            title="Merge selected nodes (Ctrl+M)"
+          >
+            Merge
+          </button>
+        )}
+        {canSplit && (
+          <button
+            onClick={splitSelectedNode}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 6,
+              border: '1px solid var(--border-color)',
+              backgroundColor: 'var(--bg-secondary)',
+              color: 'var(--text-primary)',
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
+            title="Split merged node back into individual components"
+          >
+            Split
+          </button>
+        )}
         {analysisResult && (
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
             <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>

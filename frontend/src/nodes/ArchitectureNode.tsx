@@ -1,11 +1,12 @@
 import { memo, useState } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 import type { ComponentType, Warning } from '../types/topology'
-import { NODE_TYPE_CONFIG } from './nodeConfig'
+import { NODE_TYPE_CONFIG, getMergedConfig } from './nodeConfig'
 
 interface ArchitectureNodeData {
   label: string
   componentType: ComponentType
+  roles?: ComponentType[]
   warnings?: Warning[]
   properties?: Record<string, unknown>
   [key: string]: unknown
@@ -13,13 +14,18 @@ interface ArchitectureNodeData {
 
 function ArchitectureNode({ data }: NodeProps) {
   const nodeData = data as unknown as ArchitectureNodeData
+  const roles = nodeData.roles && nodeData.roles.length > 1 ? nodeData.roles : null
   const config = NODE_TYPE_CONFIG[nodeData.componentType]
+  const mergedConfig = roles ? getMergedConfig(roles) : null
   const hasWarnings = nodeData.warnings && nodeData.warnings.length > 0
   const [showTooltip, setShowTooltip] = useState(false)
 
   const properties = nodeData.properties || {}
   const replicas = (properties.replicas as number) || 1
   const extraLayers = Math.min(Math.max(0, replicas - 1), 29) // max 29 layers behind
+
+  const primaryColor = roles ? mergedConfig!.colors[0] : config.color
+  const secondaryColor = roles ? mergedConfig!.colors[1] : config.color
 
   const nodeStyle: React.CSSProperties = {
     position: 'relative',
@@ -51,8 +57,13 @@ function ArchitectureNode({ data }: NodeProps) {
           right: -2,
           bottom: -2,
           borderRadius: 8,
-          border: `2px solid ${config.color}`,
-          backgroundColor: 'var(--bg-primary)',
+          border: roles
+            ? `2px solid transparent`
+            : `2px solid ${config.color}`,
+          background: roles
+            ? `linear-gradient(var(--bg-primary), var(--bg-primary)) padding-box, linear-gradient(135deg, ${primaryColor}, ${secondaryColor}) border-box`
+            : undefined,
+          backgroundColor: roles ? undefined : 'var(--bg-primary)',
           zIndex: -1
         }}
       >
@@ -61,7 +72,9 @@ function ArchitectureNode({ data }: NodeProps) {
             position: 'absolute',
             inset: 0,
             borderRadius: 6,
-            backgroundColor: `${config.color}15`,
+            background: roles
+              ? `linear-gradient(135deg, ${primaryColor}15, ${secondaryColor}15)`
+              : `${config.color}15`,
           }}
         />
       </div>
@@ -79,7 +92,7 @@ function ArchitectureNode({ data }: NodeProps) {
               right: -offset - 2,
               bottom: -offset - 2,
               borderRadius: 8,
-              border: `2px solid ${config.color}`,
+              border: `2px solid ${primaryColor}`,
               backgroundColor: 'var(--bg-primary)',
               zIndex: -2 - i,
             }}
@@ -89,7 +102,7 @@ function ArchitectureNode({ data }: NodeProps) {
                 position: 'absolute',
                 inset: 0,
                 borderRadius: 6,
-                backgroundColor: `${config.color}15`
+                backgroundColor: `${primaryColor}15`
               }}
             />
           </div>
@@ -143,9 +156,11 @@ function ArchitectureNode({ data }: NodeProps) {
       <Handle type="target" position={Position.Left} id="left-target" />
       <Handle type="source" position={Position.Left} id="left-source" />
 
-      <div style={{ fontSize: 22, marginBottom: 4 }}>{config.icon}</div>
-      <div style={{ fontWeight: 600, color: hasWarnings ? '#f59e0b' : config.color, marginBottom: 2 }}>
-        {config.label}
+      <div style={{ fontSize: 22, marginBottom: 4 }}>
+        {roles ? mergedConfig!.icons.join(' ') : config.icon}
+      </div>
+      <div style={{ fontWeight: 600, color: hasWarnings ? '#f59e0b' : primaryColor, marginBottom: 2 }}>
+        {roles ? mergedConfig!.label : config.label}
       </div>
       <div style={{ color: 'var(--node-text-secondary)', fontSize: 12 }}>{nodeData.label}</div>
     </div>

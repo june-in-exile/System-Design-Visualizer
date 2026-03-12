@@ -62,6 +62,17 @@ func validate(t model.SystemTopology) []Warning {
 				NodeIDs:  []string{node.ID},
 			})
 		}
+		// Validate all roles in merged nodes
+		for _, role := range node.Roles {
+			if !model.ValidComponentTypes[role] {
+				warnings = append(warnings, Warning{
+					Rule:     "schema",
+					Message:  fmt.Sprintf("unknown role %q on node %q", role, node.ID),
+					Solution: "請確保合併節點的所有角色都是有效的組件類型。",
+					NodeIDs:  []string{node.ID},
+				})
+			}
+		}
 		nodeByID[node.ID] = node
 	}
 
@@ -112,6 +123,8 @@ func validate(t model.SystemTopology) []Warning {
 	warnings = append(warnings, checkAsyncPeakShaving(nodeByID, outgoing)...)
 	warnings = append(warnings, checkClientToDB(nodeByID, t.Edges)...)
 	warnings = append(warnings, checkClientToCache(nodeByID, t.Edges)...)
+	warnings = append(warnings, checkReverseProxySPOF(t.Nodes)...)
+	warnings = append(warnings, checkReverseProxySSL(nodeByID, t.Edges)...)
 
 	return warnings
 }
@@ -121,10 +134,10 @@ func checkCDNUsage(nodes map[string]model.SystemNode, outgoing map[string][]stri
 	var clientIDs []string
 	var cdnIDs []string
 	for id, node := range nodes {
-		if node.ComponentType == "client" {
+		if model.NodeHasRole(node, "client") {
 			clientIDs = append(clientIDs, id)
 		}
-		if node.ComponentType == "cdn" {
+		if model.NodeHasRole(node, "cdn") {
 			cdnIDs = append(cdnIDs, id)
 		}
 	}
@@ -144,7 +157,7 @@ func checkCDNUsage(nodes map[string]model.SystemNode, outgoing map[string][]stri
 		for _, clientID := range clientIDs {
 			targets := outgoing[clientID]
 			for _, targetID := range targets {
-				if nodes[targetID].ComponentType == "cdn" {
+				if model.NodeHasRole(nodes[targetID], "cdn") {
 					connected = true
 					break
 				}
@@ -185,7 +198,7 @@ func checkAsyncDecoupling(nodes map[string]model.SystemNode, edges []model.Syste
 	}
 
 	for id, node := range nodes {
-		if node.ComponentType != "service" {
+		if !model.NodeHasRole(node, "service") {
 			continue
 		}
 
@@ -206,7 +219,7 @@ func checkAsyncDecoupling(nodes map[string]model.SystemNode, edges []model.Syste
 				if edge.Target == id {
 					sourceNode := nodes[edge.Source]
 					// If any caller is a Message Queue, or the connection itself is async, we consider it decoupled!
-					if sourceNode.ComponentType == "message_queue" || edge.ConnectionType == "async" {
+					if model.NodeHasRole(sourceNode, "message_queue") || edge.ConnectionType == "async" {
 						isDecoupled = true
 						break
 					}
@@ -237,7 +250,7 @@ func contains(s, substr string) bool {
 func checkLBSPOF(nodes []model.SystemNode) []Warning {
 	var lbNodes []model.SystemNode
 	for _, node := range nodes {
-		if node.ComponentType == "load_balancer" {
+		if model.NodeHasRole(node, "load_balancer") {
 			lbNodes = append(lbNodes, node)
 		}
 	}
@@ -266,7 +279,7 @@ func checkLBSPOF(nodes []model.SystemNode) []Warning {
 func checkReadWriteSeparation(nodes []model.SystemNode, edges []model.SystemEdge) []Warning {
 	var warnings []Warning
 	for _, node := range nodes {
-		if node.ComponentType != "database" {
+		if !model.NodeHasRole(node, "database") {
 			continue
 		}
 
@@ -306,7 +319,7 @@ func checkReadWriteSeparation(nodes []model.SystemNode, edges []model.SystemEdge
 func checkCacheEviction(nodes []model.SystemNode) []Warning {
 	var warnings []Warning
 	for _, node := range nodes {
-		if node.ComponentType != "cache" {
+		if !model.NodeHasRole(node, "cache") {
 			continue
 		}
 		props, err := model.ParseNodeProperties(node)
@@ -329,12 +342,12 @@ func checkCacheEviction(nodes []model.SystemNode) []Warning {
 	return warnings
 }
 
-// checkSPOF detects load balancers with only one downstream service node,
+// checkSPOF detects load balancers and reverse proxies with only one downstream service node,
 // but suppresses the warning if that service node has Replicas > 1.
 func checkSPOF(nodes map[string]model.SystemNode, outgoing map[string][]string) []Warning {
 	var warnings []Warning
 	for id, node := range nodes {
-		if node.ComponentType != "load_balancer" {
+		if !model.NodeHasRole(node, "load_balancer") && !model.NodeHasRole(node, "reverse_proxy") {
 			continue
 		}
 		targets := outgoing[id]
@@ -343,7 +356,7 @@ func checkSPOF(nodes map[string]model.SystemNode, outgoing map[string][]string) 
 
 		for _, targetID := range targets {
 			target, ok := nodes[targetID]
-			if !ok || target.ComponentType != "service" {
+			if !ok || !model.NodeHasRole(target, "service") {
 				continue
 			}
 			serviceIDs = append(serviceIDs, targetID)
@@ -378,7 +391,7 @@ func checkSPOF(nodes map[string]model.SystemNode, outgoing map[string][]string) 
 func checkDBSelection(nodes []model.SystemNode, edges []model.SystemEdge) []Warning {
 	var warnings []Warning
 	for _, node := range nodes {
-		if node.ComponentType != "database" {
+		if !model.NodeHasRole(node, "database") {
 			continue
 		}
 
@@ -422,7 +435,7 @@ func checkVerticalPartitioning(nodes map[string]model.SystemNode, outgoing map[s
 	var dbNodes []model.SystemNode
 	dbSet := make(map[string]bool)
 	for _, node := range nodes {
-		if node.ComponentType == "database" {
+		if model.NodeHasRole(node, "database") {
 			dbNodes = append(dbNodes, node)
 			dbSet[node.ID] = true
 		}
@@ -437,7 +450,7 @@ func checkVerticalPartitioning(nodes map[string]model.SystemNode, outgoing map[s
 	// A service node that has outgoing edges to at least two different database nodes.
 	isAggregated := false
 	for id, node := range nodes {
-		if node.ComponentType != "service" {
+		if !model.NodeHasRole(node, "service") {
 			continue
 		}
 
@@ -482,7 +495,7 @@ func checkVerticalPartitioning(nodes map[string]model.SystemNode, outgoing map[s
 func checkCacheConsistency(nodes map[string]model.SystemNode, outgoing map[string][]string) []Warning {
 	var warnings []Warning
 	for id, node := range nodes {
-		if node.ComponentType != "service" {
+		if !model.NodeHasRole(node, "service") {
 			continue
 		}
 		targets := outgoing[id]
@@ -493,8 +506,7 @@ func checkCacheConsistency(nodes map[string]model.SystemNode, outgoing map[strin
 
 		for _, targetID := range targets {
 			if target, ok := nodes[targetID]; ok {
-				switch target.ComponentType {
-				case "cache":
+				if model.NodeHasRole(target, "cache") {
 					hasCache = true
 					involvedIDs = append(involvedIDs, targetID)
 
@@ -505,7 +517,8 @@ func checkCacheConsistency(nodes map[string]model.SystemNode, outgoing map[strin
 							anyCacheHasTTL = true
 						}
 					}
-				case "database":
+				}
+				if model.NodeHasRole(target, "database") {
 					hasDB = true
 					involvedIDs = append(involvedIDs, targetID)
 				}
@@ -528,7 +541,7 @@ func checkCacheConsistency(nodes map[string]model.SystemNode, outgoing map[strin
 func checkCAP(nodes []model.SystemNode) []Warning {
 	var warnings []Warning
 	for _, node := range nodes {
-		if node.ComponentType != "database" {
+		if !model.NodeHasRole(node, "database") {
 			continue
 		}
 		props, err := model.ParseNodeProperties(node)
@@ -726,11 +739,22 @@ func checkProtocolMismatch(nodes map[string]model.SystemNode, edges []model.Syst
 		if !ok {
 			continue
 		}
-		allowed, hasRule := expectedProtocols[target.ComponentType]
-		if !hasRule {
+
+		// For merged nodes, build the union of expected protocols across all roles
+		allAllowed := make(map[string]bool)
+		hasAnyRule := false
+		for _, role := range model.GetEffectiveRoles(target) {
+			if allowed, ok := expectedProtocols[role]; ok {
+				hasAnyRule = true
+				for p := range allowed {
+					allAllowed[p] = true
+				}
+			}
+		}
+		if !hasAnyRule {
 			continue
 		}
-		if allowed[edge.Protocol] {
+		if allAllowed[edge.Protocol] {
 			continue
 		}
 
@@ -740,7 +764,7 @@ func checkProtocolMismatch(nodes map[string]model.SystemNode, edges []model.Syst
 		}
 
 		var suggestion []string
-		for p := range allowed {
+		for p := range allAllowed {
 			name := protocolDisplayName[p]
 			if name == "" {
 				name = p
@@ -775,7 +799,7 @@ func joinLabels(labels []string) string {
 func checkMQConsumer(nodes map[string]model.SystemNode, outgoing map[string][]string) []Warning {
 	var warnings []Warning
 	for id, node := range nodes {
-		if node.ComponentType != "message_queue" {
+		if !model.NodeHasRole(node, "message_queue") {
 			continue
 		}
 		if len(outgoing[id]) == 0 {
@@ -794,7 +818,7 @@ func checkMQConsumer(nodes map[string]model.SystemNode, outgoing map[string][]st
 func checkMQDLQ(nodes []model.SystemNode) []Warning {
 	var warnings []Warning
 	for _, node := range nodes {
-		if node.ComponentType != "message_queue" {
+		if !model.NodeHasRole(node, "message_queue") {
 			continue
 		}
 		props, err := model.ParseNodeProperties(node)
@@ -821,15 +845,15 @@ func checkMQDLQ(nodes []model.SystemNode) []Warning {
 func checkAsyncPeakShaving(nodes map[string]model.SystemNode, outgoing map[string][]string) []Warning {
 	var warnings []Warning
 	for id, node := range nodes {
-		// Entry points: LB or API Gateway
-		if node.ComponentType != "load_balancer" && node.ComponentType != "api_gateway" {
+		// Entry points: LB, API Gateway, or Reverse Proxy
+		if !model.NodeHasRole(node, "load_balancer") && !model.NodeHasRole(node, "api_gateway") && !model.NodeHasRole(node, "reverse_proxy") {
 			continue
 		}
 
 		targets := outgoing[id]
 		for _, targetID := range targets {
 			target, ok := nodes[targetID]
-			if !ok || target.ComponentType != "database" {
+			if !ok || !model.NodeHasRole(target, "database") {
 				continue
 			}
 
@@ -867,13 +891,78 @@ func checkClientToDB(nodes map[string]model.SystemNode, edges []model.SystemEdge
 			continue
 		}
 
-		if source.ComponentType == "client" && target.ComponentType == "database" {
+		if model.NodeHasRole(source, "client") && model.NodeHasRole(target, "database") {
 			warnings = append(warnings, Warning{
 				Rule:     "client_direct_db",
 				Message:  fmt.Sprintf("🚫 安全風險：禁止從 %q 直接連線至 %q。", source.Label, target.Label),
 				Solution: "Client 不應直接操作資料庫。請在兩者之間加入 API Gateway 或 Service 層進行身份驗證與數據抽象。",
 				NodeIDs:  []string{source.ID, target.ID},
 			})
+		}
+	}
+	return warnings
+}
+
+// checkReverseProxySPOF warns if there is only one Reverse Proxy in the entire system
+// and its replicas are <= 1.
+func checkReverseProxySPOF(nodes []model.SystemNode) []Warning {
+	var rpNodes []model.SystemNode
+	for _, node := range nodes {
+		if model.NodeHasRole(node, "reverse_proxy") {
+			rpNodes = append(rpNodes, node)
+		}
+	}
+
+	if len(rpNodes) == 1 {
+		node := rpNodes[0]
+		props, err := model.ParseNodeProperties(node)
+		if err == nil {
+			if rpProps, ok := props.(*model.ReverseProxyProperties); ok && rpProps.Replicas > 1 {
+				return nil
+			}
+		}
+
+		return []Warning{{
+			Rule:     "reverse_proxy_spof",
+			Message:  "🔀 入口單點故障：整體架構中僅存在 1 個 Reverse Proxy。",
+			Solution: "生產環境建議部署多個 Reverse Proxy，或在屬性面板中將 Replicas 複本數設為 2 以上。",
+			NodeIDs:  []string{node.ID},
+		}}
+	}
+	return nil
+}
+
+// checkReverseProxySSL warns if a reverse proxy receives HTTPS traffic but has SSL termination disabled.
+func checkReverseProxySSL(nodes map[string]model.SystemNode, edges []model.SystemEdge) []Warning {
+	var warnings []Warning
+	for _, node := range nodes {
+		if !model.NodeHasRole(node, "reverse_proxy") {
+			continue
+		}
+
+		props, err := model.ParseNodeProperties(node)
+		if err != nil {
+			continue
+		}
+		rpProps, ok := props.(*model.ReverseProxyProperties)
+		if !ok {
+			continue
+		}
+		if rpProps.SSLTermination {
+			continue
+		}
+
+		// Check if any incoming edge uses HTTPS
+		for _, edge := range edges {
+			if edge.Target == node.ID && edge.Protocol == "https" {
+				warnings = append(warnings, Warning{
+					Rule:     "reverse_proxy_ssl",
+					Message:  fmt.Sprintf("🔒 SSL 終止建議：Reverse Proxy %q 接收 HTTPS 流量但未啟用 SSL Termination。", node.Label),
+					Solution: "建議在 Reverse Proxy 啟用 SSL Termination，統一管理 TLS 憑證並減輕後端服務的加解密負擔。",
+					NodeIDs:  []string{node.ID},
+				})
+				break
+			}
 		}
 	}
 	return warnings
@@ -890,7 +979,7 @@ func checkClientToCache(nodes map[string]model.SystemNode, edges []model.SystemE
 			continue
 		}
 
-		if source.ComponentType == "client" && target.ComponentType == "cache" {
+		if model.NodeHasRole(source, "client") && model.NodeHasRole(target, "cache") {
 			warnings = append(warnings, Warning{
 				Rule:     "client_direct_cache",
 				Message:  fmt.Sprintf("🧊 暴露風險：不建議從 %q 直接連線至 %q。", source.Label, target.Label),

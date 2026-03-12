@@ -22,6 +22,7 @@ type SystemNode struct {
 	Label         string                 `json:"label" binding:"required"`
 	Position      Position               `json:"position"`
 	Properties    map[string]interface{} `json:"properties"`
+	Roles         []string               `json:"roles,omitempty"`
 }
 
 // SystemEdge represents a connection between two nodes.
@@ -46,6 +47,7 @@ var ValidComponentTypes = map[string]bool{
 	"cdn":           true,
 	"dns":           true,
 	"storage":       true,
+	"reverse_proxy": true,
 }
 
 // ValidConnectionTypes enumerates all supported connection types.

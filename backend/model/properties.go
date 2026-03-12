@@ -60,6 +60,16 @@ type ServiceProperties struct {
 	Stateless bool `json:"stateless"`
 }
 
+// ReverseProxyProperties holds attributes for reverse proxy nodes.
+type ReverseProxyProperties struct {
+	Product        string `json:"product,omitempty"`
+	SSLTermination bool   `json:"sslTermination"`
+	Caching        bool   `json:"caching"`
+	Compression    bool   `json:"compression"`
+	RateLimiting   bool   `json:"rateLimiting"`
+	Replicas       int    `json:"replicas,omitempty"`
+}
+
 // ParseNodeProperties converts the generic Properties map into a typed struct
 // based on the node's ComponentType. Returns the original map for unknown types.
 func ParseNodeProperties(node SystemNode) (interface{}, error) {
@@ -87,7 +97,29 @@ func ParseNodeProperties(node SystemNode) (interface{}, error) {
 	case "service":
 		var props ServiceProperties
 		return &props, json.Unmarshal(raw, &props)
+	case "reverse_proxy":
+		var props ReverseProxyProperties
+		return &props, json.Unmarshal(raw, &props)
 	default:
 		return node.Properties, nil
 	}
+}
+
+// GetEffectiveRoles returns the roles a node fulfills. If Roles is set, it is
+// returned directly; otherwise a single-element slice of ComponentType is returned.
+func GetEffectiveRoles(node SystemNode) []string {
+	if len(node.Roles) > 0 {
+		return node.Roles
+	}
+	return []string{node.ComponentType}
+}
+
+// NodeHasRole reports whether node fulfills the given role.
+func NodeHasRole(node SystemNode, role string) bool {
+	for _, r := range GetEffectiveRoles(node) {
+		if r == role {
+			return true
+		}
+	}
+	return false
 }

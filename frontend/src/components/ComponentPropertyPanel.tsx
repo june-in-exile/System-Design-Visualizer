@@ -126,6 +126,14 @@ const MQ_DELIVERY_GUARANTEES = [
   { value: 'exactly_once', label: 'Exactly Once', description: 'Strongest guarantee, higher latency and complexity' },
 ]
 
+const REVERSE_PROXY_PRODUCTS = [
+  { value: 'nginx', label: 'Nginx', description: 'High-performance HTTP server and reverse proxy' },
+  { value: 'haproxy', label: 'HAProxy', description: 'Reliable, high-performance TCP/HTTP load balancer and proxy' },
+  { value: 'envoy', label: 'Envoy', description: 'Cloud-native edge and service proxy with advanced observability' },
+  { value: 'traefik', label: 'Traefik', description: 'Cloud-native application proxy with automatic service discovery' },
+  { value: 'caddy', label: 'Caddy', description: 'Automatic HTTPS web server with zero-config TLS' },
+]
+
 const ALGORITHMS = [
   { value: 'round_robin', label: 'Round Robin', description: 'Distributes requests evenly across all servers in sequence' },
   { value: 'least_connections', label: 'Least Connections', description: 'Routes to server with fewest active connections' },
@@ -152,6 +160,7 @@ export default function PropertyPanel({
   const data = selectedNode.data as Record<string, unknown>
   const properties = (data.properties as Record<string, unknown>) ?? {}
   const componentType = data.componentType as ComponentType
+  const roles = Array.from(new Set((data.roles as ComponentType[]) || [componentType]))
 
   const handleLabelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onNodeDataChange(selectedNode.id, { ...data, label: e.target.value })
@@ -175,7 +184,6 @@ export default function PropertyPanel({
   }
 
   const handleDBTypeChange = (newType: string) => {
-    // 切換類型時，自動選取該類型下的第一個產品以維持一致性
     const firstProduct = newType === 'sql' 
       ? SQL_PRODUCTS[0].value 
       : NOSQL_GROUPS[0].products[0].value
@@ -185,6 +193,504 @@ export default function PropertyPanel({
       properties: { ...properties, dbType: newType, product: firstProduct },
     })
   }
+
+  const renderDatabaseSection = () => (
+    <>
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="Choose between relational (SQL) or non-relational (NoSQL) database types."
+        >
+          Database Category
+        </label>
+        <select
+          value={(properties.dbType as string) || 'sql'}
+          onChange={(e) => handleDBTypeChange(e.target.value)}
+          title={getTooltip(
+            DB_CATEGORIES.find(opt => opt.value === ((properties.dbType as string) || 'sql'))?.label || '',
+            DB_CATEGORIES.find(opt => opt.value === ((properties.dbType as string) || 'sql'))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {DB_CATEGORIES.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="The specific database product or engine to use."
+        >
+          Product
+        </label>
+        <select
+          value={(properties.product as string) || ''}
+          onChange={(e) => handlePropertyChange('product', e.target.value)}
+          title={properties.dbType === 'sql' 
+            ? getTooltip(
+                SQL_PRODUCTS.find(p => p.value === (properties.product as string))?.label || '',
+                SQL_PRODUCTS.find(p => p.value === (properties.product as string))?.description
+              )
+            : getTooltip(
+                NOSQL_GROUPS.flatMap(g => g.products).find(p => p.value === (properties.product as string))?.label || '',
+                NOSQL_GROUPS.flatMap(g => g.products).find(p => p.value === (properties.product as string))?.description
+              )
+          }
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {properties.dbType === 'sql' ? (
+            SQL_PRODUCTS.map((p) => (
+              <option key={p.value} value={p.value} title={p.description}>{p.label}</option>
+            ))
+          ) : (
+            NOSQL_GROUPS.map((group) => (
+              <optgroup key={group.label} label={group.label}>
+                {group.products.map((p) => (
+                  <option key={p.value} value={p.value} title={p.description}>{p.label}</option>
+                ))}
+              </optgroup>
+            ))
+          )}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="Desired data consistency model (CAP theorem trade-offs)."
+        >
+          Consistency Requirement
+        </label>
+        <select
+          value={(properties.consistencyLevel as string) || ''}
+          onChange={(e) => handlePropertyChange('consistencyLevel', e.target.value)}
+          title={getTooltip(
+            CONSISTENCY_LEVELS.find(opt => opt.value === (properties.consistencyLevel as string))?.label || 'Default',
+            CONSISTENCY_LEVELS.find(opt => opt.value === (properties.consistencyLevel as string))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          <option value="">Default (Auto-detect)</option>
+          {CONSISTENCY_LEVELS.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {properties.dbType === 'sql' && (
+        <div style={{ marginBottom: 16 }}>
+          <label 
+            style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+            title="The estimated balance between read and write operations. High read ratios favor caching and replicas."
+          >
+            Read/Write Ratio ({(properties.readWriteRatio as number) || 0})
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.1"
+            value={(properties.readWriteRatio as number) || 0}
+            onChange={(e) => handlePropertyChange('readWriteRatio', parseFloat(e.target.value))}
+            style={{ width: '100%' }}
+          />
+        </div>
+      )}
+    </>
+  )
+
+  const renderLoadBalancerSection = () => (
+    <div style={{ marginBottom: 16 }}>
+      <label 
+        style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+        title="The policy used to distribute incoming traffic across healthy backend instances."
+      >
+        Algorithm
+      </label>
+      <select
+        value={(properties.algorithm as string) || 'round_robin'}
+        onChange={(e) => handlePropertyChange('algorithm', e.target.value)}
+        title={getTooltip(
+          ALGORITHMS.find(opt => opt.value === ((properties.algorithm as string) || 'round_robin'))?.label || '',
+          ALGORITHMS.find(opt => opt.value === ((properties.algorithm as string) || 'round_robin'))?.description
+        )}
+        style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+      >
+        {ALGORITHMS.map((opt) => (
+          <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+        ))}
+      </select>
+    </div>
+  )
+
+  const renderReverseProxySection = () => (
+    <>
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="The reverse proxy software or engine."
+        >
+          Product
+        </label>
+        <select
+          value={(properties.product as string) || 'nginx'}
+          onChange={(e) => handlePropertyChange('product', e.target.value)}
+          title={getTooltip(
+            REVERSE_PROXY_PRODUCTS.find(p => p.value === ((properties.product as string) || 'nginx'))?.label || '',
+            REVERSE_PROXY_PRODUCTS.find(p => p.value === ((properties.product as string) || 'nginx'))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {REVERSE_PROXY_PRODUCTS.map((p) => (
+            <option key={p.value} value={p.value} title={p.description}>{p.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}
+          title="Terminate TLS/SSL at the proxy, forwarding plain HTTP to backends."
+        >
+          <input
+            type="checkbox"
+            checked={(properties.sslTermination as boolean) ?? true}
+            onChange={(e) => handlePropertyChange('sslTermination', e.target.checked)}
+          />
+          SSL Termination
+        </label>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}
+          title="Cache responses at the proxy layer to reduce backend load."
+        >
+          <input
+            type="checkbox"
+            checked={(properties.caching as boolean) || false}
+            onChange={(e) => handlePropertyChange('caching', e.target.checked)}
+          />
+          Response Caching
+        </label>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}
+          title="Compress responses (gzip/brotli) before sending to clients."
+        >
+          <input
+            type="checkbox"
+            checked={(properties.compression as boolean) || false}
+            onChange={(e) => handlePropertyChange('compression', e.target.checked)}
+          />
+          Compression
+        </label>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}
+          title="Limit request rate per client to protect backends from overload."
+        >
+          <input
+            type="checkbox"
+            checked={(properties.rateLimiting as boolean) || false}
+            onChange={(e) => handlePropertyChange('rateLimiting', e.target.checked)}
+          />
+          Rate Limiting
+        </label>
+      </div>
+    </>
+  )
+
+  const renderStorageSection = () => (
+    <>
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="Visibility and permission level for the stored objects."
+        >
+          Access Level
+        </label>
+        <select
+          value={(properties.accessLevel as string) || 'private'}
+          onChange={(e) => handlePropertyChange('accessLevel', e.target.value)}
+          title={getTooltip(
+            STORAGE_ACCESS_LEVELS.find(opt => opt.value === ((properties.accessLevel as string) || 'private'))?.label || '',
+            STORAGE_ACCESS_LEVELS.find(opt => opt.value === ((properties.accessLevel as string) || 'private'))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {STORAGE_ACCESS_LEVELS.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="Data storage tier, balancing access frequency, latency, and cost."
+        >
+          Storage Class
+        </label>
+        <select
+          value={(properties.storageClass as string) || 'standard'}
+          onChange={(e) => handlePropertyChange('storageClass', e.target.value)}
+          title={getTooltip(
+            STORAGE_CLASSES.find(opt => opt.value === ((properties.storageClass as string) || 'standard'))?.label || '',
+            STORAGE_CLASSES.find(opt => opt.value === ((properties.storageClass as string) || 'standard'))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {STORAGE_CLASSES.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}
+          title="Preserve multiple versions of an object to protect against accidental deletions or overwrites."
+        >
+          <input
+            type="checkbox"
+            checked={(properties.versioning as boolean) || false}
+            onChange={(e) => handlePropertyChange('versioning', e.target.checked)}
+          />
+          Enable Versioning
+        </label>
+      </div>
+    </>
+  )
+
+  const renderMessageQueueSection = () => (
+    <>
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="The architectural pattern of the messaging system."
+        >
+          Category
+        </label>
+        <select
+          value={(properties.category as string) || 'broker'}
+          onChange={(e) => handleMQCategoryChange(e.target.value)}
+          title={getTooltip(
+            MQ_CATEGORIES.find(opt => opt.value === ((properties.category as string) || 'broker'))?.label || '',
+            MQ_CATEGORIES.find(opt => opt.value === ((properties.category as string) || 'broker'))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {MQ_CATEGORIES.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="The specific messaging product or managed service."
+        >
+          Product
+        </label>
+        <select
+          value={(properties.product as string) || ''}
+          onChange={(e) => handlePropertyChange('product', e.target.value)}
+          title={getTooltip(
+            (MQ_PRODUCT_GROUPS[(properties.category as string) || 'broker'] ?? []).find(p => p.value === (properties.product as string))?.label || '',
+            (MQ_PRODUCT_GROUPS[(properties.category as string) || 'broker'] ?? []).find(p => p.value === (properties.product as string))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {(MQ_PRODUCT_GROUPS[(properties.category as string) || 'broker'] ?? []).map((p) => (
+            <option key={p.value} value={p.value} title={p.description}>{p.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="Defines how messages are distributed to consumers (one-to-one vs one-to-many)."
+        >
+          Queue Type
+        </label>
+        <select
+          value={(properties.queueType as string) || 'pub_sub'}
+          onChange={(e) => handlePropertyChange('queueType', e.target.value)}
+          title={getTooltip(
+            MQ_QUEUE_TYPES.find(opt => opt.value === ((properties.queueType as string) || 'pub_sub'))?.label || '',
+            MQ_QUEUE_TYPES.find(opt => opt.value === ((properties.queueType as string) || 'pub_sub'))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {MQ_QUEUE_TYPES.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="The reliability guarantee for message handoff between producer and consumer."
+        >
+          Delivery Guarantee
+        </label>
+        <select
+          value={(properties.deliveryGuarantee as string) || 'at_least_once'}
+          onChange={(e) => handlePropertyChange('deliveryGuarantee', e.target.value)}
+          title={getTooltip(
+            MQ_DELIVERY_GUARANTEES.find(opt => opt.value === ((properties.deliveryGuarantee as string) || 'at_least_once'))?.label || '',
+            MQ_DELIVERY_GUARANTEES.find(opt => opt.value === ((properties.deliveryGuarantee as string) || 'at_least_once'))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {MQ_DELIVERY_GUARANTEES.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}
+          title="Ensures that messages are processed in the exact order they were sent."
+        >
+          <input
+            type="checkbox"
+            checked={(properties.ordered as boolean) || false}
+            onChange={(e) => handlePropertyChange('ordered', e.target.checked)}
+          />
+          Ordered Delivery
+        </label>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}
+          title="A secondary queue for messages that cannot be processed, allowing for offline inspection and manual retry."
+        >
+          <input
+            type="checkbox"
+            checked={(properties.hasDLQ as boolean) || false}
+            onChange={(e) => handlePropertyChange('hasDLQ', e.target.checked)}
+          />
+          Enable Dead Letter Queue (DLQ)
+        </label>
+      </div>
+    </>
+  )
+
+  const renderCacheSection = () => (
+    <>
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="Defines whether the cache is local to an instance or shared across a cluster."
+        >
+          Cache Type
+        </label>
+        <select
+          value={(properties.cacheType as string) || 'distributed'}
+          onChange={(e) => handlePropertyChange('cacheType', e.target.value)}
+          title={getTooltip(
+            CACHE_TYPES.find(opt => opt.value === ((properties.cacheType as string) || 'distributed'))?.label || '',
+            CACHE_TYPES.find(opt => opt.value === ((properties.cacheType as string) || 'distributed'))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {CACHE_TYPES.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="The specific caching engine or product."
+        >
+          Product
+        </label>
+        <select
+          value={(properties.product as string) || 'redis'}
+          onChange={(e) => handlePropertyChange('product', e.target.value)}
+          title={getTooltip(
+            CACHE_PRODUCTS.find(p => p.value === ((properties.product as string) || 'redis'))?.label || '',
+            CACHE_PRODUCTS.find(p => p.value === ((properties.product as string) || 'redis'))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {CACHE_PRODUCTS.map((p) => (
+            <option key={p.value} value={p.value} title={p.description}>{p.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="The logic used to decide which items to remove when the cache is full."
+        >
+          Eviction Policy
+        </label>
+        <select
+          value={(properties.evictionPolicy as string) || 'lru'}
+          onChange={(e) => handlePropertyChange('evictionPolicy', e.target.value)}
+          title={getTooltip(
+            EVICTION_POLICIES.find(opt => opt.value === ((properties.evictionPolicy as string) || 'lru'))?.label || '',
+            EVICTION_POLICIES.find(opt => opt.value === ((properties.evictionPolicy as string) || 'lru'))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {EVICTION_POLICIES.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="Time-To-Live: Duration after which a cache entry is automatically invalidated."
+        >
+          TTL (Seconds)
+        </label>
+        <input
+          type="number"
+          min="0"
+          placeholder="0 (No Expiration)"
+          value={(properties.ttlSeconds as number) || 0}
+          onChange={(e) => handlePropertyChange('ttlSeconds', parseInt(e.target.value, 10))}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        />
+      </div>
+    </>
+  )
+
+  const renderRoleProperties = (role: ComponentType) => {
+    switch (role) {
+      case 'database': return renderDatabaseSection()
+      case 'load_balancer': return renderLoadBalancerSection()
+      case 'reverse_proxy': return renderReverseProxySection()
+      case 'storage': return renderStorageSection()
+      case 'message_queue': return renderMessageQueueSection()
+      case 'cache': return renderCacheSection()
+      default: return null
+    }
+  }
+
+  const supportsReplicas = roles.some(role => 
+    ['service', 'database', 'load_balancer', 'cache', 'reverse_proxy'].includes(role)
+  )
 
   return (
     <aside
@@ -216,124 +722,8 @@ export default function PropertyPanel({
         />
       </div>
 
-      {componentType === 'database' && (
-        <>
-          {/* Database Category */}
-          <div style={{ marginBottom: 16 }}>
-            <label 
-              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
-              title="Choose between relational (SQL) or non-relational (NoSQL) database types."
-            >
-              Database Category
-            </label>
-            <select
-              value={(properties.dbType as string) || 'sql'}
-              onChange={(e) => handleDBTypeChange(e.target.value)}
-              title={getTooltip(
-                DB_CATEGORIES.find(opt => opt.value === ((properties.dbType as string) || 'sql'))?.label || '',
-                DB_CATEGORIES.find(opt => opt.value === ((properties.dbType as string) || 'sql'))?.description
-              )}
-              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-            >
-              {DB_CATEGORIES.map((opt) => (
-                <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Product Selection - Filtered by DB Type */}
-          <div style={{ marginBottom: 16 }}>
-            <label 
-              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
-              title="The specific database product or engine to use."
-            >
-              Product
-            </label>
-            <select
-              value={(properties.product as string) || ''}
-              onChange={(e) => handlePropertyChange('product', e.target.value)}
-              title={properties.dbType === 'sql' 
-                ? getTooltip(
-                    SQL_PRODUCTS.find(p => p.value === (properties.product as string))?.label || '',
-                    SQL_PRODUCTS.find(p => p.value === (properties.product as string))?.description
-                  )
-                : getTooltip(
-                    NOSQL_GROUPS.flatMap(g => g.products).find(p => p.value === (properties.product as string))?.label || '',
-                    NOSQL_GROUPS.flatMap(g => g.products).find(p => p.value === (properties.product as string))?.description
-                  )
-              }
-              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-            >
-              {properties.dbType === 'sql' ? (
-                SQL_PRODUCTS.map((p) => (
-                  <option key={p.value} value={p.value} title={p.description}>{p.label}</option>
-                ))
-              ) : (
-                NOSQL_GROUPS.map((group) => (
-                  <optgroup key={group.label} label={group.label}>
-                    {group.products.map((p) => (
-                      <option key={p.value} value={p.value} title={p.description}>{p.label}</option>
-                    ))}
-                  </optgroup>
-                ))
-              )}
-            </select>
-          </div>
-
-          {/* Consistency Level - Added for CAP Theorem Rule 5 */}
-          <div style={{ marginBottom: 16 }}>
-            <label 
-              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
-              title="Desired data consistency model (CAP theorem trade-offs)."
-            >
-              Consistency Requirement
-            </label>
-            <select
-              value={(properties.consistencyLevel as string) || ''}
-              onChange={(e) => handlePropertyChange('consistencyLevel', e.target.value)}
-              title={getTooltip(
-                CONSISTENCY_LEVELS.find(opt => opt.value === (properties.consistencyLevel as string))?.label || 'Default',
-                CONSISTENCY_LEVELS.find(opt => opt.value === (properties.consistencyLevel as string))?.description
-              )}
-              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-            >
-              <option value="">Default (Auto-detect)</option>
-              {CONSISTENCY_LEVELS.map((opt) => (
-                <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
-              ))}
-            </select>
-            <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>
-              Explicitly choosing a level acknowledges the CAP trade-offs.
-            </p>
-          </div>
-
-          {/* Read/Write Ratio - Only shown for SQL (Rule 2) */}
-          {properties.dbType === 'sql' && (
-            <div style={{ marginBottom: 16 }}>
-              <label 
-                style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
-                title="The estimated balance between read and write operations. High read ratios favor caching and replicas."
-              >
-                Read/Write Ratio ({(properties.readWriteRatio as number) || 0})
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={(properties.readWriteRatio as number) || 0}
-                onChange={(e) => handlePropertyChange('readWriteRatio', parseFloat(e.target.value))}
-                style={{ width: '100%' }}
-              />
-              <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>
-                Lower values mean higher write pressure.
-              </p>
-            </div>
-          )}
-        </>
-      )}
-
-      {['service', 'database', 'load_balancer', 'cache'].includes(componentType) && (
+      {/* Replicas - Shared if any role supports it */}
+      {supportsReplicas && (
         <div style={{ marginBottom: 16 }}>
           <label 
             style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
@@ -351,310 +741,35 @@ export default function PropertyPanel({
         </div>
       )}
 
-      {componentType === 'load_balancer' && (
-        <div style={{ marginBottom: 16 }}>
-          <label 
-            style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
-            title="The policy used to distribute incoming traffic across healthy backend instances."
-          >
-            Algorithm
-          </label>
-          <select
-            value={(properties.algorithm as string) || 'round_robin'}
-            onChange={(e) => handlePropertyChange('algorithm', e.target.value)}
-            title={getTooltip(
-              ALGORITHMS.find(opt => opt.value === ((properties.algorithm as string) || 'round_robin'))?.label || '',
-              ALGORITHMS.find(opt => opt.value === ((properties.algorithm as string) || 'round_robin'))?.description
+      {/* Role-specific properties */}
+      {roles.map((role) => {
+        const section = renderRoleProperties(role)
+        if (!section) return null
+
+        const showHeader = roles.length > 1
+
+        return (
+          <div key={role} style={{ marginTop: showHeader ? 20 : 0, borderTop: showHeader ? '1px solid var(--border-color)' : 'none', paddingTop: showHeader ? 16 : 0 }}>
+            {showHeader && (
+              <div style={{ 
+                display: 'inline-block', 
+                padding: '2px 8px', 
+                borderRadius: 4, 
+                fontSize: 11, 
+                fontWeight: 600, 
+                backgroundColor: 'var(--bg-primary)', 
+                color: 'var(--text-secondary)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                marginBottom: 12
+              }}>
+                {role.replace('_', ' ')} Role
+              </div>
             )}
-            style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-          >
-            {ALGORITHMS.map((opt) => (
-              <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {componentType === 'storage' && (
-        <>
-          <div style={{ marginBottom: 16 }}>
-            <label 
-              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
-              title="Visibility and permission level for the stored objects."
-            >
-              Access Level
-            </label>
-            <select
-              value={(properties.accessLevel as string) || 'private'}
-              onChange={(e) => handlePropertyChange('accessLevel', e.target.value)}
-              title={getTooltip(
-                STORAGE_ACCESS_LEVELS.find(opt => opt.value === ((properties.accessLevel as string) || 'private'))?.label || '',
-                STORAGE_ACCESS_LEVELS.find(opt => opt.value === ((properties.accessLevel as string) || 'private'))?.description
-              )}
-              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-            >
-              {STORAGE_ACCESS_LEVELS.map((opt) => (
-                <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
-              ))}
-            </select>
+            {section}
           </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <label 
-              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
-              title="Data storage tier, balancing access frequency, latency, and cost."
-            >
-              Storage Class
-            </label>
-            <select
-              value={(properties.storageClass as string) || 'standard'}
-              onChange={(e) => handlePropertyChange('storageClass', e.target.value)}
-              title={getTooltip(
-                STORAGE_CLASSES.find(opt => opt.value === ((properties.storageClass as string) || 'standard'))?.label || '',
-                STORAGE_CLASSES.find(opt => opt.value === ((properties.storageClass as string) || 'standard'))?.description
-              )}
-              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-            >
-              {STORAGE_CLASSES.map((opt) => (
-                <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <label 
-              style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}
-              title="Preserve multiple versions of an object to protect against accidental deletions or overwrites."
-            >
-              <input
-                type="checkbox"
-                checked={(properties.versioning as boolean) || false}
-                onChange={(e) => handlePropertyChange('versioning', e.target.checked)}
-              />
-              Enable Versioning
-            </label>
-            <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>
-              Keep multiple versions of objects for recovery and audit.
-            </p>
-          </div>
-        </>
-      )}
-
-      {componentType === 'message_queue' && (
-        <>
-          <div style={{ marginBottom: 16 }}>
-            <label 
-              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
-              title="The architectural pattern of the messaging system."
-            >
-              Category
-            </label>
-            <select
-              value={(properties.category as string) || 'broker'}
-              onChange={(e) => handleMQCategoryChange(e.target.value)}
-              title={getTooltip(
-                MQ_CATEGORIES.find(opt => opt.value === ((properties.category as string) || 'broker'))?.label || '',
-                MQ_CATEGORIES.find(opt => opt.value === ((properties.category as string) || 'broker'))?.description
-              )}
-              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-            >
-              {MQ_CATEGORIES.map((opt) => (
-                <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <label 
-              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
-              title="The specific messaging product or managed service."
-            >
-              Product
-            </label>
-            <select
-              value={(properties.product as string) || ''}
-              onChange={(e) => handlePropertyChange('product', e.target.value)}
-              title={getTooltip(
-                (MQ_PRODUCT_GROUPS[(properties.category as string) || 'broker'] ?? []).find(p => p.value === (properties.product as string))?.label || '',
-                (MQ_PRODUCT_GROUPS[(properties.category as string) || 'broker'] ?? []).find(p => p.value === (properties.product as string))?.description
-              )}
-              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-            >
-              {(MQ_PRODUCT_GROUPS[(properties.category as string) || 'broker'] ?? []).map((p) => (
-                <option key={p.value} value={p.value} title={p.description}>{p.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <label 
-              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
-              title="Defines how messages are distributed to consumers (one-to-one vs one-to-many)."
-            >
-              Queue Type
-            </label>
-            <select
-              value={(properties.queueType as string) || 'pub_sub'}
-              onChange={(e) => handlePropertyChange('queueType', e.target.value)}
-              title={getTooltip(
-                MQ_QUEUE_TYPES.find(opt => opt.value === ((properties.queueType as string) || 'pub_sub'))?.label || '',
-                MQ_QUEUE_TYPES.find(opt => opt.value === ((properties.queueType as string) || 'pub_sub'))?.description
-              )}
-              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-            >
-              {MQ_QUEUE_TYPES.map((opt) => (
-                <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <label 
-              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
-              title="The reliability guarantee for message handoff between producer and consumer."
-            >
-              Delivery Guarantee
-            </label>
-            <select
-              value={(properties.deliveryGuarantee as string) || 'at_least_once'}
-              onChange={(e) => handlePropertyChange('deliveryGuarantee', e.target.value)}
-              title={getTooltip(
-                MQ_DELIVERY_GUARANTEES.find(opt => opt.value === ((properties.deliveryGuarantee as string) || 'at_least_once'))?.label || '',
-                MQ_DELIVERY_GUARANTEES.find(opt => opt.value === ((properties.deliveryGuarantee as string) || 'at_least_once'))?.description
-              )}
-              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-            >
-              {MQ_DELIVERY_GUARANTEES.map((opt) => (
-                <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <label 
-              style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}
-              title="Ensures that messages are processed in the exact order they were sent."
-            >
-              <input
-                type="checkbox"
-                checked={(properties.ordered as boolean) || false}
-                onChange={(e) => handlePropertyChange('ordered', e.target.checked)}
-              />
-              Ordered Delivery
-            </label>
-            <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>
-              Guarantee message ordering within a partition or queue.
-            </p>
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <label 
-              style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}
-              title="A secondary queue for messages that cannot be processed, allowing for offline inspection and manual retry."
-            >
-              <input
-                type="checkbox"
-                checked={(properties.hasDLQ as boolean) || false}
-                onChange={(e) => handlePropertyChange('hasDLQ', e.target.checked)}
-              />
-              Enable Dead Letter Queue (DLQ)
-            </label>
-            <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>
-              Automatically move failed messages to a separate queue for inspection.
-            </p>
-          </div>
-        </>
-      )}
-
-      {componentType === 'cache' && (
-        <>
-          <div style={{ marginBottom: 16 }}>
-            <label 
-              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
-              title="Defines whether the cache is local to an instance or shared across a cluster."
-            >
-              Cache Type
-            </label>
-            <select
-              value={(properties.cacheType as string) || 'distributed'}
-              onChange={(e) => handlePropertyChange('cacheType', e.target.value)}
-              title={getTooltip(
-                CACHE_TYPES.find(opt => opt.value === ((properties.cacheType as string) || 'distributed'))?.label || '',
-                CACHE_TYPES.find(opt => opt.value === ((properties.cacheType as string) || 'distributed'))?.description
-              )}
-              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-            >
-              {CACHE_TYPES.map((opt) => (
-                <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <label 
-              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
-              title="The specific caching engine or product."
-            >
-              Product
-            </label>
-            <select
-              value={(properties.product as string) || 'redis'}
-              onChange={(e) => handlePropertyChange('product', e.target.value)}
-              title={getTooltip(
-                CACHE_PRODUCTS.find(p => p.value === ((properties.product as string) || 'redis'))?.label || '',
-                CACHE_PRODUCTS.find(p => p.value === ((properties.product as string) || 'redis'))?.description
-              )}
-              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-            >
-              {CACHE_PRODUCTS.map((p) => (
-                <option key={p.value} value={p.value} title={p.description}>{p.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <label 
-              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
-              title="The logic used to decide which items to remove when the cache is full."
-            >
-              Eviction Policy
-            </label>
-            <select
-              value={(properties.evictionPolicy as string) || 'lru'}
-              onChange={(e) => handlePropertyChange('evictionPolicy', e.target.value)}
-              title={getTooltip(
-                EVICTION_POLICIES.find(opt => opt.value === ((properties.evictionPolicy as string) || 'lru'))?.label || '',
-                EVICTION_POLICIES.find(opt => opt.value === ((properties.evictionPolicy as string) || 'lru'))?.description
-              )}
-              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-            >
-              {EVICTION_POLICIES.map((opt) => (
-                <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <label 
-              style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
-              title="Time-To-Live: Duration after which a cache entry is automatically invalidated."
-            >
-              TTL (Seconds)
-            </label>
-            <input
-              type="number"
-              min="0"
-              placeholder="0 (No Expiration)"
-              value={(properties.ttlSeconds as number) || 0}
-              onChange={(e) => handlePropertyChange('ttlSeconds', parseInt(e.target.value, 10))}
-              style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-            />
-            <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>
-              Setting a TTL helps maintain data consistency by expiring old cache entries.
-            </p>
-          </div>
-        </>
-      )}
+        )
+      })}
     </aside>
   )
 }
