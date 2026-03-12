@@ -1,5 +1,18 @@
+import { useState } from 'react'
 import type { Node } from '@xyflow/react'
 import type { ComponentType } from '../types/topology'
+
+const COMMON_PRODUCTS = [
+  'MySQL',
+  'PostgreSQL',
+  'MongoDB',
+  'Cassandra',
+  'DynamoDB',
+  'Redis',
+  'Elasticsearch',
+  'Neo4j',
+  'InfluxDB',
+]
 
 interface PropertyPanelProps {
   selectedNode: Node | null
@@ -10,6 +23,8 @@ export default function PropertyPanel({
   selectedNode,
   onNodeDataChange,
 }: PropertyPanelProps) {
+  const [showOtherInput, setShowOtherInput] = useState(false)
+
   if (!selectedNode) {
     return null
   }
@@ -17,6 +32,9 @@ export default function PropertyPanel({
   const data = selectedNode.data as Record<string, unknown>
   const properties = (data.properties as Record<string, unknown>) ?? {}
   const componentType = data.componentType as ComponentType
+
+  const currentProduct = (properties.product as string) || ''
+  const isOtherProduct = showOtherInput || (currentProduct !== '' && !COMMON_PRODUCTS.includes(currentProduct))
 
   const handleLabelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onNodeDataChange(selectedNode.id, { ...data, label: e.target.value })
@@ -34,8 +52,8 @@ export default function PropertyPanel({
       style={{
         width: 300,
         padding: 16,
-        borderLeft: '1px solid #e5e7eb',
-        backgroundColor: '#f9fafb',
+        borderLeft: '1px solid var(--border-color)',
+        backgroundColor: 'var(--bg-secondary)',
         overflowY: 'auto',
       }}
     >
@@ -44,7 +62,7 @@ export default function PropertyPanel({
           margin: '0 0 16px',
           fontSize: 16,
           fontWeight: 600,
-          color: '#374151',
+          color: 'var(--text-primary)',
         }}
       >
         Properties
@@ -57,7 +75,7 @@ export default function PropertyPanel({
             marginBottom: 4,
             fontSize: 13,
             fontWeight: 500,
-            color: '#4b5563',
+            color: 'var(--text-secondary)',
           }}
         >
           Label
@@ -69,9 +87,11 @@ export default function PropertyPanel({
           style={{
             width: '100%',
             padding: '6px 8px',
-            border: '1px solid #d1d5db',
+            border: '1px solid var(--border-color)',
             borderRadius: 4,
             fontSize: 13,
+            backgroundColor: 'var(--bg-primary)',
+            color: 'var(--text-primary)',
           }}
         />
       </div>
@@ -85,7 +105,7 @@ export default function PropertyPanel({
                 marginBottom: 4,
                 fontSize: 13,
                 fontWeight: 500,
-                color: '#4b5563',
+                color: 'var(--text-secondary)',
               }}
             >
               Database Type
@@ -96,10 +116,11 @@ export default function PropertyPanel({
               style={{
                 width: '100%',
                 padding: '6px 8px',
-                border: '1px solid #d1d5db',
+                border: '1px solid var(--border-color)',
                 borderRadius: 4,
                 fontSize: 13,
-                backgroundColor: '#fff',
+                backgroundColor: 'var(--bg-primary)',
+                color: 'var(--text-primary)',
               }}
             >
               <option value="sql">SQL</option>
@@ -115,7 +136,7 @@ export default function PropertyPanel({
                 marginBottom: 4,
                 fontSize: 13,
                 fontWeight: 500,
-                color: '#4b5563',
+                color: 'var(--text-secondary)',
               }}
             >
               Read/Write Ratio ({(properties.readWriteRatio as number) || 0})
@@ -139,24 +160,60 @@ export default function PropertyPanel({
                 marginBottom: 4,
                 fontSize: 13,
                 fontWeight: 500,
-                color: '#4b5563',
+                color: 'var(--text-secondary)',
               }}
             >
               Product
             </label>
-            <input
-              type="text"
-              value={(properties.product as string) || ''}
-              onChange={(e) => handlePropertyChange('product', e.target.value)}
-              placeholder="e.g. cassandra, dynamodb"
+            <select
+              value={isOtherProduct ? '___other___' : currentProduct}
+              onChange={(e) => {
+                const val = e.target.value
+                if (val === '___other___') {
+                  setShowOtherInput(true)
+                  if (COMMON_PRODUCTS.includes(currentProduct)) {
+                    handlePropertyChange('product', '')
+                  }
+                } else {
+                  setShowOtherInput(false)
+                  handlePropertyChange('product', val)
+                }
+              }}
               style={{
                 width: '100%',
                 padding: '6px 8px',
-                border: '1px solid #d1d5db',
+                border: '1px solid var(--border-color)',
                 borderRadius: 4,
                 fontSize: 13,
+                backgroundColor: 'var(--bg-primary)',
+                color: 'var(--text-primary)',
+                marginBottom: isOtherProduct ? 8 : 0,
               }}
-            />
+            >
+              <option value="">Select a product...</option>
+              {COMMON_PRODUCTS.map(product => (
+                <option key={product} value={product}>{product}</option>
+              ))}
+              <option value="___other___">其它 / Other</option>
+            </select>
+            
+            {isOtherProduct && (
+              <input
+                type="text"
+                value={currentProduct}
+                onChange={(e) => handlePropertyChange('product', e.target.value)}
+                placeholder="Enter custom product name"
+                style={{
+                  width: '100%',
+                  padding: '6px 8px',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 4,
+                  fontSize: 13,
+                  backgroundColor: 'var(--bg-primary)',
+                  color: 'var(--text-primary)',
+                }}
+              />
+            )}
           </div>
         </>
       )}
@@ -169,7 +226,7 @@ export default function PropertyPanel({
               marginBottom: 4,
               fontSize: 13,
               fontWeight: 500,
-              color: '#4b5563',
+              color: 'var(--text-secondary)',
             }}
           >
             Replicas
@@ -184,9 +241,11 @@ export default function PropertyPanel({
             style={{
               width: '100%',
               padding: '6px 8px',
-              border: '1px solid #d1d5db',
+              border: '1px solid var(--border-color)',
               borderRadius: 4,
               fontSize: 13,
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-primary)',
             }}
           />
         </div>
@@ -200,7 +259,7 @@ export default function PropertyPanel({
               marginBottom: 4,
               fontSize: 13,
               fontWeight: 500,
-              color: '#4b5563',
+              color: 'var(--text-secondary)',
             }}
           >
             Algorithm
@@ -211,10 +270,11 @@ export default function PropertyPanel({
             style={{
               width: '100%',
               padding: '6px 8px',
-              border: '1px solid #d1d5db',
+              border: '1px solid var(--border-color)',
               borderRadius: 4,
               fontSize: 13,
-              backgroundColor: '#fff',
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-primary)',
             }}
           >
             <option value="round_robin">Round Robin</option>
