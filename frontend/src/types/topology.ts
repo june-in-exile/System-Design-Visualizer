@@ -15,6 +15,7 @@ export type ConnectionType = 'sync' | 'async' | 'replication' | 'cdn_origin'
 export type EdgeDirection = 'uni' | 'bi' | 'none'
 
 export type EdgeProtocol = 
+  | ''
   | 'http' 
   | 'https' 
   | 'grpc' 

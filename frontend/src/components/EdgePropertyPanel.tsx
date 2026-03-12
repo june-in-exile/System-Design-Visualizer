@@ -11,6 +11,7 @@ interface EdgePropertyPanelProps {
 }
 
 const PROTOCOL_OPTIONS: { value: EdgeProtocol; label: string; description: string }[] = [
+  { value: '', label: '(Unspecified)', description: 'No specific protocol defined' },
   { value: 'http', label: 'HTTP', description: 'Hypertext Transfer Protocol (Unsecured)' },
   { value: 'https', label: 'HTTPS', description: 'Hypertext Transfer Protocol Secure (TLS/SSL)' },
   { value: 'grpc', label: 'gRPC', description: 'High-performance, open source universal RPC framework' },
@@ -55,7 +56,8 @@ export default function EdgePropertyPanel({
   }
 
   const edgeData = (selectedEdge.data as Record<string, unknown>) ?? {}
-  const protocol = (edgeData.protocol as EdgeProtocol) ?? 'http'
+  const rawProtocol = edgeData.protocol as string | undefined
+  const protocol = (rawProtocol === 'unspecified' ? '' : (rawProtocol ?? '')) as EdgeProtocol
   const connectionType = (edgeData.connectionType as ConnectionType) ?? 'sync'
   const label = edgeData.label as string | undefined
   const direction = (edgeData.direction as EdgeDirection) ?? 'uni'

@@ -101,11 +101,12 @@ func validate(t model.SystemTopology) []Warning {
 	warnings = append(warnings, checkCacheConsistency(nodeByID, outgoing)...)
 	warnings = append(warnings, checkCAP(t.Nodes)...)
 	warnings = append(warnings, checkCDNUsage(nodeByID, outgoing)...)
-	warnings = append(warnings, checkAsyncDecoupling(nodeByID, outgoing)...)
+	warnings = append(warnings, checkAsyncDecoupling(nodeByID, t.Edges)...)
 	warnings = append(warnings, checkLBSPOF(t.Nodes)...)
 	warnings = append(warnings, checkReadWriteSeparation(t.Nodes)...)
 	warnings = append(warnings, checkCacheEviction(t.Nodes)...)
 	warnings = append(warnings, checkProtocolMismatch(nodeByID, t.Edges)...)
+	warnings = append(warnings, checkConnectionTypeProtocolMismatch(nodeByID, t.Edges)...)
 	warnings = append(warnings, checkMQConsumer(nodeByID, outgoing)...)
 	warnings = append(warnings, checkMQDLQ(t.Nodes)...)
 	warnings = append(warnings, checkAsyncPeakShaving(nodeByID, outgoing)...)
@@ -167,7 +168,7 @@ func checkCDNUsage(nodes map[string]model.SystemNode, outgoing map[string][]stri
 }
 
 // checkAsyncDecoupling suggests Message Queues for time-consuming operations.
-func checkAsyncDecoupling(nodes map[string]model.SystemNode, outgoing map[string][]string) []Warning {
+func checkAsyncDecoupling(nodes map[string]model.SystemNode, edges []model.SystemEdge) []Warning {
 	var warnings []Warning
 	keywords := []string{
 		"mail", "img", "image", "photo", "pic",
@@ -201,20 +202,15 @@ func checkAsyncDecoupling(nodes map[string]model.SystemNode, outgoing map[string
 			var synchronousCallers []string
 			isDecoupled := false
 
-			for sourceID, targets := range outgoing {
-				for _, targetID := range targets {
-					if targetID == id {
-						sourceNode := nodes[sourceID]
-						// If any caller is a Message Queue, we consider it decoupled!
-						if sourceNode.ComponentType == "message_queue" {
-							isDecoupled = true
-							break
-						}
-						synchronousCallers = append(synchronousCallers, sourceID)
+			for _, edge := range edges {
+				if edge.Target == id {
+					sourceNode := nodes[edge.Source]
+					// If any caller is a Message Queue, or the connection itself is async, we consider it decoupled!
+					if sourceNode.ComponentType == "message_queue" || edge.ConnectionType == "async" {
+						isDecoupled = true
+						break
 					}
-				}
-				if isDecoupled {
-					break
+					synchronousCallers = append(synchronousCallers, edge.Source)
 				}
 			}
 
@@ -609,12 +605,95 @@ var protocolDisplayName = map[string]string{
 	"dns":       "DNS",
 }
 
+// validConnectionProtocolPairs defines which protocols are allowed for each connection type.
+var validConnectionProtocolPairs = map[string]map[string]bool{
+	"sync": {
+		"unspecified": true,
+		"http":        true,
+		"https":       true,
+		"grpc":        true,
+		"websocket":   true,
+		"ssh":         true,
+		"tcp":         true,
+		"database":    true,
+		"resp":        true,
+		"binary":      true,
+		"uds":         true,
+		"dns":         true,
+	},
+	"async": {
+		"unspecified": true,
+		"amqp":        true,
+		"mqtt":        true,
+		"http":        true, // Webhooks
+		"https":       true, // Webhooks
+		"tcp":         true,
+		"udp":         true,
+	},
+	"replication": {
+		"unspecified": true,
+		"database":    true,
+		"binary":      true,
+		"tcp":         true,
+		"udp":         true,
+		"ssh":         true, // rsync over ssh
+	},
+	"cdn_origin": {
+		"unspecified": true,
+		"http":        true,
+		"https":       true,
+	},
+}
+
+// checkConnectionTypeProtocolMismatch warns when a connection type and protocol are logically inconsistent.
+func checkConnectionTypeProtocolMismatch(nodes map[string]model.SystemNode, edges []model.SystemEdge) []Warning {
+	var warnings []Warning
+
+	connectionTypeNames := map[string]string{
+		"sync":        "Synchronous",
+		"async":       "Asynchronous",
+		"replication": "Replication",
+		"cdn_origin":  "CDN Origin",
+	}
+
+	for _, edge := range edges {
+		proto := edge.Protocol
+		if proto == "" {
+			proto = "unspecified"
+		}
+
+		allowed, hasRule := validConnectionProtocolPairs[edge.ConnectionType]
+		if !hasRule {
+			continue
+		}
+
+		if !allowed[proto] {
+			source := nodes[edge.Source]
+			target := nodes[edge.Target]
+			connName := connectionTypeNames[edge.ConnectionType]
+			protoName := protocolDisplayName[proto]
+			if protoName == "" {
+				protoName = proto
+			}
+
+			warnings = append(warnings, Warning{
+				Rule: "protocol_connection_mismatch",
+				Message: fmt.Sprintf("⚠️ 屬性不匹配：%s → %s 使用了 %s 連線，但不應搭配 %s 協議。",
+					source.Label, target.Label, connName, protoName),
+				Solution: fmt.Sprintf("請將連線類型改為異步 (Async) 或更換為與 %s 相容的協議（如 HTTP/gRPC 用於 Sync，AMQP/MQTT 用於 Async）。", connName),
+				NodeIDs:  []string{source.ID, target.ID},
+			})
+		}
+	}
+	return warnings
+}
+
 // checkProtocolMismatch warns when an edge uses a protocol that doesn't match
 // the target component type (e.g. HTTP to a Database).
 func checkProtocolMismatch(nodes map[string]model.SystemNode, edges []model.SystemEdge) []Warning {
 	var warnings []Warning
 	for _, edge := range edges {
-		if edge.Protocol == "" {
+		if edge.Protocol == "" || edge.Protocol == "unspecified" {
 			continue
 		}
 		target, ok := nodes[edge.Target]
