@@ -7,7 +7,7 @@ ArchitectMind 是一個網頁版的系統架構繪圖與分析工具。它提供
 - **互動式畫布**：基於 React Flow v12，支援節點拖放、連線與自定義屬性。
 - **組件側邊欄**：提供標準的系統設計組件庫（Client, CDN, API Gateway, Message Queue 等）。
 - **後端語法驗證 (Analyze)**：自動檢查架構圖中的組件類型與連線邏輯是否符合系統設計最佳實踐。
-- **一鍵生成預設架構 (Demo)**：提供經典系統設計模板，協助快速上手。
+- **一鍵生成預設架構 (Presets)**：提供經典系統設計模板（Standard Demo, Twitter, YouTube, Google），協助快速上手。
 - **快捷操作**：支援 **Duplicate** (複製) 與 **Undo** (還原) 功能，提升繪圖效率。
 - **響應式設計**：支援深色模式 (Dark Mode)，簡潔現代的使用者介面。
 
@@ -78,8 +78,11 @@ npm run dev
 
 ## 🖥 如何使用
 
-1. **一鍵生成預設架構 (Demo)**：
+1. **一鍵生成預設架構 (Presets)**：
    - 點擊工具列上的 **Demo** 按鈕，畫布將自動載入一個包含 Client、LB、Service、Database 與 Cache 的經典架構，方便進行測試。
+   - 點擊 **Twitter** 按鈕，系統將生成一個具備 Async Decoupling (Kafka) 與 Fan-out 機制的社群媒體架構。
+   - 點擊 **YouTube** 按鈕，展示包含 Video Upload Pipeline、Transcoding 與 CDN 分發的大規模影音系統。
+   - 點擊 **Google** 按鈕，視覺化搜尋引擎的 Crawler、Indexing Pipeline、Ranking 與 Autocomplete 服務架構。
 
 2. **繪製與編輯 (Duplicate & Edit)**：
    - 從左側側邊欄拖曳組件至中央畫布。
