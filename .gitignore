@@ -33,6 +33,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # --- AI Agents & Tools ---
+.superpowers/
 .serena/
 .claude/
 .gemini/
@@ -44,3 +45,4 @@ go.work.sum
 # --- Node/Frontend Specific ---
 .eslintcache
 .stylelintcache
+.worktrees/
