@@ -3,6 +3,7 @@ import type { Node, Edge } from '@xyflow/react'
 import { copyMermaidToClipboard, downloadMermaidFile } from '../utils/exportMermaid'
 import { exportPng } from '../utils/exportImage'
 import { exportPdf } from '../utils/exportPdf'
+import { toExcalidraw, downloadExcalidraw } from '../utils/exportExcalidraw'
 
 interface ExportMenuProps {
   nodes: Node[]
@@ -84,6 +85,18 @@ export default function ExportMenu({ nodes, edges, isDarkMode }: ExportMenuProps
       showStatus(`PDF failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error')
     }
   }, [nodes, isDarkMode, showStatus])
+
+  const handleExcalidraw = useCallback(() => {
+    try {
+      showStatus('Downloading...', 'exporting')
+      const content = toExcalidraw(nodes, edges)
+      downloadExcalidraw(content)
+      showStatus('Downloaded .excalidraw', 'success')
+      setIsOpen(false)
+    } catch (err) {
+      showStatus(`Export failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error')
+    }
+  }, [nodes, edges, showStatus])
 
   const disabled = nodes.length === 0
 
@@ -168,6 +181,15 @@ export default function ExportMenu({ nodes, edges, isDarkMode }: ExportMenuProps
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
           >
             PDF Document
+          </button>
+          <div style={{ height: 1, backgroundColor: 'var(--border-color)', margin: '4px 0' }} />
+          <button
+            onClick={handleExcalidraw}
+            style={buttonStyle}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+          >
+            Excalidraw (.excalidraw)
           </button>
         </div>
       )}

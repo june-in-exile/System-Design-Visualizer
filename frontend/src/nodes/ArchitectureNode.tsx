@@ -31,8 +31,9 @@ function ArchitectureNode({ id, data }: NodeProps) {
   const seed = useMemo(() => stableSeed(id), [id])
 
   const replicas = (nodeData.properties?.replicas as number) || 1
-  const extraLayers = Math.min(replicas - 1, 3)
-  const extraOffset = extraLayers * 6
+  const extraLayers = Math.min(replicas - 1, 2)
+  const showBadge = replicas > 3
+  const extraOffset = extraLayers * 8
 
   useEffect(() => {
     if (!svgRef.current) return
@@ -41,28 +42,62 @@ function ArchitectureNode({ id, data }: NodeProps) {
 
     const rc = rough.svg(svg)
 
-    // Main rectangle with hand-drawn border
+    // A) If has warnings, create SVG glow filter
+    if (hasWarnings) {
+      const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
+      const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter')
+      filter.setAttribute('id', `glow-${id}`)
+      filter.setAttribute('x', '-50%')
+      filter.setAttribute('y', '-50%')
+      filter.setAttribute('width', '200%')
+      filter.setAttribute('height', '200%')
+      filter.innerHTML = `
+        <feGaussianBlur stdDeviation="3" result="blur" />
+        <feFlood flood-color="#f59e0b" flood-opacity="0.35" />
+        <feComposite in2="blur" operator="in" result="glow" />
+        <feMerge>
+          <feMergeNode in="glow" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      `
+      defs.appendChild(filter)
+      svg.appendChild(defs)
+    }
+
+    // B) Main rectangle
     const rect = rc.rectangle(4, 4, width - 8, height - 8, {
-      stroke: primaryColor,
-      strokeWidth: 2,
-      fill: `${primaryColor}18`,
+      stroke: hasWarnings ? '#f59e0b' : primaryColor,
+      strokeWidth: hasWarnings ? 2.5 : 2,
+      fill: hasWarnings ? '#f59e0b15' : `${primaryColor}18`,
       fillStyle: 'solid',
       roughness: 1.5,
       seed,
     })
+
+    if (hasWarnings) {
+      rect.setAttribute('filter', `url(#glow-${id})`)
+    }
     svg.appendChild(rect)
 
-    // Extra layers for replicas
+    // C) Apply stroke pulse animation to warning paths
+    if (hasWarnings) {
+      const paths = rect.querySelectorAll('path')
+      paths.forEach(path => {
+        path.style.animation = 'strokePulse 2s ease-in-out infinite'
+      })
+    }
+
+    // D) Extra layers for replicas
     if (replicas > 1) {
       for (let i = extraLayers; i >= 1; i--) {
-        const offset = i * 6
+        const offset = i * 8
         const bgRect = rc.rectangle(
           4 + offset, 4 + offset,
           width - 8, height - 8,
           {
-            stroke: primaryColor,
+            stroke: hasWarnings ? '#f59e0b' : primaryColor,
             strokeWidth: 1.5,
-            fill: `${primaryColor}10`,
+            fill: hasWarnings ? '#f59e0b08' : `${primaryColor}10`,
             fillStyle: 'solid',
             roughness: 1.5,
             seed: seed + i,
@@ -71,7 +106,7 @@ function ArchitectureNode({ id, data }: NodeProps) {
         svg.insertBefore(bgRect, svg.firstChild)
       }
     }
-  }, [primaryColor, seed, width, height, replicas, extraLayers])
+  }, [id, primaryColor, seed, width, height, replicas, extraLayers, hasWarnings])
 
   return (
     <div
@@ -82,11 +117,32 @@ function ArchitectureNode({ id, data }: NodeProps) {
         width: width + extraOffset,
         height: height + extraOffset,
         fontFamily: 'var(--font-hand)',
-        ...(hasWarnings && {
-          animation: 'warningPulse 2s ease-in-out infinite',
-        }),
       }}
     >
+      {/* Replica Badge */}
+      {showBadge && (
+        <div style={{
+          position: 'absolute',
+          top: -8,
+          right: -8,
+          width: 22,
+          height: 22,
+          borderRadius: '50%',
+          backgroundColor: primaryColor,
+          color: '#fff',
+          fontSize: 11,
+          fontWeight: 700,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2,
+          fontFamily: 'system-ui',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+        }}>
+          ×{replicas}
+        </div>
+      )}
+
       {/* Hand-drawn SVG border */}
       <svg
         ref={svgRef}
