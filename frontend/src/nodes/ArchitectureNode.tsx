@@ -14,7 +14,7 @@ interface ArchitectureNodeData {
   [key: string]: unknown
 }
 
-function ArchitectureNode({ id, data }: NodeProps) {
+function ArchitectureNode({ id, data, selected }: NodeProps) {
   const nodeData = data as unknown as ArchitectureNodeData
   const config = NODE_TYPE_CONFIG[nodeData.componentType]
   const roles = nodeData.roles && nodeData.roles.length > 1 ? nodeData.roles : null
@@ -24,7 +24,7 @@ function ArchitectureNode({ id, data }: NodeProps) {
   const svgRef = useRef<SVGSVGElement>(null)
 
   const primaryColor = roles ? mergedConfig!.colors[0] : config.color
-  const secondaryColor = roles ? mergedConfig!.colors[1] : config.color
+  const strokeColor = selected ? '#3b82f6' : hasWarnings ? '#f59e0b' : primaryColor
 
   const width = 160
   const height = 80
@@ -64,11 +64,36 @@ function ArchitectureNode({ id, data }: NodeProps) {
       svg.appendChild(defs)
     }
 
-    // B) Main rectangle
+    // B) If selected, create blue glow filter
+    if (selected) {
+      const defs = document.querySelector('defs') || document.createElementNS('http://www.w3.org/2000/svg', 'defs')
+      if (!defs.parentNode) {
+        svg.appendChild(defs)
+      }
+      const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter')
+      filter.setAttribute('id', `selection-${id}`)
+      filter.setAttribute('x', '-50%')
+      filter.setAttribute('y', '-50%')
+      filter.setAttribute('width', '200%')
+      filter.setAttribute('height', '200%')
+      filter.innerHTML = `
+        <feGaussianBlur stdDeviation="4" result="blur" />
+        <feFlood flood-color="#3b82f6" flood-opacity="0.5" />
+        <feComposite in2="blur" operator="in" result="glow" />
+        <feMerge>
+          <feMergeNode in="glow" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      `
+      defs.appendChild(filter)
+      if (!defs.parentNode) svg.appendChild(defs)
+    }
+
+    // C) Main rectangle
     const rect = rc.rectangle(4, 4, width - 8, height - 8, {
-      stroke: hasWarnings ? '#f59e0b' : primaryColor,
-      strokeWidth: hasWarnings ? 2.5 : 2,
-      fill: hasWarnings ? '#f59e0b15' : `${primaryColor}18`,
+      stroke: strokeColor,
+      strokeWidth: hasWarnings || selected ? 2.5 : 2,
+      fill: hasWarnings ? '#f59e0b15' : selected ? '#3b82f615' : `${primaryColor}18`,
       fillStyle: 'solid',
       roughness: 1.5,
       seed,
@@ -77,9 +102,12 @@ function ArchitectureNode({ id, data }: NodeProps) {
     if (hasWarnings) {
       rect.setAttribute('filter', `url(#glow-${id})`)
     }
+    if (selected) {
+      rect.setAttribute('filter', `url(#selection-${id})`)
+    }
     svg.appendChild(rect)
 
-    // C) Apply stroke pulse animation to warning paths
+    // D) Apply stroke pulse animation to warning paths
     if (hasWarnings) {
       const paths = rect.querySelectorAll('path')
       paths.forEach(path => {
@@ -87,7 +115,7 @@ function ArchitectureNode({ id, data }: NodeProps) {
       })
     }
 
-    // D) Extra layers for replicas
+    // E) Extra layers for replicas
     if (replicas > 1) {
       for (let i = extraLayers; i >= 1; i--) {
         const offset = i * 8
@@ -95,9 +123,9 @@ function ArchitectureNode({ id, data }: NodeProps) {
           4 + offset, 4 + offset,
           width - 8, height - 8,
           {
-            stroke: hasWarnings ? '#f59e0b' : primaryColor,
+            stroke: strokeColor,
             strokeWidth: 1.5,
-            fill: hasWarnings ? '#f59e0b08' : `${primaryColor}10`,
+            fill: hasWarnings ? '#f59e0b08' : selected ? '#3b82f610' : `${primaryColor}10`,
             fillStyle: 'solid',
             roughness: 1.5,
             seed: seed + i,
@@ -106,7 +134,7 @@ function ArchitectureNode({ id, data }: NodeProps) {
         svg.insertBefore(bgRect, svg.firstChild)
       }
     }
-  }, [id, primaryColor, seed, width, height, replicas, extraLayers, hasWarnings])
+  }, [id, primaryColor, seed, width, height, replicas, extraLayers, hasWarnings, selected, strokeColor])
 
   return (
     <div
@@ -172,36 +200,45 @@ function ArchitectureNode({ id, data }: NodeProps) {
             }
           </div>
         )}
-        <div style={{
-          fontWeight: 600,
-          fontSize: 14,
-          color: hasWarnings ? '#f59e0b' : primaryColor,
-          fontFamily: 'var(--font-hand)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-        }}>
-          {config.label}
-          {roles && (
-            <span
-              style={{
-                fontSize: 10,
-                padding: '2px 6px',
-                borderRadius: 12,
-                backgroundColor: 'var(--bg-secondary)',
-                color: 'var(--text-secondary)',
-                border: `1px solid ${secondaryColor}60`,
-                cursor: 'help',
-              }}
-              title={`Merged with: ${roles.filter((r) => r !== nodeData.componentType).map((r) => NODE_TYPE_CONFIG[r].label).join(', ')}`}
-            >
-              +{roles.length - 1}
-            </span>
-          )}
-        </div>
-        <div style={{ color: 'var(--node-text-secondary)', fontSize: 12, fontFamily: 'var(--font-hand)' }}>
-          {nodeData.label}
-        </div>
+        {roles ? (
+          <>
+            <div style={{
+              fontWeight: 600,
+              fontSize: 13,
+              color: hasWarnings ? '#f59e0b' : selected ? '#3b82f6' : primaryColor,
+              fontFamily: 'var(--font-hand)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+            }}>
+              {roles.map((role, i) => (
+                <span key={role} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {i > 0 && <span style={{ color: 'var(--text-secondary)', fontSize: 11 }}>+</span>}
+                  {NODE_TYPE_CONFIG[role].label}
+                </span>
+              ))}
+            </div>
+            <div style={{ color: 'var(--node-text-secondary)', fontSize: 11, fontFamily: 'var(--font-hand)' }}>
+              {nodeData.label}
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{
+              fontWeight: 600,
+              fontSize: 14,
+              color: hasWarnings ? '#f59e0b' : selected ? '#3b82f6' : primaryColor,
+              fontFamily: 'var(--font-hand)',
+            }}>
+              {config.label}
+            </div>
+            <div style={{ color: 'var(--node-text-secondary)', fontSize: 12, fontFamily: 'var(--font-hand)' }}>
+              {nodeData.label}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Tooltip for warnings */}
