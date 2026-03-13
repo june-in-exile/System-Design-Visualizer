@@ -79,6 +79,11 @@ export interface StorageProperties {
 export interface ServiceProperties {
   replicas: number
   stateless: boolean
+  language?: 'go' | 'java' | 'python' | 'node' | 'rust' | 'dotnet' | 'custom'
+  framework?: string
+  computeType?: 'container' | 'serverless' | 'vm' | 'bare_metal'
+  autoScaling?: boolean
+  healthCheck?: boolean
 }
 
 export interface ReverseProxyProperties {
@@ -91,16 +96,16 @@ export interface ReverseProxyProperties {
 }
 
 export interface FirewallProperties {
-  product?: string
+  product?: 'cloudflare' | 'aws_waf' | 'azure_waf' | 'modsecurity' | 'custom'
   mode: 'inline' | 'monitor'
-  rateLimit?: number
+  layer: 'l3' | 'l7'
   replicas?: number
 }
 
 export interface LoggerProperties {
-  product?: string
+  product?: 'elk' | 'prometheus' | 'grafana' | 'datadog' | 'splunk' | 'cloudwatch' | 'jaeger' | 'custom'
   logType: 'metrics' | 'logs' | 'traces' | 'all'
-  retentionDays?: number
+  alerting: boolean
   replicas?: number
 }
 

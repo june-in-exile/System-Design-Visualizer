@@ -142,6 +142,85 @@ const ALGORITHMS = [
   { value: 'weighted', label: 'Weighted', description: 'Distributes based on server capacity weights' },
 ]
 
+const LB_LAYERS = [
+  { 
+    value: 'l4', 
+    label: 'L4 (Transport)', 
+    description: 'Routes traffic based on IP address and TCP/UDP port. Cannot inspect HTTP content. Lower latency. (e.g., AWS NLB, HAProxy TCP mode)' 
+  },
+  { 
+    value: 'l7', 
+    label: 'L7 (Application)', 
+    description: 'Routes traffic based on HTTP headers, URL path, cookies, and content. Supports path-based routing, SSL termination, and sticky sessions. (e.g., AWS ALB, Nginx, Envoy)' 
+  },
+]
+
+const FIREWALL_PRODUCTS = [
+  { value: '', label: '(Unspecified)', description: 'No specific WAF product selected' },
+  { value: 'cloudflare', label: 'Cloudflare WAF', description: 'Cloud WAF + CDN integration, ideal for SaaS and public APIs' },
+  { value: 'aws_waf', label: 'AWS WAF', description: 'AWS native, deep integration with ALB/CloudFront/API Gateway' },
+  { value: 'azure_waf', label: 'Azure WAF', description: 'Azure native, integrates with Azure Front Door/Application Gateway' },
+  { value: 'modsecurity', label: 'ModSecurity', description: 'Open-source WAF engine, embeddable in Nginx/Apache for self-hosted infra' },
+  { value: 'custom', label: 'Custom', description: 'Custom-built or other WAF product not listed' },
+]
+
+const FIREWALL_MODES = [
+  { value: 'inline', label: 'Inline (Block)', description: 'Blocks malicious traffic on detection, prevents it from reaching backends' },
+  { value: 'monitor', label: 'Monitor (Log Only)', description: 'Logs malicious traffic without blocking, useful for pre-deployment testing' },
+]
+
+const FIREWALL_LAYERS = [
+  { value: 'l3', label: 'L3/L4 (Network)', description: 'Network-layer firewall: filters by IP, port, protocol. Cannot inspect HTTP content.' },
+  { value: 'l7', label: 'L7 (Application)', description: 'Application-layer WAF: inspects HTTP content, detects SQLi, XSS, CSRF attacks.' },
+]
+
+const LOGGER_PRODUCTS = [
+  { value: '', label: '(Unspecified)', description: 'No specific observability product selected' },
+  { value: 'elk', label: 'ELK Stack', description: 'Elasticsearch + Logstash + Kibana, open-source log analysis platform' },
+  { value: 'prometheus', label: 'Prometheus', description: 'Open-source metrics monitoring with pull-based collection and alerting' },
+  { value: 'grafana', label: 'Grafana', description: 'Visualization dashboards, typically paired with Prometheus or other data sources' },
+  { value: 'datadog', label: 'Datadog', description: 'Fully managed SaaS observability: metrics + logs + traces in one platform' },
+  { value: 'splunk', label: 'Splunk', description: 'Enterprise log analysis with powerful search and security analytics (SIEM)' },
+  { value: 'cloudwatch', label: 'CloudWatch', description: 'AWS native monitoring, deep integration with AWS services' },
+  { value: 'jaeger', label: 'Jaeger', description: 'Open-source distributed tracing system, focused on traces' },
+  { value: 'custom', label: 'Custom', description: 'Custom-built or other monitoring product not listed' },
+]
+
+const LOGGER_LOG_TYPES = [
+  { value: 'metrics', label: 'Metrics', description: 'Numeric indicators (CPU usage, p99 latency, error rate, QPS) for dashboards and alerting' },
+  { value: 'logs', label: 'Logs', description: 'Structured/unstructured text records (error log, access log, audit log) for post-mortem debugging' },
+  { value: 'traces', label: 'Traces', description: 'Distributed tracing (request path across services with timing) for microservice debugging' },
+  { value: 'all', label: 'All (Full Observability)', description: 'Collects metrics + logs + traces for complete observability' },
+]
+
+const SERVICE_LANGUAGES = [
+  { value: '', label: '(Unspecified)', description: 'No specific language selected' },
+  { value: 'go', label: 'Go', description: 'High concurrency, low latency, suitable for infrastructure and microservices' },
+  { value: 'java', label: 'Java', description: 'Enterprise-grade ecosystem, Spring Boot is the mainstream framework' },
+  { value: 'python', label: 'Python', description: 'Rapid development, suitable for ML/AI services and script-intensive tasks' },
+  { value: 'node', label: 'Node.js', description: 'Event-driven non-blocking I/O, suitable for I/O-intensive and BFF layer' },
+  { value: 'rust', label: 'Rust', description: 'Extreme performance + memory safety, suitable for performance-critical paths' },
+  { value: 'dotnet', label: '.NET', description: 'Microsoft ecosystem, suitable for enterprise applications and Azure integration' },
+  { value: 'custom', label: 'Custom', description: 'Other language not listed' },
+]
+
+const COMPUTE_TYPES = [
+  { value: '', label: '(Unspecified)', description: 'No specific compute type selected' },
+  { value: 'container', label: 'Container (K8s/Docker)', description: 'Containerized deployment, orchestrated by Kubernetes or Docker Swarm. Most popular microservices deployment method.' },
+  { value: 'serverless', label: 'Serverless (Lambda)', description: 'Serverless, pay-per-invocation. Suitable for low traffic or burst loads. Cold start is the main drawback.' },
+  { value: 'vm', label: 'Virtual Machine', description: 'Traditional VM deployment (EC2, GCE). Heavier but better isolation.' },
+  { value: 'bare_metal', label: 'Bare Metal', description: 'Runs directly on physical hardware. Maximum performance but less flexible.' },
+]
+
+const FRAMEWORK_HINTS: Record<string, string[]> = {
+  go: ['gin', 'fiber', 'echo', 'chi'],
+  java: ['spring-boot', 'quarkus', 'micronaut'],
+  python: ['fastapi', 'django', 'flask'],
+  node: ['express', 'nestjs', 'fastify', 'hono'],
+  rust: ['actix-web', 'axum', 'rocket'],
+  dotnet: ['asp.net', 'minimal-api'],
+}
+
 const getTooltip = (label: string, description?: string) => {
   const lowerLabel = label.toLowerCase()
   if (!description || lowerLabel.includes('unspecified') || lowerLabel.includes('default') || lowerLabel.includes('auto-detect')) {
@@ -303,27 +382,65 @@ export default function PropertyPanel({
   )
 
   const renderLoadBalancerSection = () => (
-    <div style={{ marginBottom: 16 }}>
-      <label 
-        style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
-        title="The policy used to distribute incoming traffic across healthy backend instances."
-      >
-        Algorithm
-      </label>
-      <select
-        value={(properties.algorithm as string) || 'round_robin'}
-        onChange={(e) => handlePropertyChange('algorithm', e.target.value)}
-        title={getTooltip(
-          ALGORITHMS.find(opt => opt.value === ((properties.algorithm as string) || 'round_robin'))?.label || '',
-          ALGORITHMS.find(opt => opt.value === ((properties.algorithm as string) || 'round_robin'))?.description
-        )}
-        style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-      >
-        {ALGORITHMS.map((opt) => (
-          <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
-        ))}
-      </select>
-    </div>
+    <>
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="The policy used to distribute incoming traffic across healthy backend instances."
+        >
+          Algorithm
+        </label>
+        <select
+          value={(properties.algorithm as string) || 'round_robin'}
+          onChange={(e) => handlePropertyChange('algorithm', e.target.value)}
+          title={getTooltip(
+            ALGORITHMS.find(opt => opt.value === ((properties.algorithm as string) || 'round_robin'))?.label || '',
+            ALGORITHMS.find(opt => opt.value === ((properties.algorithm as string) || 'round_robin'))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {ALGORITHMS.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="L4 routes by IP/port with lower latency; L7 routes by HTTP content with richer features"
+        >
+          Layer
+        </label>
+        <select
+          value={(properties.layer as string) || 'l7'}
+          onChange={(e) => handlePropertyChange('layer', e.target.value)}
+          title={getTooltip(
+            LB_LAYERS.find(opt => opt.value === ((properties.layer as string) || 'l7'))?.label || '',
+            LB_LAYERS.find(opt => opt.value === ((properties.layer as string) || 'l7'))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {LB_LAYERS.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}
+          title="Enable health checks to detect unhealthy backend instances and stop routing traffic to them."
+        >
+          <input
+            type="checkbox"
+            checked={(properties.healthCheck as boolean) ?? true}
+            onChange={(e) => handlePropertyChange('healthCheck', e.target.checked)}
+          />
+          Health Check
+        </label>
+      </div>
+    </>
   )
 
   const renderReverseProxySection = () => (
@@ -686,6 +803,230 @@ export default function PropertyPanel({
     </>
   )
 
+  const renderFirewallSection = () => (
+    <>
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="Select the WAF product used for traffic filtering"
+        >
+          Product
+        </label>
+        <select
+          value={(properties.product as string) || ''}
+          onChange={(e) => handlePropertyChange('product', e.target.value || undefined)}
+          title={getTooltip(
+            FIREWALL_PRODUCTS.find(p => p.value === ((properties.product as string) || ''))?.label || '',
+            FIREWALL_PRODUCTS.find(p => p.value === ((properties.product as string) || ''))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {FIREWALL_PRODUCTS.map((p) => (
+            <option key={p.value} value={p.value} title={p.description}>{p.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="Inline blocks malicious traffic; Monitor only logs without blocking"
+        >
+          Mode
+        </label>
+        <select
+          value={(properties.mode as string) || 'inline'}
+          onChange={(e) => handlePropertyChange('mode', e.target.value)}
+          title={getTooltip(
+            FIREWALL_MODES.find(opt => opt.value === ((properties.mode as string) || 'inline'))?.label || '',
+            FIREWALL_MODES.find(opt => opt.value === ((properties.mode as string) || 'inline'))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {FIREWALL_MODES.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="L3/L4 filters by IP/port; L7 inspects HTTP content for attacks like SQLi/XSS"
+        >
+          Layer
+        </label>
+        <select
+          value={(properties.layer as string) || 'l7'}
+          onChange={(e) => handlePropertyChange('layer', e.target.value)}
+          title={getTooltip(
+            FIREWALL_LAYERS.find(opt => opt.value === ((properties.layer as string) || 'l7'))?.label || '',
+            FIREWALL_LAYERS.find(opt => opt.value === ((properties.layer as string) || 'l7'))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {FIREWALL_LAYERS.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+    </>
+  )
+
+  const renderLoggerSection = () => (
+    <>
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="Select the observability product for log collection and monitoring"
+        >
+          Product
+        </label>
+        <select
+          value={(properties.product as string) || ''}
+          onChange={(e) => handlePropertyChange('product', e.target.value || undefined)}
+          title={getTooltip(
+            LOGGER_PRODUCTS.find(p => p.value === ((properties.product as string) || ''))?.label || '',
+            LOGGER_PRODUCTS.find(p => p.value === ((properties.product as string) || ''))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {LOGGER_PRODUCTS.map((p) => (
+            <option key={p.value} value={p.value} title={p.description}>{p.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="Metrics: numeric indicators; Logs: text records; Traces: distributed request tracking; All: full observability"
+        >
+          Log Type
+        </label>
+        <select
+          value={(properties.logType as string) || 'all'}
+          onChange={(e) => handlePropertyChange('logType', e.target.value)}
+          title={getTooltip(
+            LOGGER_LOG_TYPES.find(opt => opt.value === ((properties.logType as string) || 'all'))?.label || '',
+            LOGGER_LOG_TYPES.find(opt => opt.value === ((properties.logType as string) || 'all'))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {LOGGER_LOG_TYPES.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}
+          title="Enable alerting to receive notifications when anomalies are detected"
+        >
+          <input
+            type="checkbox"
+            checked={(properties.alerting as boolean) || false}
+            onChange={(e) => handlePropertyChange('alerting', e.target.checked)}
+          />
+          Enable Alerting
+        </label>
+      </div>
+    </>
+  )
+
+  const renderServiceSection = () => (
+    <>
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="How this service is deployed and executed"
+        >
+          Compute Type
+        </label>
+        <select
+          value={(properties.computeType as string) || ''}
+          onChange={(e) => handlePropertyChange('computeType', e.target.value || undefined)}
+          title={getTooltip(
+            COMPUTE_TYPES.find(opt => opt.value === ((properties.computeType as string) || ''))?.label || '',
+            COMPUTE_TYPES.find(opt => opt.value === ((properties.computeType as string) || ''))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {COMPUTE_TYPES.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}
+          title="Automatically scale replicas based on CPU, memory, or request metrics"
+        >
+          <input
+            type="checkbox"
+            checked={(properties.autoScaling as boolean) || false}
+            onChange={(e) => handlePropertyChange('autoScaling', e.target.checked)}
+          />
+          Auto Scaling
+        </label>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}
+          title="Expose a health endpoint (e.g., /health) for load balancers and orchestrators"
+        >
+          <input
+            type="checkbox"
+            checked={(properties.healthCheck as boolean) || false}
+            onChange={(e) => handlePropertyChange('healthCheck', e.target.checked)}
+          />
+          Health Check
+        </label>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="Primary programming language of this service"
+        >
+          Language
+        </label>
+        <select
+          value={(properties.language as string) || ''}
+          onChange={(e) => handlePropertyChange('language', e.target.value || undefined)}
+          title={getTooltip(
+            SERVICE_LANGUAGES.find(opt => opt.value === ((properties.language as string) || ''))?.label || '',
+            SERVICE_LANGUAGES.find(opt => opt.value === ((properties.language as string) || ''))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {SERVICE_LANGUAGES.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label 
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title={`e.g., ${FRAMEWORK_HINTS[(properties.language as string)]?.join(', ') || 'spring-boot, fastapi, gin, express'}`}
+        >
+          Framework
+        </label>
+        <input
+          type="text"
+          placeholder={FRAMEWORK_HINTS[(properties.language as string)]?.[0] || 'e.g., spring-boot, fastapi, gin, express'}
+          value={(properties.framework as string) || ''}
+          onChange={(e) => handlePropertyChange('framework', e.target.value || undefined)}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        />
+      </div>
+    </>
+  )
+
   const renderRoleProperties = (role: ComponentType) => {
     switch (role) {
       case 'database': return renderDatabaseSection()
@@ -694,9 +1035,9 @@ export default function PropertyPanel({
       case 'storage': return renderStorageSection()
       case 'message_queue': return renderMessageQueueSection()
       case 'cache': return renderCacheSection()
-      case 'firewall':
-      case 'logger':
-        return null
+      case 'firewall': return renderFirewallSection()
+      case 'logger': return renderLoggerSection()
+      case 'service': return renderServiceSection()
       default: return null
     }
   }

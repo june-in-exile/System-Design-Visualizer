@@ -127,6 +127,13 @@ func validate(t model.SystemTopology) []Warning {
 	warnings = append(warnings, checkReverseProxySSL(nodeByID, t.Edges)...)
 	warnings = append(warnings, checkMissingFirewall(nodeByID, outgoing)...)
 	warnings = append(warnings, checkMissingLogger(nodeByID, outgoing)...)
+	warnings = append(warnings, checkFirewallMonitorMode(t.Nodes)...)
+	warnings = append(warnings, checkFirewallL3Only(nodeByID)...)
+	warnings = append(warnings, checkIncompleteObservability(t.Nodes)...)
+	warnings = append(warnings, checkAlertingDisabled(t.Nodes)...)
+	warnings = append(warnings, checkServerlessReplicas(t.Nodes)...)
+	warnings = append(warnings, checkNoAutoScalingSingle(t.Nodes)...)
+	warnings = append(warnings, checkNoHealthCheckBehindLB(t.Nodes, t.Edges)...)
 
 	return warnings
 }
@@ -1112,4 +1119,253 @@ func checkMissingLogger(nodes map[string]model.SystemNode, outgoing map[string][
 	}
 
 	return nil
+}
+
+// checkFirewallMonitorMode warns if a Firewall is in monitor mode (not blocking).
+func checkFirewallMonitorMode(nodes []model.SystemNode) []Warning {
+	var warnings []Warning
+	for _, node := range nodes {
+		if !model.NodeHasRole(node, "firewall") {
+			continue
+		}
+		props, err := model.ParseNodeProperties(node)
+		if err != nil {
+			continue
+		}
+		fwProps, ok := props.(*model.FirewallProperties)
+		if !ok {
+			continue
+		}
+		if fwProps.Mode == "monitor" {
+			warnings = append(warnings, Warning{
+				Rule:     "firewall_monitor_mode",
+				Message:  fmt.Sprintf("🛡️ Firewall 監控模式提醒：%q 目前為監控模式 (Monitor)，惡意流量不會被攔截。", node.Label),
+				Solution: "若已完成測試，建議將 Firewall 切換為 Inline 模式以啟用實際攔截。",
+				NodeIDs:  []string{node.ID},
+			})
+		}
+	}
+	return warnings
+}
+
+// checkFirewallL3Only warns if a Firewall operates at L3/L4 only while an API Gateway exists.
+func checkFirewallL3Only(nodes map[string]model.SystemNode) []Warning {
+	hasAPIGateway := false
+	for _, node := range nodes {
+		if model.NodeHasRole(node, "api_gateway") {
+			hasAPIGateway = true
+			break
+		}
+	}
+	if !hasAPIGateway {
+		return nil
+	}
+
+	var warnings []Warning
+	for _, node := range nodes {
+		if !model.NodeHasRole(node, "firewall") {
+			continue
+		}
+		props, err := model.ParseNodeProperties(node)
+		if err != nil {
+			continue
+		}
+		fwProps, ok := props.(*model.FirewallProperties)
+		if !ok {
+			continue
+		}
+		if fwProps.Layer == "l3" {
+			warnings = append(warnings, Warning{
+				Rule:     "firewall_l3_only",
+				Message:  fmt.Sprintf("🛡️ 防護層級不足：%q 僅在 L3/L4 層運作，無法防禦應用層攻擊（如 SQL Injection、XSS）。", node.Label),
+				Solution: "建議升級為 L7 WAF 或額外加入應用層 Firewall 以保護 API 端點。",
+				NodeIDs:  []string{node.ID},
+			})
+		}
+	}
+	return warnings
+}
+
+// checkIncompleteObservability warns if a Logger collects only partial telemetry
+// in an architecture with 3+ services.
+func checkIncompleteObservability(nodes []model.SystemNode) []Warning {
+	serviceCount := 0
+	for _, node := range nodes {
+		if model.NodeHasRole(node, "service") {
+			serviceCount++
+		}
+	}
+	if serviceCount < 3 {
+		return nil
+	}
+
+	var warnings []Warning
+	for _, node := range nodes {
+		if !model.NodeHasRole(node, "logger") {
+			continue
+		}
+		props, err := model.ParseNodeProperties(node)
+		if err != nil {
+			continue
+		}
+		logProps, ok := props.(*model.LoggerProperties)
+		if !ok {
+			continue
+		}
+		if logProps.LogType == "all" || logProps.LogType == "" {
+			continue
+		}
+		if logProps.LogType == "metrics" {
+			warnings = append(warnings, Warning{
+				Rule:     "incomplete_observability",
+				Message:  fmt.Sprintf("📊 觀測性不完整：%q 僅收集 Metrics，缺少 Logs 和 Traces。微服務架構中缺乏 distributed tracing 將難以定位跨服務的效能瓶頸。", node.Label),
+				Solution: "建議將 logType 設為 All，或額外加入 Traces 類型的 Logger（如 Jaeger）實現完整觀測性。",
+				NodeIDs:  []string{node.ID},
+			})
+		} else if logProps.LogType == "logs" {
+			warnings = append(warnings, Warning{
+				Rule:     "incomplete_observability",
+				Message:  fmt.Sprintf("📊 觀測性不完整：%q 僅收集 Logs，缺少 Metrics 和 Traces。沒有 Metrics 將無法設定有效的告警規則。", node.Label),
+				Solution: "建議將 logType 設為 All，或額外加入 Metrics 類型的 Logger（如 Prometheus）。",
+				NodeIDs:  []string{node.ID},
+			})
+		} else if logProps.LogType == "traces" {
+			warnings = append(warnings, Warning{
+				Rule:     "incomplete_observability",
+				Message:  fmt.Sprintf("📊 觀測性不完整：%q 僅收集 Traces，缺少 Metrics 和 Logs。缺乏 Metrics 和 Logs 將無法進行全面的問題診斷。", node.Label),
+				Solution: "建議將 logType 設為 All，或額外加入 Metrics 和 Logs 類型的 Logger。",
+				NodeIDs:  []string{node.ID},
+			})
+		}
+	}
+	return warnings
+}
+
+// checkAlertingDisabled warns if a Logger node has alerting turned off.
+func checkAlertingDisabled(nodes []model.SystemNode) []Warning {
+	var warnings []Warning
+	for _, node := range nodes {
+		if !model.NodeHasRole(node, "logger") {
+			continue
+		}
+		props, err := model.ParseNodeProperties(node)
+		if err != nil {
+			continue
+		}
+		logProps, ok := props.(*model.LoggerProperties)
+		if !ok {
+			continue
+		}
+		if !logProps.Alerting {
+			warnings = append(warnings, Warning{
+				Rule:     "alerting_disabled",
+				Message:  fmt.Sprintf("🔔 告警未啟用：%q 未啟用告警功能。問題發生時將無法及時收到通知，只能依賴人工巡檢。", node.Label),
+				Solution: "建議啟用告警並配置通知管道（如 Slack、PagerDuty、Email），設定關鍵指標的閾值觸發條件。",
+				NodeIDs:  []string{node.ID},
+			})
+		}
+	}
+	return warnings
+}
+
+// checkServerlessReplicas warns if a serverless service has manually set replicas.
+func checkServerlessReplicas(nodes []model.SystemNode) []Warning {
+	var warnings []Warning
+	for _, node := range nodes {
+		if !model.NodeHasRole(node, "service") {
+			continue
+		}
+		props, err := model.ParseNodeProperties(node)
+		if err != nil {
+			continue
+		}
+		svcProps, ok := props.(*model.ServiceProperties)
+		if !ok {
+			continue
+		}
+		if svcProps.ComputeType == "serverless" && svcProps.Replicas > 1 {
+			warnings = append(warnings, Warning{
+				Rule:     "serverless_replicas",
+				Message:  fmt.Sprintf("⚠️ Serverless 不需手動設定 Replicas：服務 %q 為 Serverless 運算且設定了多個複本。", node.Label),
+				Solution: "Serverless 模式下 Replicas 由雲端平台自動管理，手動設定 replicas 無意義。建議移除 replicas 設定，改由平台自動擴縮。",
+				NodeIDs:  []string{node.ID},
+			})
+		}
+	}
+	return warnings
+}
+
+// checkNoAutoScalingSingle warns if a service has only one replica and auto-scaling is disabled.
+func checkNoAutoScalingSingle(nodes []model.SystemNode) []Warning {
+	var warnings []Warning
+	for _, node := range nodes {
+		if !model.NodeHasRole(node, "service") {
+			continue
+		}
+		props, err := model.ParseNodeProperties(node)
+		if err != nil {
+			continue
+		}
+		svcProps, ok := props.(*model.ServiceProperties)
+		if !ok {
+			continue
+		}
+		if !svcProps.AutoScaling && svcProps.Replicas == 1 {
+			warnings = append(warnings, Warning{
+				Rule:     "no_autoscaling_single",
+				Message:  fmt.Sprintf("⚠️ 單一複本缺乏可用性：服務 %q 僅有 1 個 Replica 且未啟用自動擴縮。", node.Label),
+				Solution: "建議啟用 Auto Scaling 或將 Replicas 增加至 2 以上以確保可用性，防止流量突增時成為瓶頸。",
+				NodeIDs:  []string{node.ID},
+			})
+		}
+	}
+	return warnings
+}
+
+// checkNoHealthCheckBehindLB warns if a service without health check is connected to a Load Balancer.
+func checkNoHealthCheckBehindLB(nodes []model.SystemNode, edges []model.SystemEdge) []Warning {
+	var warnings []Warning
+
+	// Build a map of nodes by ID
+	nodeByID := make(map[string]model.SystemNode)
+	for _, node := range nodes {
+		nodeByID[node.ID] = node
+	}
+
+	// Build a map of nodes that are Load Balancers
+	lbNodes := make(map[string]bool)
+	for _, node := range nodes {
+		if model.NodeHasRole(node, "load_balancer") {
+			lbNodes[node.ID] = true
+		}
+	}
+
+	// For each edge from LB to Service, check if Service has healthCheck
+	for _, edge := range edges {
+		if !lbNodes[edge.Source] {
+			continue
+		}
+		target, ok := nodeByID[edge.Target]
+		if !ok || !model.NodeHasRole(target, "service") {
+			continue
+		}
+
+		props, err := model.ParseNodeProperties(target)
+		if err != nil {
+			continue
+		}
+		svcProps, ok := props.(*model.ServiceProperties)
+		if !ok {
+			continue
+		}
+		if !svcProps.HealthCheck {
+			warnings = append(warnings, Warning{
+				Rule:     "no_healthcheck_behind_lb",
+				Message:  fmt.Sprintf("🏥 健康檢查缺失：服務 %q 位於 Load Balancer 後方但未啟用健康檢查。", target.Label),
+				Solution: "建議在服務中暴露 /health 端點並在 Load Balancer 中設定 health check 間隔，以便自動偵測並移除不健康的實例。",
+				NodeIDs:  []string{target.ID},
+			})
+		}
+	}
+	return warnings
 }

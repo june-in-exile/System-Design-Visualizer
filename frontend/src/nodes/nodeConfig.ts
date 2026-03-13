@@ -37,6 +37,7 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
     description: 'Web Application Firewall: Filters and monitors HTTP traffic between the client and the application, blocking malicious requests.',
     defaultProperties: {
       mode: 'inline',
+      layer: 'l7',
     },
   },
   load_balancer: {
@@ -78,6 +79,8 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
     defaultProperties: {
       replicas: 1,
       stateless: true,
+      autoScaling: false,
+      healthCheck: false,
     },
   },
   message_queue: {
@@ -136,7 +139,7 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
     description: 'Logging and monitoring system: Collects metrics, logs, and traces from all services for observability and alerting.',
     defaultProperties: {
       logType: 'all',
-      retentionDays: 30,
+      alerting: false,
     },
   },
   

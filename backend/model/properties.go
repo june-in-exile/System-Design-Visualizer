@@ -56,8 +56,13 @@ type StorageProperties struct {
 
 // ServiceProperties holds attributes for service nodes.
 type ServiceProperties struct {
-	Replicas  int  `json:"replicas"`
-	Stateless bool `json:"stateless"`
+	Replicas    int    `json:"replicas"`
+	Stateless   bool   `json:"stateless"`
+	Language    string `json:"language,omitempty"`
+	Framework   string `json:"framework,omitempty"`
+	ComputeType string `json:"computeType,omitempty"`
+	AutoScaling bool   `json:"autoScaling"`
+	HealthCheck bool   `json:"healthCheck"`
 }
 
 // ReverseProxyProperties holds attributes for reverse proxy nodes.
@@ -68,6 +73,20 @@ type ReverseProxyProperties struct {
 	Compression    bool   `json:"compression"`
 	RateLimiting   bool   `json:"rateLimiting"`
 	Replicas       int    `json:"replicas,omitempty"`
+}
+
+// FirewallProperties holds attributes for firewall/WAF nodes.
+type FirewallProperties struct {
+	Product string `json:"product,omitempty"`
+	Mode    string `json:"mode"`
+	Layer   string `json:"layer"`
+}
+
+// LoggerProperties holds attributes for logger/monitor nodes.
+type LoggerProperties struct {
+	Product  string `json:"product,omitempty"`
+	LogType  string `json:"logType"`
+	Alerting bool   `json:"alerting"`
 }
 
 // ParseNodeProperties converts the generic Properties map into a typed struct
@@ -99,6 +118,12 @@ func ParseNodeProperties(node SystemNode) (interface{}, error) {
 		return &props, json.Unmarshal(raw, &props)
 	case "reverse_proxy":
 		var props ReverseProxyProperties
+		return &props, json.Unmarshal(raw, &props)
+	case "firewall":
+		var props FirewallProperties
+		return &props, json.Unmarshal(raw, &props)
+	case "logger":
+		var props LoggerProperties
 		return &props, json.Unmarshal(raw, &props)
 	default:
 		return node.Properties, nil
