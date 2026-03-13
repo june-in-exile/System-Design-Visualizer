@@ -1,6 +1,7 @@
 {
   "name": "frontend",
   "private": true,
+  "homepage": "https://architect-mind.vercel.app/",
   "version": "0.0.0",
   "type": "module",
   "scripts": {

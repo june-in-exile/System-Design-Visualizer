@@ -1,5 +1,7 @@
 # ArchitectMind: 系統設計視覺化工具 (System Design Visualizer)
 
+[🌐 點此線上體驗](https://architect-mind.vercel.app/)
+
 ![ArchitectMind Demo](./demo.png)
 
 ArchitectMind 是一個網頁版的系統架構繪圖與分析工具。它提供了一個直觀的互動式畫布 (Canvas)，讓使用者可以拖放各種基礎設施組件（如 Load Balancer, Database, Service 等），並透過後端 API 進行架構邏輯的語法驗證與最佳實踐建議。
