@@ -109,6 +109,30 @@ export interface LoggerProperties {
   replicas?: number
 }
 
+export interface ClientProperties {
+  clientType: 'web' | 'mobile' | 'desktop' | 'iot' | 'api_consumer'
+  platform?: 'browser' | 'ios' | 'android' | 'cross_platform' | 'custom'
+  authMethod?: 'none' | 'jwt' | 'oauth2' | 'api_key' | 'session'
+}
+
+export interface DNSProperties {
+  provider?: 'route53' | 'cloudflare' | 'google_dns' | 'azure_dns' | 'custom'
+  routingPolicy: 'simple' | 'weighted' | 'latency' | 'geo' | 'failover'
+  healthCheck: boolean
+}
+
+export interface CDNProperties {
+  provider?: 'cloudflare' | 'aws_cloudfront' | 'akamai' | 'fastly' | 'gcp_cdn' | 'azure_cdn' | 'custom'
+  contentType: 'static' | 'media' | 'api' | 'full_site'
+  cacheTTL: 'short' | 'medium' | 'long' | 'custom'
+}
+
+export interface APIGatewayProperties {
+  product?: 'kong' | 'aws_apigw' | 'apigee' | 'nginx' | 'envoy' | 'traefik' | 'custom'
+  authentication?: 'none' | 'api_key' | 'jwt' | 'oauth2'
+  rateLimiting: boolean
+}
+
 export type ComponentProperties =
   | DatabaseProperties
   | LoadBalancerProperties
@@ -119,6 +143,10 @@ export type ComponentProperties =
   | ReverseProxyProperties
   | FirewallProperties
   | LoggerProperties
+  | ClientProperties
+  | DNSProperties
+  | CDNProperties
+  | APIGatewayProperties
   | Record<string, unknown>
 
 export interface SystemNode {

@@ -221,6 +221,93 @@ const FRAMEWORK_HINTS: Record<string, string[]> = {
   dotnet: ['asp.net', 'minimal-api'],
 }
 
+const CLIENT_TYPES = [
+  { value: 'web', label: 'Web Browser', description: 'Browser-based application (React, Vue, Angular SPA)' },
+  { value: 'mobile', label: 'Mobile App', description: 'iOS/Android native or cross-platform app (React Native, Flutter)' },
+  { value: 'desktop', label: 'Desktop App', description: 'Desktop application (Electron, native)' },
+  { value: 'iot', label: 'IoT Device', description: 'Resource-constrained device, typically using MQTT or lightweight HTTP' },
+  { value: 'api_consumer', label: 'API Consumer', description: 'Third-party system calling API (B2B integration, webhook)' },
+]
+
+const CLIENT_PLATFORMS = [
+  { value: '', label: '(Unspecified)', description: 'No specific platform selected' },
+  { value: 'browser', label: 'Browser', description: 'Chrome, Safari, Firefox browser environment' },
+  { value: 'ios', label: 'iOS', description: 'Apple iOS platform' },
+  { value: 'android', label: 'Android', description: 'Google Android platform' },
+  { value: 'cross_platform', label: 'Cross-Platform', description: 'Cross-platform frameworks (React Native, Flutter, Electron)' },
+  { value: 'custom', label: 'Custom', description: 'Other platform not listed' },
+]
+
+const CLIENT_AUTH_METHODS = [
+  { value: '', label: '(Unspecified)', description: 'No authentication configured' },
+  { value: 'none', label: 'None', description: 'No authentication (public API)' },
+  { value: 'jwt', label: 'JWT Token', description: 'JSON Web Token, stateless validation suitable for microservices' },
+  { value: 'oauth2', label: 'OAuth 2.0', description: 'Third-party authorization (Google, GitHub login)' },
+  { value: 'api_key', label: 'API Key', description: 'Simple key-based authentication, suitable for server-to-server' },
+  { value: 'session', label: 'Session Cookie', description: 'Traditional session-based authentication, requires server-side state' },
+]
+
+const DNS_PROVIDERS = [
+  { value: '', label: '(Unspecified)', description: 'No specific DNS provider selected' },
+  { value: 'route53', label: 'AWS Route 53', description: 'AWS managed DNS with deep AWS integration, health checks and traffic routing' },
+  { value: 'cloudflare', label: 'Cloudflare DNS', description: 'One of the fastest global DNS with built-in DDoS protection and CDN integration' },
+  { value: 'google_dns', label: 'Google Cloud DNS', description: 'GCP managed DNS with 100% SLA and global anycast network' },
+  { value: 'azure_dns', label: 'Azure DNS', description: 'Azure managed DNS with Azure services integration' },
+  { value: 'custom', label: 'Custom / Self-hosted', description: 'Self-hosted DNS (BIND, CoreDNS) or other provider' },
+]
+
+const DNS_ROUTING_POLICIES = [
+  { value: 'simple', label: 'Simple', description: 'Single record, returns fixed IP directly (most basic)' },
+  { value: 'weighted', label: 'Weighted', description: 'Weighted routing, distributes traffic proportionally across endpoints (blue-green, canary)' },
+  { value: 'latency', label: 'Latency-based', description: 'Selects the nearest endpoint based on user latency' },
+  { value: 'geo', label: 'Geolocation', description: 'Routes based on user geographic location (compliance, localization)' },
+  { value: 'failover', label: 'Failover', description: 'Primary/secondary switch, automatically fails over to backup when primary is unhealthy' },
+]
+
+const CDN_PROVIDERS = [
+  { value: '', label: '(Unspecified)', description: 'No specific CDN provider selected' },
+  { value: 'cloudflare', label: 'Cloudflare', description: 'One of the largest global CDNs with built-in WAF, DDoS protection, and Workers edge computing' },
+  { value: 'aws_cloudfront', label: 'AWS CloudFront', description: 'AWS native CDN with deep integration to S3, ALB, Lambda@Edge' },
+  { value: 'akamai', label: 'Akamai', description: 'Enterprise-grade CDN with one of the largest edge networks globally' },
+  { value: 'fastly', label: 'Fastly', description: 'Developer-friendly CDN with instant cache purge, Varnish-based' },
+  { value: 'gcp_cdn', label: 'Google Cloud CDN', description: 'GCP native CDN integrated with Cloud Storage and Load Balancer' },
+  { value: 'azure_cdn', label: 'Azure CDN', description: 'Azure native CDN' },
+  { value: 'custom', label: 'Custom', description: 'Self-hosted CDN or other provider' },
+]
+
+const CDN_CONTENT_TYPES = [
+  { value: 'static', label: 'Static Assets', description: 'Caches static resources (JS, CSS, images, fonts)' },
+  { value: 'media', label: 'Media / Streaming', description: 'Video and audio streaming (HLS, DASH segments)' },
+  { value: 'api', label: 'API Responses', description: 'Caches API responses (requires careful cache key and TTL configuration)' },
+  { value: 'full_site', label: 'Full Site', description: 'Full site acceleration (static + dynamic content)' },
+]
+
+const CDN_CACHE_TTLS = [
+  { value: 'short', label: 'Short (1-5 min)', description: 'Suitable for frequently updated content (API, dynamic pages)' },
+  { value: 'medium', label: 'Medium (1-24 hr)', description: 'Suitable for typical static resources (images, CSS)' },
+  { value: 'long', label: 'Long (7-30 days)', description: 'Suitable for infrequently changed resources (fonts, vendor JS)' },
+  { value: 'custom', label: 'Custom', description: 'Custom TTL' },
+]
+
+const API_GATEWAY_PRODUCTS = [
+  { value: '', label: '(Unspecified)', description: 'No specific API Gateway product selected' },
+  { value: 'kong', label: 'Kong', description: 'Open-source API Gateway with rich plugin ecosystem, supports rate limiting, auth, logging' },
+  { value: 'aws_apigw', label: 'AWS API Gateway', description: 'AWS managed, supports REST, HTTP, WebSocket APIs, deep Lambda integration' },
+  { value: 'apigee', label: 'Apigee (Google)', description: 'Enterprise-grade API management platform, strong in API lifecycle and analytics' },
+  { value: 'nginx', label: 'Nginx', description: 'High-performance reverse proxy and API Gateway, common for self-hosted infrastructure' },
+  { value: 'envoy', label: 'Envoy', description: 'Cloud-native L7 proxy, data plane for Service Mesh (Istio)' },
+  { value: 'traefik', label: 'Traefik', description: 'Cloud-native proxy with automatic service discovery, great K8s integration' },
+  { value: 'custom', label: 'Custom', description: 'Custom-built or other product not listed' },
+]
+
+const API_GATEWAY_AUTH_METHODS = [
+  { value: '', label: '(Unspecified)', description: 'No authentication configured' },
+  { value: 'none', label: 'None', description: 'No authentication, public API' },
+  { value: 'api_key', label: 'API Key', description: 'Simple key-based authentication' },
+  { value: 'jwt', label: 'JWT Validation', description: 'Validates JWT tokens at Gateway level, no need for each Service to validate' },
+  { value: 'oauth2', label: 'OAuth 2.0', description: 'Handles OAuth flow at Gateway level' },
+]
+
 const getTooltip = (label: string, description?: string) => {
   const lowerLabel = label.toLowerCase()
   if (!description || lowerLabel.includes('unspecified') || lowerLabel.includes('default') || lowerLabel.includes('auto-detect')) {

@@ -14,21 +14,29 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
     color: '#4b5563',
     icon: '',
     description: 'Represents an end-user device, web browser, or external consumer of the system.',
-    defaultProperties: {},
+    defaultProperties: {
+      clientType: 'web',
+    },
   },
   dns: {
     label: 'DNS',
     color: '#4b5563',
     icon: '',
     description: 'Domain Name System: Translates human-readable domain names to IP addresses.',
-    defaultProperties: {},
+    defaultProperties: {
+      routingPolicy: 'simple',
+      healthCheck: false,
+    },
   },
   cdn: {
     label: 'CDN',
     color: '#4b5563',
     icon: '',
     description: 'Content Delivery Network: Geographically distributed group of servers which work together to provide fast delivery of Internet content.',
-    defaultProperties: {},
+    defaultProperties: {
+      contentType: 'static',
+      cacheTTL: 'medium',
+    },
   },
   firewall: {
     label: 'Firewall',
@@ -69,7 +77,9 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
     color: '#4b5563',
     icon: '',
     description: 'A single entry point for all clients, handling request routing, composition, and protocol translation.',
-    defaultProperties: {},
+    defaultProperties: {
+      rateLimiting: false,
+    },
   },
   service: {
     label: 'Service',
