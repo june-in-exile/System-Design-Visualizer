@@ -13,7 +13,8 @@ A full-stack system design visualizer with a React frontend (using React Flow) a
 │       ├── components/  # React components (Canvas, Sidebar, TabBar)
 │       ├── nodes/     # Custom React Flow node types
 │       └── utils/     # Export utilities (Excalidraw, Mermaid, Image)
-├── backend/           # Go + Gin
+├── api/               # Go + Gin
+│   ├── _cmd/          # Server entry (main.go)
 │   ├── handler/       # HTTP handlers (validation rules)
 │   └── model/         # Data models
 ```
@@ -22,6 +23,8 @@ A full-stack system design visualizer with a React frontend (using React Flow) a
 
 ## Build, Lint & Development Commands
 
+| Command | Description |
+|---------|-------------|
 | `./start-dev.sh` | Start both frontend and backend (Ctrl+C to stop) |
 
 ### Frontend (React + TypeScript + Vite)
@@ -36,9 +39,9 @@ A full-stack system design visualizer with a React frontend (using React Flow) a
 
 | Command | Description |
 |---------|-------------|
-| `go run .` | Run backend server (localhost:8080) |
-| `go test ./...` | Run all tests |
-| `go fmt` | Format Go code |
+| `cd api && go run _cmd/main.go` | Run backend server (localhost:8080) |
+| `cd api && go test ./...` | Run all tests |
+| `cd api && go fmt` | Format Go code |
 
 ---
 
@@ -55,10 +58,10 @@ A full-stack system design visualizer with a React frontend (using React Flow) a
 
 ### Adding a New Validation Rule
 
-1. Add a new `check_*.go` file in `backend/handler/`
+1. Add a new `check_*.go` file in `api/handler/`
 2. Implement the rule using `model.TopologyContext`
-3. Call the rule function in `handler.validate()` within `backend/handler/topology_handler.go`
-4. Add corresponding tests in `backend/handler/check_*_test.go`
+3. Call the rule function in `handler.validate()` within `api/handler/topology_handler.go`
+4. Add corresponding tests in `api/handler/check_*_test.go`
 
 ### Adding a New Export Format
 

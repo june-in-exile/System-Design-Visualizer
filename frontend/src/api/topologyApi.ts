@@ -1,6 +1,6 @@
 import type { SystemTopology, AnalyzeResponse } from '../types/topology'
 
-const API_BASE = 'http://localhost:8080/api'
+const API_BASE = '/api'
 
 export async function analyzeTopology(
   topology: SystemTopology

@@ -4,8 +4,8 @@ ArchitectMind is a web-based tool for visualizing and analyzing system architect
 
 ## Project Structure
 
-- `backend/`: Go-based API using the Gin framework.
-  - `main.go`: Entry point, CORS configuration, and route definitions.
+- `api/`: Go-based API using the Gin framework.
+  - `_cmd/main.go`: Entry point, CORS configuration, and route definitions.
   - `handler/`: API request handlers and 38+ validation rules (e.g., `check_availability.go`).
   - `model/`: Data structures for nodes, edges, and protocols.
 - `frontend/`: React-based visualizer using Vite and React Flow.
@@ -28,5 +28,5 @@ ArchitectMind is a web-based tool for visualizing and analyzing system architect
 - **Frontend:**
   - Use TypeScript for all components and utilities.
   - Custom node styling should be managed in `src/nodes/ArchitectureNode.tsx` and `nodeConfig.ts`.
-  - Keep types in sync between `frontend/src/types/` and `backend/model/`.
+  - Keep types in sync between `frontend/src/types/` and `api/model/`.
   - New export formats go into `src/utils/`.

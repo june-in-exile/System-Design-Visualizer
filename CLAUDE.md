@@ -6,9 +6,9 @@ ArchitectMind is a system design visualizer with a React Flow canvas and a Go Gi
 
 ### Backend (Go + Gin)
 
-- `cd backend && go run main.go` - Start server on :8080
-- `cd backend && go build ./...` - Build check
-- `cd backend && go test ./...` - Run all tests
+- `cd api && go run _cmd/main.go` - Start server on :8080
+- `cd api && go build ./...` - Build check
+- `cd api && go test ./...` - Run all tests
 
 ### Frontend (React + Vite + TypeScript)
 
@@ -20,7 +20,7 @@ ArchitectMind is a system design visualizer with a React Flow canvas and a Go Gi
 ## Architecture
 
 - **Analysis**: `POST /api/topology` sends nodes/edges to backend.
-- **Validation Rules**: Implemented in `backend/handler/check_*.go`. Over 38 rules covering Availability, Performance, Security, etc.
+- **Validation Rules**: Implemented in `api/handler/check_*.go`. Over 38 rules covering Availability, Performance, Security, etc.
 - **Frontend State**: Managed in `Canvas.tsx` (nodes/edges) with history for Undo. Multi-tab support via `useCanvasTabs`.
 - **Export**: Utilities in `src/utils/` for Excalidraw, Image, Mermaid, and PDF.
 - **Presets**: Standard Demo, Twitter, YouTube, and Google architectures available in the toolbar.
@@ -28,5 +28,5 @@ ArchitectMind is a system design visualizer with a React Flow canvas and a Go Gi
 
 ## Adding Features
 
-- **New Component**: Update `backend/model/topology.go`, `backend/model/properties.go`, `frontend/src/types/topology.ts`, and `frontend/src/nodes/nodeConfig.ts`.
-- **New Rule**: Add `check_newrule.go` in `backend/handler/`, register in `topology_handler.go`, and add a test.
+- **New Component**: Update `api/model/topology.go`, `api/model/properties.go`, `frontend/src/types/topology.ts`, and `frontend/src/nodes/nodeConfig.ts`.
+- **New Rule**: Add `check_newrule.go` in `api/handler/`, register in `topology_handler.go`, and add a test.

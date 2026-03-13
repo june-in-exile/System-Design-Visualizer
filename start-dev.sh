@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Starting backend..."
-cd backend && go run . &
+cd api && go run _cmd/main.go &
 BACKEND_PID=$!
 
 sleep 2

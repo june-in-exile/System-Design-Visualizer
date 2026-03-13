@@ -47,16 +47,16 @@ chmod +x start-dev.sh
 
 ## ✅ 測試 (Tests)
 
-目前測試集中於後端。請在 `backend` 目錄下執行：
+目前測試集中於後端。請在 `api` 目錄下執行：
 
 ```bash
-cd backend
+cd api
 go test ./... -v
 ```
 
 ## 🔍 架構驗證規則範例 (Validation Rules)
 
-後端目前實作了超過 38 項進階架構驗證規則，完整清單請參閱 [backend/RULES.md](./backend/RULES.md)。規則涵蓋：
+後端目前實作了超過 38 項進階架構驗證規則，完整清單請參閱 [api/RULES.md](./api/RULES.md)。規則涵蓋：
 
 - **Availability**: 單點故障檢查 (SPOF)、LB/API Gateway 冗餘驗證、Health Check 配置。
 - **Performance**: 讀寫分離建議、快取一致性與失效策略、CDN 全球加速建議。
@@ -67,4 +67,4 @@ go test ./... -v
 ## 📂 專案結構
 
 - `/frontend`: 包含 React 原始碼、React Flow 組件、自定義 Hook 與 API 調用邏輯。
-- `/backend`: 包含 Go API 處理程序 (Handlers)、數據模型 (Models) 與驗證引擎。
+- `/api`: 包含 Go API 處理程序 (Handlers)、數據模型 (Models) 與驗證引擎。
