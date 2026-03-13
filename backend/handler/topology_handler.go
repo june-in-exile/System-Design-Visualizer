@@ -1095,10 +1095,17 @@ func checkMissingLogger(nodes map[string]model.SystemNode, outgoing map[string][
 
 	if serviceCount >= 3 && hasLogger {
 		connected := false
-		for _, loggerID := range loggerIDs {
-			targets := outgoing[loggerID]
+		// Map of logger IDs for quick lookup
+		isLogger := make(map[string]bool)
+		for _, id := range loggerIDs {
+			isLogger[id] = true
+		}
+
+		// Check if any service connects to a logger
+		for _, serviceID := range serviceIDs {
+			targets := outgoing[serviceID]
 			for _, targetID := range targets {
-				if model.NodeHasRole(nodes[targetID], "service") {
+				if isLogger[targetID] {
 					connected = true
 					break
 				}
@@ -1111,7 +1118,7 @@ func checkMissingLogger(nodes map[string]model.SystemNode, outgoing map[string][
 		if !connected {
 			return []Warning{{
 				Rule:     "missing_observability",
-				Message:  "📊 Logger/Monitor 未正確連線：架構中有 Logger/Monitor 但未連線至任何 Service。",
+				Message:  "📊 Logger/Monitor 未正確連線：架構中有 Logger/Monitor 但未與任何 Service 建立連線。",
 				Solution: "建議將各 Service 連接至 Logger/Monitor 節點，以收集日誌與監控數據。",
 				NodeIDs:  append(loggerIDs, serviceIDs[:3]...),
 			}}
