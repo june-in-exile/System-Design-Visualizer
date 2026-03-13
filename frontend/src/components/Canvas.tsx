@@ -17,6 +17,7 @@ import '@xyflow/react/dist/style.css'
 import ArchitectureNode from '../nodes/ArchitectureNode'
 import ComponentPropertyPanel from './ComponentPropertyPanel'
 import EdgePropertyPanel from './EdgePropertyPanel'
+import ExportMenu from './ExportMenu'
 import { NODE_TYPE_CONFIG } from '../nodes/nodeConfig'
 import { analyzeTopology } from '../api/topologyApi'
 import type {
@@ -988,6 +989,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
         >
           Undo
         </button>
+        <ExportMenu nodes={nodes} edges={edges} isDarkMode={isDarkMode} />
         {canMerge && (
           <button
             onClick={mergeSelectedNodes}
