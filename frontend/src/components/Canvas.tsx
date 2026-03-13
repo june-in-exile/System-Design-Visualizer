@@ -3,6 +3,7 @@ import {
   ReactFlow,
   Controls,
   Background,
+  BackgroundVariant,
   useNodesState,
   useEdgesState,
   SelectionMode,
@@ -15,6 +16,7 @@ import {
 import '@xyflow/react/dist/style.css'
 
 import ArchitectureNode from '../nodes/ArchitectureNode'
+import HandDrawnEdge from '../edges/HandDrawnEdge'
 import ComponentPropertyPanel from './ComponentPropertyPanel'
 import EdgePropertyPanel from './EdgePropertyPanel'
 import ExportMenu from './ExportMenu'
@@ -29,6 +31,10 @@ import type {
 
 const nodeTypes = {
   architecture: ArchitectureNode,
+}
+
+const edgeTypes = {
+  handdrawn: HandDrawnEdge,
 }
 
 let nodeIdCounter = 0
@@ -499,10 +505,11 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
         target: params.target,
         sourceHandle: params.sourceHandle,
         targetHandle: params.targetHandle,
+        type: 'handdrawn',
         data: { connectionType: 'unspecified', protocol: '', direction: 'uni' },
         style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 },
         markerEnd: { type: MarkerType.ArrowClosed, color: isDarkMode ? '#d1d5db' : '#b1b1b7' },
-        animated: true,
+        animated: false,
       }
       setEdges((eds) => [...eds, newEdge])
     },
@@ -659,17 +666,17 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
     ]
 
     const demoEdges: Edge[] = [
-      { id: 'e-client-dns', source: 'demo-client', target: 'demo-dns', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'dns' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
-      { id: 'e-client-cdn', source: 'demo-client', target: 'demo-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
-      { id: 'e-client-lb', source: 'demo-client', target: 'demo-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
-      { id: 'e-cdn-storage', source: 'demo-cdn', target: 'demo-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
-      { id: 'e-lb-proxy', source: 'demo-lb', target: 'demo-reverse-proxy', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
-      { id: 'e-proxy-apigw', source: 'demo-reverse-proxy', target: 'demo-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
-      { id: 'e-apigw-service', source: 'demo-apigw', target: 'demo-service', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
-      { id: 'e-service-mq', source: 'demo-service', target: 'demo-mq', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'async', protocol: 'amqp' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
-      { id: 'e-service-dbm', source: 'demo-service', target: 'demo-db-master', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
-      { id: 'e-service-dbs', source: 'demo-service', target: 'demo-db-slave', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true },
-      { id: 'e-service-cache', source: 'demo-service', target: 'demo-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'default', animated: true }
+      { id: 'e-client-dns', source: 'demo-client', target: 'demo-dns', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'dns' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-client-cdn', source: 'demo-client', target: 'demo-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-client-lb', source: 'demo-client', target: 'demo-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-cdn-storage', source: 'demo-cdn', target: 'demo-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-lb-proxy', source: 'demo-lb', target: 'demo-reverse-proxy', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-proxy-apigw', source: 'demo-reverse-proxy', target: 'demo-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-apigw-service', source: 'demo-apigw', target: 'demo-service', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-service-mq', source: 'demo-service', target: 'demo-mq', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'async', protocol: 'amqp' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-service-dbm', source: 'demo-service', target: 'demo-db-master', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-service-dbs', source: 'demo-service', target: 'demo-db-slave', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-service-cache', source: 'demo-service', target: 'demo-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false }
     ]
 
     setNodes(demoNodes)
@@ -721,34 +728,34 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
 
     const twitterEdges: Edge[] = [
       // User Request Flow (Sync)
-      { id: 'e-tw-client-dns', source: 'tw-client', target: 'tw-dns', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'dns' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-tw-client-cdn', source: 'tw-client', target: 'tw-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-tw-client-lb', source: 'tw-client', target: 'tw-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-tw-lb-rp', source: 'tw-lb', target: 'tw-rp', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-tw-rp-apigw', source: 'tw-rp', target: 'tw-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-tw-client-dns', source: 'tw-client', target: 'tw-dns', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'dns' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-tw-client-cdn', source: 'tw-client', target: 'tw-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-tw-client-lb', source: 'tw-client', target: 'tw-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-tw-lb-rp', source: 'tw-lb', target: 'tw-rp', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-tw-rp-apigw', source: 'tw-rp', target: 'tw-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
       
       // Gateway to Services (Sync)
-      { id: 'e-tw-apigw-user', source: 'tw-apigw', target: 'tw-user-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-tw-apigw-tweet', source: 'tw-apigw', target: 'tw-tweet-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-tw-apigw-timeline', source: 'tw-apigw', target: 'tw-timeline-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-tw-apigw-media', source: 'tw-apigw', target: 'tw-media-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-tw-apigw-user', source: 'tw-apigw', target: 'tw-user-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-tw-apigw-tweet', source: 'tw-apigw', target: 'tw-tweet-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-tw-apigw-timeline', source: 'tw-apigw', target: 'tw-timeline-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-tw-apigw-media', source: 'tw-apigw', target: 'tw-media-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
       
       // Service to Data/Storage (Sync)
-      { id: 'e-tw-user-db', source: 'tw-user-srv', target: 'tw-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-tw-tweet-db', source: 'tw-tweet-srv', target: 'tw-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-tw-timeline-cache', source: 'tw-timeline-srv', target: 'tw-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-tw-media-storage', source: 'tw-media-srv', target: 'tw-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-tw-user-db', source: 'tw-user-srv', target: 'tw-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-tw-tweet-db', source: 'tw-tweet-srv', target: 'tw-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-tw-timeline-cache', source: 'tw-timeline-srv', target: 'tw-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-tw-media-storage', source: 'tw-media-srv', target: 'tw-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
       
       // Async Decoupling (MQ as Channel)
       // Tweet Service -> MQ (Async)
-      { id: 'e-tw-tweet-mq', source: 'tw-tweet-srv', target: 'tw-mq', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-tw-tweet-mq', source: 'tw-tweet-srv', target: 'tw-mq', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'handdrawn', animated: false },
       // MQ -> Workers (Async Consumption)
-      { id: 'e-tw-mq-fanout', source: 'tw-mq', target: 'tw-fanout-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-tw-mq-search', source: 'tw-mq', target: 'tw-search-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-tw-mq-fanout', source: 'tw-mq', target: 'tw-fanout-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-tw-mq-search', source: 'tw-mq', target: 'tw-search-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'handdrawn', animated: false },
       
       // Worker to Data (Sync - Worker Services access Data Layer)
-      { id: 'e-tw-fanout-cache', source: 'tw-fanout-srv', target: 'tw-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-tw-search-db', source: 'tw-search-srv', target: 'tw-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-tw-fanout-cache', source: 'tw-fanout-srv', target: 'tw-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-tw-search-db', source: 'tw-search-srv', target: 'tw-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'handdrawn', animated: false },
     ]
 
     setNodes(twitterNodes)
@@ -801,40 +808,40 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
 
     const ytEdges: Edge[] = [
       // Request Flow
-      { id: 'e-yt-client-dns', source: 'yt-client', target: 'yt-dns', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'dns' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-yt-client-cdn', source: 'yt-client', target: 'yt-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-yt-client-lb', source: 'yt-client', target: 'yt-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-yt-lb-rp', source: 'yt-lb', target: 'yt-rp', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-yt-rp-apigw', source: 'yt-rp', target: 'yt-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-client-dns', source: 'yt-client', target: 'yt-dns', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'dns' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-client-cdn', source: 'yt-client', target: 'yt-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-client-lb', source: 'yt-client', target: 'yt-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-lb-rp', source: 'yt-lb', target: 'yt-rp', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-rp-apigw', source: 'yt-rp', target: 'yt-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
       
       // API Gateway to Services
-      { id: 'e-yt-apigw-user', source: 'yt-apigw', target: 'yt-user-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-yt-apigw-search', source: 'yt-apigw', target: 'yt-search-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-yt-apigw-reco', source: 'yt-apigw', target: 'yt-reco-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-yt-apigw-streaming', source: 'yt-apigw', target: 'yt-streaming-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-yt-apigw-metadata', source: 'yt-apigw', target: 'yt-metadata-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-yt-apigw-upload', source: 'yt-apigw', target: 'yt-upload-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-apigw-user', source: 'yt-apigw', target: 'yt-user-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-apigw-search', source: 'yt-apigw', target: 'yt-search-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-apigw-reco', source: 'yt-apigw', target: 'yt-reco-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-apigw-streaming', source: 'yt-apigw', target: 'yt-streaming-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-apigw-metadata', source: 'yt-apigw', target: 'yt-metadata-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-apigw-upload', source: 'yt-apigw', target: 'yt-upload-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
       
       // Upload Flow
-      { id: 'e-yt-upload-storage', source: 'yt-upload-srv', target: 'yt-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-yt-upload-mq', source: 'yt-upload-srv', target: 'yt-mq', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-yt-mq-transcoding', source: 'yt-mq', target: 'yt-transcoding-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-yt-transcoding-storage', source: 'yt-transcoding-srv', target: 'yt-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-yt-transcoding-mq', source: 'yt-transcoding-srv', target: 'yt-mq', sourceHandle: 'top-source', targetHandle: 'bottom-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-yt-mq-metadata', source: 'yt-mq', target: 'yt-metadata-srv', sourceHandle: 'top-source', targetHandle: 'bottom-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-upload-storage', source: 'yt-upload-srv', target: 'yt-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-upload-mq', source: 'yt-upload-srv', target: 'yt-mq', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-mq-transcoding', source: 'yt-mq', target: 'yt-transcoding-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-transcoding-storage', source: 'yt-transcoding-srv', target: 'yt-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-transcoding-mq', source: 'yt-transcoding-srv', target: 'yt-mq', sourceHandle: 'top-source', targetHandle: 'bottom-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-mq-metadata', source: 'yt-mq', target: 'yt-metadata-srv', sourceHandle: 'top-source', targetHandle: 'bottom-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'handdrawn', animated: false },
       
       // Metadata & CDN
-      { id: 'e-yt-metadata-db', source: 'yt-metadata-srv', target: 'yt-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-yt-metadata-cdn', source: 'yt-metadata-srv', target: 'yt-cdn', sourceHandle: 'top-source', targetHandle: 'bottom-target', data: { connectionType: 'async', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-metadata-db', source: 'yt-metadata-srv', target: 'yt-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-metadata-cdn', source: 'yt-metadata-srv', target: 'yt-cdn', sourceHandle: 'top-source', targetHandle: 'bottom-target', data: { connectionType: 'async', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
       
       // Streaming Flow
-      { id: 'e-yt-streaming-db', source: 'yt-streaming-srv', target: 'yt-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-yt-streaming-cache', source: 'yt-streaming-srv', target: 'yt-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-yt-cdn-storage', source: 'yt-cdn', target: 'yt-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { ...edgeStyle, strokeDasharray: '5,5' }, type: 'default', animated: true },
+      { id: 'e-yt-streaming-db', source: 'yt-streaming-srv', target: 'yt-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-streaming-cache', source: 'yt-streaming-srv', target: 'yt-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-cdn-storage', source: 'yt-cdn', target: 'yt-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { ...edgeStyle, strokeDasharray: '5,5' }, type: 'handdrawn', animated: false },
 
       // Search & Reco
-      { id: 'e-yt-search-db', source: 'yt-search-srv', target: 'yt-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-yt-reco-cache', source: 'yt-reco-srv', target: 'yt-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-yt-search-db', source: 'yt-search-srv', target: 'yt-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-reco-cache', source: 'yt-reco-srv', target: 'yt-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'handdrawn', animated: false },
     ]
 
     setNodes(ytNodes)
@@ -889,31 +896,31 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
 
     const googleEdges: Edge[] = [
       // Request Flow
-      { id: 'e-gg-client-dns', source: 'gg-client', target: 'gg-dns', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'dns' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-gg-client-cdn', source: 'gg-client', target: 'gg-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-gg-client-lb', source: 'gg-client', target: 'gg-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-gg-lb-rp', source: 'gg-lb', target: 'gg-rp', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-gg-rp-apigw', source: 'gg-rp', target: 'gg-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-gg-client-dns', source: 'gg-client', target: 'gg-dns', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'dns' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-gg-client-cdn', source: 'gg-client', target: 'gg-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-gg-client-lb', source: 'gg-client', target: 'gg-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-gg-lb-rp', source: 'gg-lb', target: 'gg-rp', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-gg-rp-apigw', source: 'gg-rp', target: 'gg-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
       
       // Gateway to Services
-      { id: 'e-gg-apigw-auto', source: 'gg-apigw', target: 'gg-auto-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-gg-apigw-query', source: 'gg-apigw', target: 'gg-query-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-gg-apigw-auto', source: 'gg-apigw', target: 'gg-auto-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-gg-apigw-query', source: 'gg-apigw', target: 'gg-query-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
       
       // Query Chain (Sync)
-      { id: 'e-gg-query-cache', source: 'gg-query-srv', target: 'gg-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-gg-query-db', source: 'gg-query-srv', target: 'gg-db-index', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-gg-query-ranking', source: 'gg-query-srv', target: 'gg-ranking-srv', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'grpc' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-gg-ranking-ads', source: 'gg-ranking-srv', target: 'gg-ads-srv', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'grpc' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-gg-ads-snippet', source: 'gg-ads-srv', target: 'gg-snippet-srv', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'grpc' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-gg-query-cache', source: 'gg-query-srv', target: 'gg-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-gg-query-db', source: 'gg-query-srv', target: 'gg-db-index', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-gg-query-ranking', source: 'gg-query-srv', target: 'gg-ranking-srv', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'grpc' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-gg-ranking-ads', source: 'gg-ranking-srv', target: 'gg-ads-srv', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'grpc' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-gg-ads-snippet', source: 'gg-ads-srv', target: 'gg-snippet-srv', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'grpc' }, style: edgeStyle, type: 'handdrawn', animated: false },
       
       // Autocomplete (Heavy Cache)
-      { id: 'e-gg-auto-cache', source: 'gg-auto-srv', target: 'gg-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-gg-auto-cache', source: 'gg-auto-srv', target: 'gg-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'handdrawn', animated: false },
       
       // Crawler & Indexing Flow (Async)
-      { id: 'e-gg-crawler-storage', source: 'gg-crawler-srv', target: 'gg-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-gg-crawler-mq', source: 'gg-crawler-srv', target: 'gg-mq', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-gg-mq-indexing', source: 'gg-mq', target: 'gg-indexing-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'default', animated: true },
-      { id: 'e-gg-indexing-db', source: 'gg-indexing-srv', target: 'gg-db-index', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'default', animated: true },
+      { id: 'e-gg-crawler-storage', source: 'gg-crawler-srv', target: 'gg-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-gg-crawler-mq', source: 'gg-crawler-srv', target: 'gg-mq', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-gg-mq-indexing', source: 'gg-mq', target: 'gg-indexing-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-gg-indexing-db', source: 'gg-indexing-srv', target: 'gg-db-index', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'handdrawn', animated: false },
     ]
 
     setNodes(googleNodes)
@@ -1119,18 +1126,34 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
             onNodesDelete={onNodesDelete}
             onSelectionChange={onSelectionChange}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             colorMode={isDarkMode ? 'dark' : 'light'}
             fitView
             snapToGrid
             snapGrid={[16, 16]}
             defaultEdgeOptions={{
               selectable: true,
-              type: 'default',
+              type: 'handdrawn',
             }}
             proOptions={{ hideAttribution: true }}
           >
+            {/* SVG filter for hand-drawn edge effect */}
+            <svg width="0" height="0">
+              <defs>
+                <filter id="roughen">
+                  <feTurbulence type="turbulence" baseFrequency="0.03" numOctaves="2" result="noise" />
+                  <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.5" />
+                </filter>
+              </defs>
+            </svg>
+
             <Controls />
-            <Background gap={16} size={1} color={isDarkMode ? '#4b5563' : '#81818a'} />
+            <Background
+              variant={BackgroundVariant.Dots}
+              gap={20}
+              size={1.5}
+              color={isDarkMode ? '#444' : '#ccc'}
+            />
             
             <div style={{ position: 'absolute', bottom: 16, left: 70, zIndex: 10, display: 'flex', gap: 8 }}>
               <button

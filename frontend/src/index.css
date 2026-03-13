@@ -1,7 +1,8 @@
 :root {
   /* Light Theme */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f9fafb;
+  --font-hand: 'Caveat', 'Virgil', 'Comic Neue', cursive;
+  --bg-primary: #fafaf8;
+  --bg-secondary: #f5f5f0;
   --bg-tertiary: #f3f4f6;
   --text-primary: #1f2937;
   --text-secondary: #4b5563;
@@ -15,8 +16,8 @@
 
 .dark {
   /* Dark Theme */
-  --bg-primary: #1f2937;
-  --bg-secondary: #111827;
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #141414;
   --bg-tertiary: #374151;
   --text-primary: #f9fafb;
   --text-secondary: #d1d5db;
@@ -35,7 +36,7 @@
 }
 
 body {
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-hand), system-ui, -apple-system, sans-serif;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -49,6 +50,24 @@ body {
 }
 .dark .react-flow__controls-button:hover {
   background-color: var(--bg-tertiary);
+}
+
+/* Hand-drawn handle styles */
+.react-flow__handle {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--text-secondary);
+  background: var(--bg-primary);
+}
+
+.react-flow__handle:hover {
+  background: var(--btn-primary-bg);
+}
+
+/* Subtle background */
+.react-flow__background {
+  opacity: 0.3;
 }
 
 @keyframes warningPulse {
