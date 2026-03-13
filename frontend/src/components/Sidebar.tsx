@@ -62,7 +62,7 @@ function Sidebar({ isDarkMode, toggleDarkMode }: SidebarProps) {
                 color: 'var(--text-primary)',
               }}
             >
-              <span>{config.icon}</span>
+              {config.icon && <span>{config.icon}</span>}
               <span>{config.label}</span>
             </div>
           )

@@ -162,14 +162,16 @@ function ArchitectureNode({ id, data }: NodeProps) {
         height: height,
         padding: '8px 12px',
       }}>
-        <div style={{ fontSize: 20, marginBottom: 2, display: 'flex', gap: 6 }}>
-          {roles
-            ? mergedConfig!.icons.map((icon, i) => (
-                <span key={i} title={mergedConfig!.descriptions[i]} style={{ cursor: 'help' }}>{icon}</span>
-              ))
-            : <span title={config.description} style={{ cursor: 'help' }}>{config.icon}</span>
-          }
-        </div>
+        {(roles ? mergedConfig!.icons.some(icon => icon !== '') : config.icon !== '') && (
+          <div style={{ fontSize: 20, marginBottom: 2, display: 'flex', gap: 6 }}>
+            {roles
+              ? mergedConfig!.icons.map((icon, i) => (
+                  icon && <span key={i} title={mergedConfig!.descriptions[i]} style={{ cursor: 'help' }}>{icon}</span>
+                ))
+              : <span title={config.description} style={{ cursor: 'help' }}>{config.icon}</span>
+            }
+          </div>
+        )}
         <div style={{
           fontWeight: 600,
           fontSize: 14,

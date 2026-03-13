@@ -11,29 +11,29 @@ interface NodeTypeConfig {
 export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
   client: {
     label: 'Client',
-    color: '#6366f1',
-    icon: '🖥️',
+    color: '#4b5563',
+    icon: '',
     description: 'Represents an end-user device, web browser, or external consumer of the system.',
     defaultProperties: {},
   },
   dns: {
     label: 'DNS',
-    color: '#64748b',
-    icon: '📡',
+    color: '#4b5563',
+    icon: '',
     description: 'Domain Name System: Translates human-readable domain names to IP addresses.',
     defaultProperties: {},
   },
   cdn: {
     label: 'CDN',
-    color: '#14b8a6',
-    icon: '🌐',
+    color: '#4b5563',
+    icon: '',
     description: 'Content Delivery Network: Geographically distributed group of servers which work together to provide fast delivery of Internet content.',
     defaultProperties: {},
   },
   load_balancer: {
     label: 'Load Balancer',
-    color: '#f59e0b',
-    icon: '⚖️',
+    color: '#4b5563',
+    icon: '',
     description: 'Distributes incoming network traffic across a group of backend servers to ensure availability and reliability.',
     defaultProperties: {
       algorithm: 'round_robin',
@@ -43,8 +43,8 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
   },
   reverse_proxy: {
     label: 'Reverse Proxy',
-    color: '#0ea5e9',
-    icon: '🔀',
+    color: '#4b5563',
+    icon: '',
     description: 'Sits between clients and backend servers, handling SSL termination, caching, compression, and request routing.',
     defaultProperties: {
       product: 'nginx',
@@ -56,15 +56,15 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
   },
   api_gateway: {
     label: 'API Gateway',
-    color: '#10b981',
-    icon: '🚪',
+    color: '#4b5563',
+    icon: '',
     description: 'A single entry point for all clients, handling request routing, composition, and protocol translation.',
     defaultProperties: {},
   },
   service: {
     label: 'Service',
-    color: '#3b82f6',
-    icon: '⚙️',
+    color: '#4b5563',
+    icon: '',
     description: 'A generic compute unit, microservice, or application server that performs business logic.',
     defaultProperties: {
       replicas: 1,
@@ -73,8 +73,8 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
   },
   message_queue: {
     label: 'Message Queue',
-    color: '#ec4899',
-    icon: '📨',
+    color: '#4b5563',
+    icon: '',
     description: 'Provides an asynchronous communication protocol for inter-service messaging.',
     defaultProperties: {
       category: 'broker',
@@ -87,8 +87,8 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
   },
   cache: {
     label: 'Cache',
-    color: '#8b5cf6',
-    icon: '⚡',
+    color: '#4b5563',
+    icon: '',
     description: 'High-speed data storage layer which stores a subset of data for faster retrieval.',
     defaultProperties: {
       cacheType: 'distributed',
@@ -99,8 +99,8 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
   },
   database: {
     label: 'Database',
-    color: '#ef4444',
-    icon: '🗄️',
+    color: '#4b5563',
+    icon: '',
     description: 'A structured system for storing, managing, and retrieving data.',
     defaultProperties: {
       dbType: 'sql',
@@ -111,8 +111,8 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
   },
   storage: {
     label: 'Storage',
-    color: '#f97316',
-    icon: '💾',
+    color: '#4b5563',
+    icon: '',
     description: 'Object or block storage for unstructured data like images, logs, and backups.',
     defaultProperties: {
       accessLevel: 'private',
