@@ -668,6 +668,8 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
         success: false,
         nodeCount: 0,
         edgeCount: 0,
+        totalRules: 0,
+        rulesPassed: 0,
         warnings: [
           { rule: 'error', message, solution: '請檢查後端服務是否正常啟動，並重試。', nodeIds: [] } as Warning,
         ],
@@ -1244,6 +1246,38 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
               color={isDarkMode ? '#444' : '#ccc'}
             />
             
+            {analysisResult && (
+              <div style={{
+                position: 'absolute',
+                bottom: 15,
+                right: 70,
+                zIndex: 10,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 10px',
+                borderRadius: 6,
+                backgroundColor: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              }}>
+                <span style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: analysisResult.rulesPassed === analysisResult.totalRules
+                    ? '#22c55e'
+                    : analysisResult.rulesPassed / analysisResult.totalRules >= 0.8
+                      ? '#eab308'
+                      : '#ef4444',
+                }}>
+                  {analysisResult.rulesPassed}/{analysisResult.totalRules}
+                </span>
+                <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                  rules passed
+                </span>
+              </div>
+            )}
+
             <div style={{ position: 'absolute', bottom: 16, left: 70, zIndex: 10, display: 'flex', gap: 8 }}>
               <button
                 onClick={handleDemo}

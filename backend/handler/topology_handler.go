@@ -21,12 +21,15 @@ func PostTopology(c *gin.Context) {
 	}
 
 	warnings := validate(topology)
+	totalRules, rulesPassed := ComputeRulesPassed(warnings)
 
 	c.JSON(http.StatusOK, AnalyzeResponse{
-		Success:   true,
-		NodeCount: len(topology.Nodes),
-		EdgeCount: len(topology.Edges),
-		Warnings:  warnings,
+		Success:     true,
+		NodeCount:   len(topology.Nodes),
+		EdgeCount:   len(topology.Edges),
+		TotalRules:  totalRules,
+		RulesPassed: rulesPassed,
+		Warnings:    warnings,
 	})
 }
 

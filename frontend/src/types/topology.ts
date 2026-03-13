@@ -186,5 +186,7 @@ export interface AnalyzeResponse {
   success: boolean
   nodeCount: number
   edgeCount: number
+  totalRules: number
+  rulesPassed: number
   warnings?: Warning[]
 }
