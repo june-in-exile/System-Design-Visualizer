@@ -14,8 +14,8 @@ A full-stack system design visualizer with a React frontend (using React Flow) a
 │       ├── nodes/     # Custom React Flow node types
 │       └── utils/     # Export utilities (Excalidraw, Mermaid, Image)
 ├── api/               # Go + Gin
-│   ├── _cmd/          # Server entry (main.go)
-│   ├── handler/       # HTTP handlers (validation rules)
+│   ├── main.go          # Server entry
+│   ├── handler/         # HTTP handlers (validation rules)
 │   └── model/         # Data models
 ```
 
@@ -39,7 +39,7 @@ A full-stack system design visualizer with a React frontend (using React Flow) a
 
 | Command | Description |
 |---------|-------------|
-| `cd api && go run _cmd/main.go` | Run backend server (localhost:8080) |
+| `cd api && go run main.go` | Run backend server (localhost:8080) |
 | `cd api && go test ./...` | Run all tests |
 | `cd api && go fmt` | Format Go code |
 
