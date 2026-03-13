@@ -125,8 +125,8 @@ func validate(t model.SystemTopology) []Warning {
 	warnings = append(warnings, checkClientToCache(nodeByID, t.Edges)...)
 	warnings = append(warnings, checkReverseProxySPOF(t.Nodes)...)
 	warnings = append(warnings, checkReverseProxySSL(nodeByID, t.Edges)...)
-	warnings = append(warnings, checkMissingFirewall(t.Nodes)...)
-	warnings = append(warnings, checkMissingLogger(t.Nodes)...)
+	warnings = append(warnings, checkMissingFirewall(nodeByID, outgoing)...)
+	warnings = append(warnings, checkMissingLogger(nodeByID, outgoing)...)
 
 	return warnings
 }
@@ -993,12 +993,15 @@ func checkClientToCache(nodes map[string]model.SystemNode, edges []model.SystemE
 	return warnings
 }
 
-// checkMissingFirewall warns if there's a Client and LB/API Gateway but no Firewall.
-func checkMissingFirewall(nodes []model.SystemNode) []Warning {
+// checkMissingFirewall warns if there's a Client and LB/API Gateway but no Firewall,
+// or if a Firewall exists but is not connected to the entry points.
+func checkMissingFirewall(nodes map[string]model.SystemNode, outgoing map[string][]string) []Warning {
 	hasClient := false
 	hasEntryPoint := false
 	hasFirewall := false
 	var clientIDs []string
+	var entryPointIDs []string
+	var firewallIDs []string
 
 	for _, node := range nodes {
 		if model.NodeHasRole(node, "client") {
@@ -1007,36 +1010,67 @@ func checkMissingFirewall(nodes []model.SystemNode) []Warning {
 		}
 		if model.NodeHasRole(node, "load_balancer") || model.NodeHasRole(node, "api_gateway") {
 			hasEntryPoint = true
+			entryPointIDs = append(entryPointIDs, node.ID)
 		}
 		if model.NodeHasRole(node, "firewall") {
 			hasFirewall = true
+			firewallIDs = append(firewallIDs, node.ID)
 		}
 	}
 
 	if hasClient && hasEntryPoint && !hasFirewall {
 		return []Warning{{
 			Rule:     "missing_firewall",
-			Message:  "架構中缺少 Firewall/WAF。Client 直接連線至入口節點，可能存在安全風險。",
+			Message:  "🛡️ 缺少 Firewall/WAF：架構中有 Client 與入口節點 (LB/API Gateway)，但缺少 Firewall。",
 			Solution: "建議在 Client 與 Load Balancer/API Gateway 之間加入 Firewall 或 WAF，進行流量過濾與惡意請求攔截。",
 			NodeIDs:  clientIDs,
 		}}
 	}
+
+	if hasClient && hasEntryPoint && hasFirewall {
+		connected := false
+		for _, firewallID := range firewallIDs {
+			targets := outgoing[firewallID]
+			for _, targetID := range targets {
+				if model.NodeHasRole(nodes[targetID], "load_balancer") || model.NodeHasRole(nodes[targetID], "api_gateway") {
+					connected = true
+					break
+				}
+			}
+			if connected {
+				break
+			}
+		}
+
+		if !connected {
+			return []Warning{{
+				Rule:     "missing_firewall",
+				Message:  "🛡️ Firewall 未正確連線：架構中有 Firewall 但未連線至入口節點。",
+				Solution: "建議將 Firewall 連接至 Load Balancer 或 API Gateway，以發揮流量過濾與安全防護的效果。",
+				NodeIDs:  append(firewallIDs, entryPointIDs...),
+			}}
+		}
+	}
+
 	return nil
 }
 
-// checkMissingLogger warns if there are 3+ Services but no Logger.
-func checkMissingLogger(nodes []model.SystemNode) []Warning {
+// checkMissingLogger warns if there are 3+ Services but no Logger,
+// or if Logger exists but is not connected to any Service.
+func checkMissingLogger(nodes map[string]model.SystemNode, outgoing map[string][]string) []Warning {
 	serviceCount := 0
 	hasLogger := false
 	var serviceIDs []string
+	var loggerIDs []string
 
 	for _, node := range nodes {
 		if model.NodeHasRole(node, "service") {
 			serviceCount++
 			serviceIDs = append(serviceIDs, node.ID)
 		}
-		if model.NodeHasRole(node, "logger") {
+		if model.NodeHasRole(node, "logger") || model.NodeHasRole(node, "monitor") {
 			hasLogger = true
+			loggerIDs = append(loggerIDs, node.ID)
 		}
 	}
 
@@ -1046,10 +1080,36 @@ func checkMissingLogger(nodes []model.SystemNode) []Warning {
 		}
 		return []Warning{{
 			Rule:     "missing_observability",
-			Message:  "架構中有多個 Service 但缺少 Logger/Monitor。在生產環境中缺乏觀測性將難以除錯與監控。",
+			Message:  "📊 缺少 Logger/Monitor：架構中有 3 個（含）以上的 Service 但缺少 Logger/Monitor。",
 			Solution: "建議加入 Logger/Monitor 節點（如 ELK Stack、Prometheus + Grafana、Datadog），並讓各 Service 連線至該節點。",
 			NodeIDs:  serviceIDs,
 		}}
 	}
+
+	if serviceCount >= 3 && hasLogger {
+		connected := false
+		for _, loggerID := range loggerIDs {
+			targets := outgoing[loggerID]
+			for _, targetID := range targets {
+				if model.NodeHasRole(nodes[targetID], "service") {
+					connected = true
+					break
+				}
+			}
+			if connected {
+				break
+			}
+		}
+
+		if !connected {
+			return []Warning{{
+				Rule:     "missing_observability",
+				Message:  "📊 Logger/Monitor 未正確連線：架構中有 Logger/Monitor 但未連線至任何 Service。",
+				Solution: "建議將各 Service 連接至 Logger/Monitor 節點，以收集日誌與監控數據。",
+				NodeIDs:  append(loggerIDs, serviceIDs[:3]...),
+			}}
+		}
+	}
+
 	return nil
 }
