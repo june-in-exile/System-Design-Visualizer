@@ -180,3 +180,128 @@ func checkVerticalPartitioning(ctx model.TopologyContext) []Warning {
 
 	return nil
 }
+
+// checkSearchDatabase warns if a service labeled "search" connects directly to SQL/NoSQL.
+// This handles the "search engine selection" issue (C4/T7/Y6).
+func checkSearchDatabase(ctx model.TopologyContext) []Warning {
+	var warnings []Warning
+	for id, node := range ctx.NodeByID {
+		if !model.NodeHasRole(node, "service") || !labelContains(node.Label, "search") {
+			continue
+		}
+
+		targets := ctx.Outgoing[id]
+		for _, targetID := range targets {
+			target, ok := ctx.NodeByID[targetID]
+			if !ok || !model.NodeHasRole(target, "database") {
+				continue
+			}
+
+			props, err := model.ParseNodeProperties(target)
+			if err != nil {
+				continue
+			}
+			dbProps, ok := props.(*model.DatabaseProperties)
+			if !ok {
+				continue
+			}
+
+			if dbProps.Product != "elasticsearch" && dbProps.Product != "solr" {
+				warnings = append(warnings, Warning{
+					Rule:     "search_engine_recommendation",
+					Message:  fmt.Sprintf("🔍 搜尋引擎建議：搜尋服務 %q 直接連線至 %q。", node.Label, target.Label),
+					Solution: "全文搜尋或複雜篩選在 RDBMS/NoSQL 上效率較低。建議使用專門的搜尋引擎（如 Elasticsearch, Solr），並透過同步機制確保資料一致性。",
+					NodeIDs:  []string{id, targetID},
+				})
+			}
+		}
+	}
+	return warnings
+}
+
+// checkServiceDataSource warns if a service has no outgoing connections to data sources.
+// This handles the "missing data source" issue (C6/G4/G5).
+func checkServiceDataSource(ctx model.TopologyContext) []Warning {
+	var warnings []Warning
+	for id, node := range ctx.NodeByID {
+		if !model.NodeHasRole(node, "service") {
+			continue
+		}
+
+		// Skip known proxy/gateway roles
+		if model.NodeHasRole(node, "api_gateway") || model.NodeHasRole(node, "load_balancer") || model.NodeHasRole(node, "reverse_proxy") {
+			continue
+		}
+		// Skip if label implies proxy
+		if labelContains(node.Label, "gateway") || labelContains(node.Label, "proxy") || labelContains(node.Label, "lb") {
+			continue
+		}
+
+		targets := ctx.Outgoing[id]
+		hasDataSource := false
+		for _, targetID := range targets {
+			target, ok := ctx.NodeByID[targetID]
+			if !ok {
+				continue
+			}
+			// If it connects to DB, Cache, Storage, or ANOTHER service (which might be the source)
+			if model.NodeHasRole(target, "database") || model.NodeHasRole(target, "cache") || model.NodeHasRole(target, "storage") || model.NodeHasRole(target, "service") {
+				hasDataSource = true
+				break
+			}
+		}
+
+		if !hasDataSource {
+			warnings = append(warnings, Warning{
+				Rule:     "missing_data_source",
+				Message:  fmt.Sprintf("❓ 缺少資料來源：服務 %q 目前沒有連線至任何資料儲存或下游服務。", node.Label),
+				Solution: "每個業務服務應有明確的資料來源。請連接至 Database、Cache、Storage 或其他提供資料的 Service。",
+				NodeIDs:  []string{id},
+			})
+		}
+	}
+	return warnings
+}
+
+// checkDatabasePerService warns if multiple distinct services share the same database node.
+// This handles the "shared database" issue (T1/Y1).
+func checkDatabasePerService(ctx model.TopologyContext) []Warning {
+	var warnings []Warning
+	dbToServices := make(map[string][]string)
+
+	for _, edge := range ctx.Edges {
+		target, okT := ctx.NodeByID[edge.Target]
+		source, okS := ctx.NodeByID[edge.Source]
+		if okT && okS && model.NodeHasRole(target, "database") && model.NodeHasRole(source, "service") {
+			// Avoid duplicates
+			found := false
+			for _, s := range dbToServices[edge.Target] {
+				if s == edge.Source {
+					found = true
+					break
+				}
+			}
+			if !found {
+				dbToServices[edge.Target] = append(dbToServices[edge.Target], edge.Source)
+			}
+		}
+	}
+
+	for dbID, serviceIDs := range dbToServices {
+		if len(serviceIDs) >= 2 {
+			dbNode := ctx.NodeByID[dbID]
+			var labels []string
+			for _, sID := range serviceIDs {
+				labels = append(labels, ctx.NodeByID[sID].Label)
+			}
+
+			warnings = append(warnings, Warning{
+				Rule:     "shared_database",
+				Message:  fmt.Sprintf("🗄️ 資料庫共享提醒：多個服務 (%s) 共享同一個資料庫 %q。", joinLabels(labels), dbNode.Label),
+				Solution: "在微服務架構中，建議採用 Database-per-Service 模式以解耦服務間的資料依賴與擴展瓶頸。考慮按業務功能拆分資料庫。",
+				NodeIDs:  append([]string{dbID}, serviceIDs...),
+			})
+		}
+	}
+	return warnings
+}

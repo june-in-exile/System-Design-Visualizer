@@ -186,10 +186,138 @@ func checkReverseProxySSL(ctx model.TopologyContext) []Warning {
 					Message:  fmt.Sprintf("🔒 SSL 終止建議：Reverse Proxy %q 接收 HTTPS 流量 but has SSL termination disabled。", node.Label),
 					Solution: "建議在 Reverse Proxy 啟用 SSL Termination，統一管理 TLS 憑證並減輕後端服務的加解密負擔。",
 					NodeIDs:  []string{node.ID},
-				})
-				break
-			}
-		}
-	}
-	return warnings
-}
+					})
+					break
+					}
+					}
+					}
+					return warnings
+					}
+
+					// checkCDNOrigin warns if a CDN node lacks a cdn_origin outgoing edge.
+					// This handles the "isolated CDN" issue (C3).
+					func checkCDNOrigin(ctx model.TopologyContext) []Warning {
+					var warnings []Warning
+					for id, node := range ctx.NodeByID {
+					if !model.NodeHasRole(node, "cdn") {
+					continue
+					}
+
+					hasOrigin := false
+					for _, edge := range ctx.Edges {
+					if edge.Source == id && edge.ConnectionType == "cdn_origin" {
+					hasOrigin = true
+					break
+					}
+					}
+
+					if !hasOrigin {
+					warnings = append(warnings, Warning{
+					Rule:     "cdn_isolated",
+					Message:  fmt.Sprintf("🌐 CDN 孤立提醒：%q 尚未設定 Origin 源站連線。", node.Label),
+					Solution: "CDN 需要從源站 (Origin，如 Storage 或 API Gateway) 抓取內容。請建立一條連線並將 Connection Type 設為 'CDN Origin'。",
+					NodeIDs:  []string{id},
+					})
+					}
+					}
+					return warnings
+					}
+
+					// checkSyncChain detects synchronous call chains of length >= 3 between services.
+					// This handles the "long sync chain" issue (C5/G1).
+					func checkSyncChain(ctx model.TopologyContext) []Warning {
+					var warnings []Warning
+
+					// Helper to find max sync depth from a service
+					var findMaxDepth func(currentID string, visited map[string]bool) (int, []string)
+					findMaxDepth = func(currentID string, visited map[string]bool) (int, []string) {
+					visited[currentID] = true
+					maxD := 0
+					var longestPath []string
+
+					for _, edge := range ctx.Edges {
+					if edge.Source == currentID && edge.ConnectionType == "sync" {
+					target, ok := ctx.NodeByID[edge.Target]
+					if ok && model.NodeHasRole(target, "service") && !visited[edge.Target] {
+					d, p := findMaxDepth(edge.Target, copyMap(visited))
+					if d > maxD {
+						maxD = d
+						longestPath = p
+					}
+					}
+					}
+					}
+
+					return maxD + 1, append([]string{currentID}, longestPath...)
+					}
+
+					for id, node := range ctx.NodeByID {
+					if !model.NodeHasRole(node, "service") {
+					continue
+					}
+
+					// Only check from entry points or nodes with no incoming sync edges from services
+					isEntry := true
+					for _, edge := range ctx.Edges {
+					if edge.Target == id && edge.ConnectionType == "sync" {
+					source, ok := ctx.NodeByID[edge.Source]
+					if ok && model.NodeHasRole(source, "service") {
+					isEntry = false
+					break
+					}
+					}
+					}
+
+					if isEntry {
+					depth, path := findMaxDepth(id, make(map[string]bool))
+					if depth >= 3 {
+					warnings = append(warnings, Warning{
+					Rule:     "long_sync_chain",
+					Message:  fmt.Sprintf("🔗 同步鏈過長：偵測到長度為 %d 的同步呼叫鏈 (%s)。", depth, joinLabelsByID(path, ctx)),
+					Solution: "同步鏈過長會導致延遲堆積與可用性下降。建議將部分呼叫改為並行 (Parallel Fan-out) 或異步處理 (Async/MQ)。",
+					NodeIDs:  path,
+					})
+					}
+					}
+					}
+					return warnings
+					}
+
+					// checkInternalHTTP warns if Service-to-Service communication uses plain HTTP.
+					// This handles the "internal http" issue (T6).
+					func checkInternalHTTP(ctx model.TopologyContext) []Warning {
+					var warnings []Warning
+					for _, edge := range ctx.Edges {
+					if edge.Protocol != "http" {
+					continue
+					}
+					source, okS := ctx.NodeByID[edge.Source]
+					target, okT := ctx.NodeByID[edge.Target]
+					if okS && okT && model.NodeHasRole(source, "service") && model.NodeHasRole(target, "service") {
+					warnings = append(warnings, Warning{
+					Rule:     "internal_http",
+					Message:  fmt.Sprintf("🔌 內部通訊協定建議：%s → %s 使用 HTTP。", source.Label, target.Label),
+					Solution: "微服務內部通訊建議使用 gRPC 以獲得更高的序列化效率與多路復用優點。",
+					NodeIDs:  []string{edge.Source, edge.Target},
+					})
+					}
+					}
+					return warnings
+					}
+
+					func copyMap(m map[string]bool) map[string]bool {
+					nm := make(map[string]bool)
+					for k, v := range m {
+					nm[k] = v
+					}
+					return nm
+					}
+
+					func joinLabelsByID(ids []string, ctx model.TopologyContext) string {
+					labels := make([]string, len(ids))
+					for i, id := range ids {
+					labels[i] = ctx.NodeByID[id].Label
+					}
+					return joinLabels(labels)
+					}
+

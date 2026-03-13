@@ -150,3 +150,27 @@ func checkAsyncPeakShaving(ctx model.TopologyContext) []Warning {
 	}
 	return warnings
 }
+
+// checkSyncUpload warns if a service labeled "upload" or "media" connects synchronously to storage.
+// This handles the "sync upload" issue (T5).
+func checkSyncUpload(ctx model.TopologyContext) []Warning {
+	var warnings []Warning
+	for _, edge := range ctx.Edges {
+		if edge.ConnectionType != "sync" {
+			continue
+		}
+		source, okS := ctx.NodeByID[edge.Source]
+		target, okT := ctx.NodeByID[edge.Target]
+		if okS && okT && model.NodeHasRole(target, "storage") {
+			if labelContains(source.Label, "upload") || labelContains(source.Label, "media") || labelContains(source.Label, "transcode") {
+				warnings = append(warnings, Warning{
+					Rule:     "sync_upload_bottleneck",
+					Message:  fmt.Sprintf("📤 同步上傳瓶頸：服務 %q 同步上傳至 Storage。", source.Label),
+					Solution: "大檔案上傳建議改為異步流程：Service 產生 Presigned URL 給 Client 直傳 Storage，完成後再透過 MQ 通知 Service 處理後續。",
+					NodeIDs:  []string{edge.Source, edge.Target},
+				})
+			}
+		}
+	}
+	return warnings
+}

@@ -100,6 +100,7 @@ func validate(t model.SystemTopology) []Warning {
 	warnings = append(warnings, checkMQConsumer(ctx)...)
 	warnings = append(warnings, checkMQDLQ(ctx)...)
 	warnings = append(warnings, checkAsyncPeakShaving(ctx)...)
+	warnings = append(warnings, checkSyncUpload(ctx)...)
 	warnings = append(warnings, checkClientDirectAccess(ctx,
 		"database",
 		"client_direct_db",
@@ -114,6 +115,13 @@ func validate(t model.SystemTopology) []Warning {
 	)...)
 	warnings = append(warnings, checkEntryPointSPOF(ctx, "reverse_proxy", "reverse_proxy_spof", "🔀", "Reverse Proxy")...)
 	warnings = append(warnings, checkReverseProxySSL(ctx)...)
+	warnings = append(warnings, checkCDNOrigin(ctx)...)
+	warnings = append(warnings, checkSyncChain(ctx)...)
+	warnings = append(warnings, checkInternalHTTP(ctx)...)
+	warnings = append(warnings, checkSearchDatabase(ctx)...)
+	warnings = append(warnings, checkServiceDataSource(ctx)...)
+	warnings = append(warnings, checkDatabasePerService(ctx)...)
+	warnings = append(warnings, checkCacheOnly(ctx)...)
 	warnings = append(warnings, checkMissingFirewall(ctx)...)
 	warnings = append(warnings, checkMissingLogger(ctx)...)
 	warnings = append(warnings, checkFirewallMonitorMode(ctx)...)

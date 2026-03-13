@@ -142,7 +142,15 @@ go tool cover -html=coverage.out
 | 16 | **協定不匹配 (Protocol Mismatch)** | 連線使用了與目標組件類型不匹配的協議（如對 SQL Database 使用 HTTP 而非 Database Protocol）。 | 建立連線，並在連線屬性中設定與目標不符的 **Protocol**（例如選取 RESP 連接到 SQL 資料庫）。 |
 | 17 | **屬性不匹配 (Conn/Protocol Mismatch)** | 連線類型與通訊協定邏輯不一致（如同步連線搭配異步協定 AMQP）。 | 建立連線，將 **Connection Type** 設為 **Synchronous**，但 **Protocol** 選擇 **AMQP**。 |
 | 18 | **缺少 Firewall/WAF** | 架構中有 Client 與入口節點 (LB/API Gateway) 但缺乏 Firewall，或 Firewall 存在但未連線至入口節點。 | 放置 **Client** 與 **Load Balancer**，但不放置 **Firewall**；或放置 **Firewall** 但未連線至 **Load Balancer**。 |
-| 19 | **缺少 Logger/Monitor** | 架構中有 3 個（含）以上 Service 但缺乏 Logger/Monitor，或 Logger/Monitor 存在但未連線至任何 Service。 | 放置 **3 個或更多 Service**，但不放置 **Monitor**；或放置 **Monitor** 但未連線至任何 **Service**。 |
+| 19 | **觀測性缺失檢查** | 偵測尚未連線至 Logger/Monitor 的 Service。 | 放置 **Service** 與 **Monitor**，但未建立連線；或完全不放置 **Monitor**。 |
+| 20 | **同步上傳瓶頸** | 服務（如標籤含 upload, media）同步連線至 Storage，易造成連線阻塞。 | 建立 **Service** 到 **Storage** 的連線，並設為 **Synchronous**。 |
+| 21 | **CDN 孤立提醒** | CDN 節點缺乏 Origin 源站連線，無法抓取內容。 | 放置 **CDN** 但不建立連往後端（如 API Gateway, Storage）的 **CDN Origin** 連線。 |
+| 22 | **同步鏈過長提醒** | 偵測到 3 個（含）以上 Service 的連續同步呼叫鏈（A->B->C）。 | 建立三個 **Service** 節點並以 **Synchronous** 連線串接。 |
+| 23 | **內部通訊協定建議** | Service 之間使用 HTTP 進行內部通訊。 | 建立兩個 **Service** 間的連線，並將協議設為 **HTTP**。 |
+| 24 | **搜尋引擎選型建議** | 搜尋服務 (Search Service) 直接查詢 SQL/NoSQL 資料庫而非專用搜尋引擎。 | 將名稱含 **Search** 的 **Service** 連接至 **SQL** 資料庫。 |
+| 25 | **缺失資料來源** | 服務沒有連線至任何資料儲存 (DB/Cache/Storage) 或下游服務。 | 放置一個 **Service** 節點但不建立任何輸出連線。 |
+| 26 | **資料庫共享提醒** | 多個不同業務服務共享同一個資料庫節點，違反 Database-per-Service 原則。 | 將 **2 個不同的 Service** 同時連線至同一個 **Database** 節點。 |
+| 27 | **快取回退 (Fallback) 缺失** | Service 僅連線至 Cache 而無 Database/Storage 作為持久化回退。 | 建立 **Service** 到 **Cache** 的連線，但不連向任何 **Database**。 |
 
 ## 📂 專案結構
 

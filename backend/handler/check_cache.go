@@ -78,3 +78,48 @@ func checkCacheConsistency(ctx model.TopologyContext) []Warning {
 	}
 	return warnings
 }
+
+// checkCacheOnly warns if a service connects to Cache but has no path to Database/Storage.
+// This handles the "no fallback" issue (C2).
+func checkCacheOnly(ctx model.TopologyContext) []Warning {
+	var warnings []Warning
+	for id, node := range ctx.NodeByID {
+		if !model.NodeHasRole(node, "service") {
+			continue
+		}
+
+		// Skip fan-out services as they often only write to cache
+		if labelContains(node.Label, "fanout") || labelContains(node.Label, "fan-out") {
+			continue
+		}
+
+		targets := ctx.Outgoing[id]
+		hasCache := false
+		hasDB := false
+		var cacheIDs []string
+
+		for _, targetID := range targets {
+			target, ok := ctx.NodeByID[targetID]
+			if !ok {
+				continue
+			}
+			if model.NodeHasRole(target, "cache") {
+				hasCache = true
+				cacheIDs = append(cacheIDs, targetID)
+			}
+			if model.NodeHasRole(target, "database") || model.NodeHasRole(target, "storage") {
+				hasDB = true
+			}
+		}
+
+		if hasCache && !hasDB {
+			warnings = append(warnings, Warning{
+				Rule:     "cache_no_fallback",
+				Message:  fmt.Sprintf("❄️ 快取回退缺失：Service %q 僅連線至 Cache 而無 Database/Storage 回退路徑。", node.Label),
+				Solution: "在 Cache-aside 模式下，當 Cache miss 或失效時，應有資料庫作為最終資料來源 (Fallback)。請為該 Service 建立與資料庫的連線。",
+				NodeIDs:  append([]string{id}, cacheIDs...),
+			})
+		}
+	}
+	return warnings
+}

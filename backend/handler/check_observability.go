@@ -5,65 +5,81 @@ import (
 	"github.com/architectmind/backend/model"
 )
 
-// checkMissingLogger warns if there are 3+ Services but no Logger,
-// or if Logger exists but is not connected to any Service.
+// checkMissingLogger warns if any Service is NOT connected to a Logger/Monitor.
 func checkMissingLogger(ctx model.TopologyContext) []Warning {
-	serviceCount := 0
-	hasLogger := false
-	var serviceIDs []string
+	var serviceNodes []model.SystemNode
 	var loggerIDs []string
 
 	for _, node := range ctx.Nodes {
 		if model.NodeHasRole(node, "service") {
-			serviceCount++
-			serviceIDs = append(serviceIDs, node.ID)
+			serviceNodes = append(serviceNodes, node)
 		}
 		if model.NodeHasRole(node, "logger") || model.NodeHasRole(node, "monitor") {
-			hasLogger = true
 			loggerIDs = append(loggerIDs, node.ID)
 		}
 	}
 
-	if serviceCount >= 3 && !hasLogger {
-		if len(serviceIDs) > 3 {
-			serviceIDs = serviceIDs[:3]
-		}
-		return []Warning{{
-			Rule:     "missing_observability",
-			Message:  "📊 缺少 Logger/Monitor：架構中有 3 個（含）以上的 Service 但缺少 Logger/Monitor。",
-			Solution: "建議加入 Logger/Monitor 節點（如 ELK Stack、Prometheus + Grafana、Datadog），並讓各 Service 連線至該節點。",
-			NodeIDs:  serviceIDs,
-		}}
+	if len(serviceNodes) == 0 {
+		return nil
 	}
 
-	if serviceCount >= 3 && hasLogger {
-		connected := false
-		// Map of logger IDs for quick lookup
-		isLogger := make(map[string]bool)
-		for _, id := range loggerIDs {
-			isLogger[id] = true
-		}
+	// Map of logger IDs for quick lookup
+	isLogger := make(map[string]bool)
+	for _, id := range loggerIDs {
+		isLogger[id] = true
+	}
 
-		// Check if any service connects to a logger
-		for _, serviceID := range serviceIDs {
-			targets := ctx.Outgoing[serviceID]
-			for _, targetID := range targets {
-				if isLogger[targetID] {
-					connected = true
-					break
-				}
-			}
-			if connected {
+	var disconnectedServices []model.SystemNode
+	for _, svc := range serviceNodes {
+		connected := false
+		targets := ctx.Outgoing[svc.ID]
+		for _, targetID := range targets {
+			if isLogger[targetID] {
+				connected = true
 				break
 			}
 		}
-
 		if !connected {
+			disconnectedServices = append(disconnectedServices, svc)
+		}
+	}
+
+	if len(disconnectedServices) > 0 {
+		if len(loggerIDs) == 0 {
+			// No logger exists at all
+			var nodeIDs []string
+			for i, svc := range disconnectedServices {
+				if i >= 3 {
+					break
+				}
+				nodeIDs = append(nodeIDs, svc.ID)
+			}
 			return []Warning{{
 				Rule:     "missing_observability",
-				Message:  "📊 Logger/Monitor 未正確連線：架構中有 Logger/Monitor 但未與任何 Service 建立連線。",
-				Solution: "建議將各 Service 連接至 Logger/Monitor 節點，以收集日誌與監控數據。",
-				NodeIDs:  append(loggerIDs, serviceIDs[:3]...),
+				Message:  "📊 缺少 Logger/Monitor：架構中存在 Service 但缺少 Logger/Monitor 節點。",
+				Solution: "建議加入 Logger/Monitor 節點（如 ELK Stack、Prometheus），並讓各 Service 連線至該節點以收集觀測數據。",
+				NodeIDs:  nodeIDs,
+			}}
+		} else {
+			// Logger exists but some services are not connected
+			var nodeIDs []string
+			var labels []string
+			for i, svc := range disconnectedServices {
+				nodeIDs = append(nodeIDs, svc.ID)
+				if i < 3 {
+					labels = append(labels, svc.Label)
+				}
+			}
+			msg := fmt.Sprintf("📊 觀測性缺失：Service %s 等尚未連線至 Logger/Monitor。", joinLabels(labels))
+			if len(disconnectedServices) == 1 {
+				msg = fmt.Sprintf("📊 觀測性缺失：Service %q 尚未連線至 Logger/Monitor。", disconnectedServices[0].Label)
+			}
+
+			return []Warning{{
+				Rule:     "incomplete_service_observability",
+				Message:  msg,
+				Solution: "請將這些 Service 連接至 Logger/Monitor 節點，以確保系統具備完整的監控與除錯能力。",
+				NodeIDs:  nodeIDs,
 			}}
 		}
 	}

@@ -21,37 +21,52 @@ func TestCheckMissingLogger_3Services_NoLogger(t *testing.T) {
 	}
 }
 
-func TestCheckMissingLogger_2Services_NoWarning(t *testing.T) {
+func TestCheckMissingLogger_2Services_NoLogger(t *testing.T) {
 	nodes := map[string]model.SystemNode{
 		"s1": {ID: "s1", ComponentType: "service", Label: "Svc1"},
 		"s2": {ID: "s2", ComponentType: "service", Label: "Svc2"},
 	}
 	ctx := makeCtx(nodes, []model.SystemEdge{})
 	w := checkMissingLogger(ctx)
-	if len(w) != 0 {
-		t.Errorf("expected 0 warnings for <3 services, got %d", len(w))
+	if len(w) != 1 || w[0].Rule != "missing_observability" {
+		t.Errorf("expected 1 warning for services without logger, got %d", len(w))
 	}
 }
 
 func TestCheckMissingLogger_LoggerNotConnected(t *testing.T) {
 	nodes := map[string]model.SystemNode{
 		"s1":  {ID: "s1", ComponentType: "service", Label: "Svc1"},
-		"s2":  {ID: "s2", ComponentType: "service", Label: "Svc2"},
-		"s3":  {ID: "s3", ComponentType: "service", Label: "Svc3"},
 		"log": {ID: "log", ComponentType: "logger", Label: "ELK"},
 	}
 	ctx := makeCtx(nodes, []model.SystemEdge{})
 	w := checkMissingLogger(ctx)
-	if len(w) != 1 {
-		t.Errorf("expected 1 warning for disconnected logger, got %d", len(w))
+	if len(w) != 1 || w[0].Rule != "incomplete_service_observability" {
+		t.Errorf("expected 1 warning for disconnected service, got %d", len(w))
 	}
 }
 
-func TestCheckMissingLogger_LoggerConnected(t *testing.T) {
+func TestCheckMissingLogger_PartialLoggerConnected(t *testing.T) {
 	nodes := map[string]model.SystemNode{
 		"s1":  {ID: "s1", ComponentType: "service", Label: "Svc1"},
 		"s2":  {ID: "s2", ComponentType: "service", Label: "Svc2"},
-		"s3":  {ID: "s3", ComponentType: "service", Label: "Svc3"},
+		"log": {ID: "log", ComponentType: "logger", Label: "ELK"},
+	}
+	edges := []model.SystemEdge{
+		{ID: "e1", Source: "s1", Target: "log", ConnectionType: "sync"},
+	}
+	ctx := makeCtx(nodes, edges)
+	w := checkMissingLogger(ctx)
+	if len(w) != 1 || w[0].Rule != "incomplete_service_observability" {
+		t.Errorf("expected 1 warning for partial connection, got %d", len(w))
+	}
+	if w[0].NodeIDs[0] != "s2" {
+		t.Errorf("expected warning for s2, got %v", w[0].NodeIDs)
+	}
+}
+
+func TestCheckMissingLogger_LoggerAllConnected(t *testing.T) {
+	nodes := map[string]model.SystemNode{
+		"s1":  {ID: "s1", ComponentType: "service", Label: "Svc1"},
 		"log": {ID: "log", ComponentType: "logger", Label: "ELK"},
 	}
 	edges := []model.SystemEdge{
