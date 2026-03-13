@@ -91,9 +91,6 @@ export default function EdgePropertyPanel({
     })
   }
 
-  const sourceNode = edges.find(e => e.id === selectedEdge.id)?.source
-  const targetNode = edges.find(e => e.id === selectedEdge.id)?.target
-
   return (
     <aside
       style={{
@@ -107,13 +104,6 @@ export default function EdgePropertyPanel({
       <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
         Edge Properties
       </h3>
-
-      <div style={{ marginBottom: 16, padding: 8, backgroundColor: 'var(--bg-primary)', borderRadius: 4 }}>
-        <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-          <div><strong>From:</strong> {sourceNode}</div>
-          <div><strong>To:</strong> {targetNode}</div>
-        </div>
-      </div>
 
       <div style={{ marginBottom: 16 }}>
         <label style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
