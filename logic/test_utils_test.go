@@ -1,4 +1,4 @@
-package handler
+package logic
 
 import "github.com/architectmind/backend/model"
 

@@ -3,7 +3,7 @@
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "Starting backend..."
-cd "$DIR/api" && go run _cmd/main.go &
+cd "$DIR" && go run _cmd/main.go &
 BACKEND_PID=$!
 
 sleep 2

@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/architectmind/backend/handler"
+	"github.com/architectmind/backend/logic"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -20,7 +20,7 @@ func main() {
 
 	api := r.Group("/api")
 	{
-		api.POST("/topology", handler.PostTopology)
+		api.POST("/topology", logic.PostTopology)
 	}
 
 	log.Println("ArchitectMind backend starting on :8080")

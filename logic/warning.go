@@ -1,4 +1,4 @@
-package handler
+package logic
 
 // Warning represents a structured linting result with associated node IDs.
 type Warning struct {

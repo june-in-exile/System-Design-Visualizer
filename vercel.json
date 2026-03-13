@@ -1,26 +1,9 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/handler/serverless.go",
-      "use": "@vercel/go"
-    },
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
   "rewrites": [
-    {
-      "source": "/api/topology",
-      "destination": "/api/handler/serverless"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/frontend/$1"
-    }
+    { "source": "/api/topology", "destination": "/api/topology" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
