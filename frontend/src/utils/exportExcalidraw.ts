@@ -26,8 +26,43 @@ function getStrokeColor(componentType: string): string {
 // 節點尺寸（與 ArchitectureNode.tsx 一致）
 // ============================================================
 
-const NODE_WIDTH = 180
+const NODE_WIDTH = 160
 const NODE_HEIGHT = 80
+
+// ============================================================
+// Handle 位置計算
+// ============================================================
+
+interface AnchorPoint {
+  x: number
+  y: number
+}
+
+/**
+ * 根據 sourceHandle / targetHandle 字串計算連接點座標
+ * handle 格式：'top-source', 'bottom-target', 'left-source', 'right-target' 等
+ */
+function getAnchorPoint(
+  nodeX: number,
+  nodeY: number,
+  handle: string | null | undefined
+): AnchorPoint {
+  const h = handle || 'bottom-source'
+  const side = h.split('-')[0]
+
+  switch (side) {
+    case 'top':
+      return { x: nodeX + NODE_WIDTH / 2, y: nodeY }
+    case 'bottom':
+      return { x: nodeX + NODE_WIDTH / 2, y: nodeY + NODE_HEIGHT }
+    case 'left':
+      return { x: nodeX, y: nodeY + NODE_HEIGHT / 2 }
+    case 'right':
+      return { x: nodeX + NODE_WIDTH, y: nodeY + NODE_HEIGHT / 2 }
+    default:
+      return { x: nodeX + NODE_WIDTH / 2, y: nodeY + NODE_HEIGHT }
+  }
+}
 
 // ============================================================
 // 核心轉換
@@ -48,7 +83,6 @@ export function toExcalidraw(nodes: Node[], edges: Edge[]): string {
     const rectId = `rect-${node.id}`
     const textId = `text-${node.id}`
 
-    // 矩形
     elements.push({
       id: rectId,
       type: 'rectangle',
@@ -57,7 +91,7 @@ export function toExcalidraw(nodes: Node[], edges: Edge[]): string {
       width: NODE_WIDTH,
       height: NODE_HEIGHT,
       strokeColor: color,
-      strokeWidth: 2,
+      strokeWidth: 1,
       backgroundColor: `${color}22`,
       fillStyle: 'solid',
       roughness: 1,
@@ -67,7 +101,6 @@ export function toExcalidraw(nodes: Node[], edges: Edge[]): string {
       seed: hashString(node.id),
     })
 
-    // 文字標籤（綁定在矩形內）
     elements.push({
       id: textId,
       type: 'text',
@@ -77,7 +110,7 @@ export function toExcalidraw(nodes: Node[], edges: Edge[]): string {
       height: 24,
       text: label,
       fontSize: 16,
-      fontFamily: 1,           // 1 = Virgil (手寫), Excalidraw 預設
+      fontFamily: 1,
       textAlign: 'center',
       verticalAlign: 'middle',
       strokeColor: color,
@@ -102,23 +135,27 @@ export function toExcalidraw(nodes: Node[], edges: Edge[]): string {
     const protocol = (edgeData.protocol as string) || ''
     const connType = (edgeData.connectionType as string) || ''
 
-    // 起點：source 底部中央 → 終點：target 頂部中央
-    const sx = sourceNode.position.x + NODE_WIDTH / 2
-    const sy = sourceNode.position.y + NODE_HEIGHT
-    const tx = targetNode.position.x + NODE_WIDTH / 2
-    const ty = targetNode.position.y
+    const src = getAnchorPoint(
+      sourceNode.position.x,
+      sourceNode.position.y,
+      edge.sourceHandle
+    )
+    const tgt = getAnchorPoint(
+      targetNode.position.x,
+      targetNode.position.y,
+      edge.targetHandle
+    )
 
-    // Arrow
     elements.push({
       id: `arrow-${edge.id}`,
       type: 'arrow',
-      x: sx,
-      y: sy,
-      width: Math.abs(tx - sx),
-      height: Math.abs(ty - sy),
-      points: [[0, 0], [tx - sx, ty - sy]],
-      strokeColor: '#1e1e1e',
-      strokeWidth: 2,
+      x: src.x,
+      y: src.y,
+      width: Math.abs(tgt.x - src.x),
+      height: Math.abs(tgt.y - src.y),
+      points: [[0, 0], [tgt.x - src.x, tgt.y - src.y]],
+      strokeColor: '#555555',
+      strokeWidth: 1,
       backgroundColor: 'transparent',
       fillStyle: 'solid',
       roughness: 1,
@@ -145,29 +182,29 @@ export function toExcalidraw(nodes: Node[], edges: Edge[]): string {
       if (protocol) parts.push(protocol.toUpperCase())
       if (connType && connType !== 'unspecified') parts.push(connType)
 
+      const midX = (src.x + tgt.x) / 2
+      const midY = (src.y + tgt.y) / 2
+
       elements.push({
         id: `label-${edge.id}`,
         type: 'text',
-        x: (sx + tx) / 2 - 40,
-        y: (sy + ty) / 2 - 12,
+        x: midX - 40,
+        y: midY - 12,
         width: 80,
         height: 20,
         text: parts.join(' · '),
         fontSize: 12,
         fontFamily: 1,
         textAlign: 'center',
-        strokeColor: '#666666',
+        strokeColor: '#888888',
         backgroundColor: 'transparent',
         fillStyle: 'solid',
         roughness: 0,
-        opacity: 80,
+        opacity: 70,
       })
     }
   }
 
-  // ----------------------------------------------------------
-  // 組裝 Excalidraw JSON
-  // ----------------------------------------------------------
   return JSON.stringify({
     type: 'excalidraw',
     version: 2,
@@ -186,7 +223,6 @@ export function toExcalidraw(nodes: Node[], edges: Edge[]): string {
 // 工具函數
 // ============================================================
 
-/** 穩定的 hash（與 utils/rough.ts 的 stableSeed 同邏輯） */
 function hashString(str: string): number {
   let hash = 0
   for (let i = 0; i < str.length; i++) {
@@ -195,7 +231,6 @@ function hashString(str: string): number {
   return Math.abs(hash)
 }
 
-/** 觸發瀏覽器下載 */
 export function downloadExcalidraw(content: string, filename = 'architecture.excalidraw') {
   const blob = new Blob([content], { type: 'application/json' })
   const url = URL.createObjectURL(blob)

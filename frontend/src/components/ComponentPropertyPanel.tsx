@@ -56,6 +56,7 @@ const CACHE_PRODUCTS = [
 ]
 
 const EVICTION_POLICIES = [
+  { value: '', label: '(Unspecified)', description: 'No specific eviction policy configured' },
   { value: 'lru', label: 'LRU (Least Recently Used)', description: 'Evicts least recently accessed items first' },
   { value: 'lfu', label: 'LFU (Least Frequently Used)', description: 'Evicts least frequently accessed items first' },
   { value: 'fifo', label: 'FIFO (First In First Out)', description: 'Evicts oldest items first, regardless of access pattern' },
@@ -643,11 +644,11 @@ export default function PropertyPanel({
           Eviction Policy
         </label>
         <select
-          value={(properties.evictionPolicy as string) || 'lru'}
+          value={(properties.evictionPolicy as string) || ''}
           onChange={(e) => handlePropertyChange('evictionPolicy', e.target.value)}
           title={getTooltip(
-            EVICTION_POLICIES.find(opt => opt.value === ((properties.evictionPolicy as string) || 'lru'))?.label || '',
-            EVICTION_POLICIES.find(opt => opt.value === ((properties.evictionPolicy as string) || 'lru'))?.description
+            EVICTION_POLICIES.find(opt => opt.value === ((properties.evictionPolicy as string) || ''))?.label || '',
+            EVICTION_POLICIES.find(opt => opt.value === ((properties.evictionPolicy as string) || ''))?.description
           )}
           style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
         >
@@ -665,11 +666,20 @@ export default function PropertyPanel({
           TTL (Seconds)
         </label>
         <input
-          type="number"
-          min="0"
+          type="text"
+          inputMode="numeric"
           placeholder="0 (No Expiration)"
-          value={(properties.ttlSeconds as number) || 0}
-          onChange={(e) => handlePropertyChange('ttlSeconds', parseInt(e.target.value, 10))}
+          value={properties.ttlSeconds !== undefined ? properties.ttlSeconds : ''}
+          onChange={(e) => {
+            const val = e.target.value
+            if (val === '') {
+              const newProps = { ...properties }
+              delete newProps.ttlSeconds
+              onNodeDataChange(selectedNode.id, { ...data, properties: newProps })
+            } else {
+              handlePropertyChange('ttlSeconds', parseInt(val, 10))
+            }
+          }}
           style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
         />
       </div>

@@ -951,9 +951,9 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
           style={{
             padding: '6px 16px',
             borderRadius: 6,
-            border: 'none',
-            backgroundColor: nodes.length === 0 ? 'var(--btn-disabled-bg)' : 'var(--btn-primary-bg)',
-            color: 'var(--btn-primary-text)',
+            border: '1px solid var(--border-color)',
+            backgroundColor: nodes.length === 0 ? 'var(--btn-disabled-bg)' : 'var(--bg-secondary)',
+            color: nodes.length === 0 ? 'var(--text-secondary)' : 'var(--text-primary)',
             fontSize: 13,
             fontWeight: 600,
             cursor: nodes.length === 0 ? 'not-allowed' : 'pointer',
@@ -1043,7 +1043,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
                 <span 
                   onClick={() => setShowWarnings((prev) => !prev)}
                   style={{ 
-                    color: '#f59e0b', 
+                    color: 'var(--text-secondary)',
                     marginLeft: 8,
                     cursor: 'pointer',
                     textDecoration: 'underline',

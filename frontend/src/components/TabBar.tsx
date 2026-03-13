@@ -57,7 +57,7 @@ function TabBar({
       style={{
         display: 'flex',
         alignItems: 'center',
-        backgroundColor: 'var(--bg-secondary)',
+        backgroundColor: 'var(--bg-primary)',
         borderBottom: '1px solid var(--border-color)',
         height: 36,
         paddingLeft: 8,
