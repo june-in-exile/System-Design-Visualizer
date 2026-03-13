@@ -60,3 +60,29 @@ var ValidConnectionTypes = map[string]bool{
 	"cdn_origin":  true,
 	"unspecified": true,
 }
+
+// TopologyContext holds pre-computed lookup structures for validation.
+type TopologyContext struct {
+	Nodes    []SystemNode
+	Edges    []SystemEdge
+	NodeByID map[string]SystemNode
+	Outgoing map[string][]string // source ID -> list of target IDs
+}
+
+// NewTopologyContext builds a TopologyContext from a SystemTopology.
+func NewTopologyContext(t SystemTopology) TopologyContext {
+	nodeByID := make(map[string]SystemNode, len(t.Nodes))
+	for _, node := range t.Nodes {
+		nodeByID[node.ID] = node
+	}
+	outgoing := make(map[string][]string)
+	for _, edge := range t.Edges {
+		outgoing[edge.Source] = append(outgoing[edge.Source], edge.Target)
+	}
+	return TopologyContext{
+		Nodes:    t.Nodes,
+		Edges:    t.Edges,
+		NodeByID: nodeByID,
+		Outgoing: outgoing,
+	}
+}

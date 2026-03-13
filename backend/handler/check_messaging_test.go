@@ -12,8 +12,7 @@ func TestCheckMQConsumer_NoOutgoing(t *testing.T) {
 	nodes := map[string]model.SystemNode{
 		"mq1": {ID: "mq1", ComponentType: "message_queue", Label: "RabbitMQ"},
 	}
-	outgoing := map[string][]string{}
-	w := checkMQConsumer(nodes, outgoing)
+	w := checkMQConsumer(makeCtx(nodes, nil))
 	if len(w) != 1 || w[0].Rule != "mq_consumer_missing" {
 		t.Errorf("expected 1 warning, got %d", len(w))
 	}
@@ -24,8 +23,8 @@ func TestCheckMQConsumer_WithConsumer(t *testing.T) {
 		"mq1": {ID: "mq1", ComponentType: "message_queue", Label: "RabbitMQ"},
 		"s1":  {ID: "s1", ComponentType: "service", Label: "Worker"},
 	}
-	outgoing := map[string][]string{"mq1": {"s1"}}
-	w := checkMQConsumer(nodes, outgoing)
+	edges := []model.SystemEdge{{ID: "e1", Source: "mq1", Target: "s1"}}
+	w := checkMQConsumer(makeCtx(nodes, edges))
 	if len(w) != 0 {
 		t.Errorf("expected 0 warnings, got %d", len(w))
 	}
@@ -34,24 +33,24 @@ func TestCheckMQConsumer_WithConsumer(t *testing.T) {
 // --- checkMQDLQ ---
 
 func TestCheckMQDLQ_NoDLQ(t *testing.T) {
-	nodes := []model.SystemNode{
-		{ID: "mq1", ComponentType: "message_queue", Label: "RabbitMQ", Properties: map[string]interface{}{
+	nodes := map[string]model.SystemNode{
+		"mq1": {ID: "mq1", ComponentType: "message_queue", Label: "RabbitMQ", Properties: map[string]interface{}{
 			"hasDLQ": false,
 		}},
 	}
-	w := checkMQDLQ(nodes)
+	w := checkMQDLQ(makeCtx(nodes, nil))
 	if len(w) != 1 || w[0].Rule != "mq_dlq_missing" {
 		t.Errorf("expected 1 warning, got %d", len(w))
 	}
 }
 
 func TestCheckMQDLQ_WithDLQ(t *testing.T) {
-	nodes := []model.SystemNode{
-		{ID: "mq1", ComponentType: "message_queue", Label: "RabbitMQ", Properties: map[string]interface{}{
+	nodes := map[string]model.SystemNode{
+		"mq1": {ID: "mq1", ComponentType: "message_queue", Label: "RabbitMQ", Properties: map[string]interface{}{
 			"hasDLQ": true,
 		}},
 	}
-	w := checkMQDLQ(nodes)
+	w := checkMQDLQ(makeCtx(nodes, nil))
 	if len(w) != 0 {
 		t.Errorf("expected 0 warnings, got %d", len(w))
 	}
@@ -67,7 +66,7 @@ func TestCheckAsyncDecoupling_SyncCallToHeavyService(t *testing.T) {
 	edges := []model.SystemEdge{
 		{ID: "e1", Source: "s1", Target: "s2", ConnectionType: "sync"},
 	}
-	w := checkAsyncDecoupling(nodes, edges)
+	w := checkAsyncDecoupling(makeCtx(nodes, edges))
 	if len(w) != 1 || w[0].Rule != "async_decoupling" {
 		t.Errorf("expected 1 async_decoupling warning, got %d", len(w))
 	}
@@ -81,7 +80,7 @@ func TestCheckAsyncDecoupling_AlreadyDecoupled(t *testing.T) {
 	edges := []model.SystemEdge{
 		{ID: "e1", Source: "mq1", Target: "s2", ConnectionType: "async"},
 	}
-	w := checkAsyncDecoupling(nodes, edges)
+	w := checkAsyncDecoupling(makeCtx(nodes, edges))
 	if len(w) != 0 {
 		t.Errorf("expected 0 warnings when decoupled via MQ, got %d", len(w))
 	}
@@ -95,7 +94,7 @@ func TestCheckAsyncDecoupling_NonHeavyService_NoWarning(t *testing.T) {
 	edges := []model.SystemEdge{
 		{ID: "e1", Source: "s1", Target: "s2", ConnectionType: "sync"},
 	}
-	w := checkAsyncDecoupling(nodes, edges)
+	w := checkAsyncDecoupling(makeCtx(nodes, edges))
 	if len(w) != 0 {
 		t.Errorf("expected 0 warnings for non-heavy service, got %d", len(w))
 	}
@@ -110,8 +109,8 @@ func TestCheckAsyncPeakShaving_LBToHighWriteDB(t *testing.T) {
 			"dbType": "sql", "readWriteRatio": 0.2,
 		}},
 	}
-	outgoing := map[string][]string{"lb1": {"db1"}}
-	w := checkAsyncPeakShaving(nodes, outgoing)
+	edges := []model.SystemEdge{{ID: "e1", Source: "lb1", Target: "db1"}}
+	w := checkAsyncPeakShaving(makeCtx(nodes, edges))
 	if len(w) != 1 {
 		t.Errorf("expected 1 warning, got %d", len(w))
 	}
@@ -124,9 +123,10 @@ func TestCheckAsyncPeakShaving_LBToHighReadDB_NoWarning(t *testing.T) {
 			"dbType": "sql", "readWriteRatio": 0.8,
 		}},
 	}
-	outgoing := map[string][]string{"lb1": {"db1"}}
-	w := checkAsyncPeakShaving(nodes, outgoing)
+	edges := []model.SystemEdge{{ID: "e1", Source: "lb1", Target: "db1"}}
+	w := checkAsyncPeakShaving(makeCtx(nodes, edges))
 	if len(w) != 0 {
 		t.Errorf("expected 0 warnings, got %d", len(w))
 	}
 }
+

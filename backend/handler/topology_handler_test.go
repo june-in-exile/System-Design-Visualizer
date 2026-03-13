@@ -1,8 +1,9 @@
 package handler
 
 import (
-	"github.com/architectmind/backend/model"
 	"testing"
+
+	"github.com/architectmind/backend/model"
 )
 
 func TestCheckProtocolMismatch_Unspecified(t *testing.T) {
@@ -20,7 +21,8 @@ func TestCheckProtocolMismatch_Unspecified(t *testing.T) {
 		},
 	}
 
-	warnings := checkProtocolMismatch(nodes, edges)
+	ctx := makeCtx(nodes, edges)
+	warnings := checkProtocolMismatch(ctx)
 	if len(warnings) > 0 {
 		t.Errorf("Expected no warnings for unspecified protocol, got %v", warnings)
 	}
@@ -41,7 +43,8 @@ func TestCheckProtocolMismatch_Mismatch(t *testing.T) {
 		},
 	}
 
-	warnings := checkProtocolMismatch(nodes, edges)
+	ctx := makeCtx(nodes, edges)
+	warnings := checkProtocolMismatch(ctx)
 	if len(warnings) == 0 {
 		t.Error("Expected warning for HTTP protocol on database, got none")
 	}
@@ -62,29 +65,32 @@ func TestCheckConnectionTypeProtocolMismatch_Unspecified(t *testing.T) {
 		},
 	}
 
-	warnings := checkConnectionTypeProtocolMismatch(nodes, edges)
+	ctx := makeCtx(nodes, edges)
+	warnings := checkConnectionTypeProtocolMismatch(ctx)
 	if len(warnings) > 0 {
 		t.Errorf("Expected no warnings for replication with unspecified protocol, got %v", warnings)
 	}
 }
 
-func TestCheckReverseProxySPOF_SingleNoReplica(t *testing.T) {
-	nodes := []model.SystemNode{
-		{ID: "rp1", ComponentType: "reverse_proxy", Label: "Nginx", Properties: map[string]interface{}{}},
+func TestCheckEntryPointSPOF_RP_SingleNoReplica(t *testing.T) {
+	nodes := map[string]model.SystemNode{
+		"rp1": {ID: "rp1", ComponentType: "reverse_proxy", Label: "Nginx", Properties: map[string]interface{}{}},
 	}
-	warnings := checkReverseProxySPOF(nodes)
+	ctx := makeCtx(nodes, []model.SystemEdge{})
+	warnings := checkEntryPointSPOF(ctx, "reverse_proxy", "reverse_proxy_spof", "🔀", "Reverse Proxy")
 	if len(warnings) != 1 {
 		t.Errorf("Expected 1 warning for single reverse proxy without replicas, got %d", len(warnings))
 	}
 }
 
-func TestCheckReverseProxySPOF_SingleWithReplica(t *testing.T) {
-	nodes := []model.SystemNode{
-		{ID: "rp1", ComponentType: "reverse_proxy", Label: "Nginx", Properties: map[string]interface{}{
+func TestCheckEntryPointSPOF_RP_SingleWithReplica(t *testing.T) {
+	nodes := map[string]model.SystemNode{
+		"rp1": {ID: "rp1", ComponentType: "reverse_proxy", Label: "Nginx", Properties: map[string]interface{}{
 			"replicas": float64(3),
 		}},
 	}
-	warnings := checkReverseProxySPOF(nodes)
+	ctx := makeCtx(nodes, []model.SystemEdge{})
+	warnings := checkEntryPointSPOF(ctx, "reverse_proxy", "reverse_proxy_spof", "🔀", "Reverse Proxy")
 	if len(warnings) != 0 {
 		t.Errorf("Expected no warnings for reverse proxy with replicas > 1, got %d", len(warnings))
 	}
@@ -100,7 +106,8 @@ func TestCheckReverseProxySSL_HTTPSWithoutTermination(t *testing.T) {
 	edges := []model.SystemEdge{
 		{ID: "e1", Source: "c1", Target: "rp1", ConnectionType: "sync", Protocol: "https"},
 	}
-	warnings := checkReverseProxySSL(nodes, edges)
+	ctx := makeCtx(nodes, edges)
+	warnings := checkReverseProxySSL(ctx)
 	if len(warnings) != 1 {
 		t.Errorf("Expected 1 warning for HTTPS without SSL termination, got %d", len(warnings))
 	}
@@ -116,7 +123,8 @@ func TestCheckReverseProxySSL_HTTPSWithTermination(t *testing.T) {
 	edges := []model.SystemEdge{
 		{ID: "e1", Source: "c1", Target: "rp1", ConnectionType: "sync", Protocol: "https"},
 	}
-	warnings := checkReverseProxySSL(nodes, edges)
+	ctx := makeCtx(nodes, edges)
+	warnings := checkReverseProxySSL(ctx)
 	if len(warnings) != 0 {
 		t.Errorf("Expected no warnings for HTTPS with SSL termination, got %d", len(warnings))
 	}
@@ -130,10 +138,11 @@ func TestCheckAsyncPeakShaving_ReverseProxy(t *testing.T) {
 			"readWriteRatio": 0.2,
 		}},
 	}
-	outgoing := map[string][]string{
-		"rp1": {"db1"},
+	edges := []model.SystemEdge{
+		{ID: "e1", Source: "rp1", Target: "db1", ConnectionType: "sync"},
 	}
-	warnings := checkAsyncPeakShaving(nodes, outgoing)
+	ctx := makeCtx(nodes, edges)
+	warnings := checkAsyncPeakShaving(ctx)
 	if len(warnings) != 1 {
 		t.Errorf("Expected 1 warning for reverse proxy directly connecting to high-write DB, got %d", len(warnings))
 	}
@@ -147,10 +156,11 @@ func TestCheckSPOF_ReverseProxySingleService(t *testing.T) {
 			"stateless": true,
 		}},
 	}
-	outgoing := map[string][]string{
-		"rp1": {"s1"},
+	edges := []model.SystemEdge{
+		{ID: "e1", Source: "rp1", Target: "s1", ConnectionType: "sync"},
 	}
-	warnings := checkSPOF(nodes, outgoing)
+	ctx := makeCtx(nodes, edges)
+	warnings := checkSPOF(ctx)
 	if len(warnings) != 1 {
 		t.Errorf("Expected 1 SPOF warning for reverse proxy with single service, got %d", len(warnings))
 	}

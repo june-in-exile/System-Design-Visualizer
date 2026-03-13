@@ -13,8 +13,11 @@ func TestCheckCDNUsage_ClientNoCDN(t *testing.T) {
 		"c1": {ID: "c1", ComponentType: "client", Label: "Browser"},
 		"s1": {ID: "s1", ComponentType: "service", Label: "API"},
 	}
-	outgoing := map[string][]string{"c1": {"s1"}}
-	w := checkCDNUsage(nodes, outgoing)
+	edges := []model.SystemEdge{
+		{ID: "e1", Source: "c1", Target: "s1", ConnectionType: "sync"},
+	}
+	ctx := makeCtx(nodes, edges)
+	w := checkCDNUsage(ctx)
 	if len(w) != 1 || w[0].Rule != "cdn_usage" {
 		t.Errorf("expected 1 cdn_usage warning, got %d", len(w))
 	}
@@ -25,8 +28,11 @@ func TestCheckCDNUsage_ClientAndCDN_Connected(t *testing.T) {
 		"c1":   {ID: "c1", ComponentType: "client", Label: "Browser"},
 		"cdn1": {ID: "cdn1", ComponentType: "cdn", Label: "CloudFront"},
 	}
-	outgoing := map[string][]string{"c1": {"cdn1"}}
-	w := checkCDNUsage(nodes, outgoing)
+	edges := []model.SystemEdge{
+		{ID: "e1", Source: "c1", Target: "cdn1", ConnectionType: "sync"},
+	}
+	ctx := makeCtx(nodes, edges)
+	w := checkCDNUsage(ctx)
 	if len(w) != 0 {
 		t.Errorf("expected 0 warnings, got %d", len(w))
 	}
@@ -38,8 +44,11 @@ func TestCheckCDNUsage_ClientAndCDN_NotConnected(t *testing.T) {
 		"cdn1": {ID: "cdn1", ComponentType: "cdn", Label: "CloudFront"},
 		"s1":   {ID: "s1", ComponentType: "service", Label: "API"},
 	}
-	outgoing := map[string][]string{"c1": {"s1"}}
-	w := checkCDNUsage(nodes, outgoing)
+	edges := []model.SystemEdge{
+		{ID: "e1", Source: "c1", Target: "s1", ConnectionType: "sync"},
+	}
+	ctx := makeCtx(nodes, edges)
+	w := checkCDNUsage(ctx)
 	if len(w) != 1 {
 		t.Errorf("expected 1 warning for disconnected CDN, got %d", len(w))
 	}
@@ -49,7 +58,8 @@ func TestCheckCDNUsage_NoClient_NoWarning(t *testing.T) {
 	nodes := map[string]model.SystemNode{
 		"s1": {ID: "s1", ComponentType: "service", Label: "API"},
 	}
-	w := checkCDNUsage(nodes, map[string][]string{})
+	ctx := makeCtx(nodes, []model.SystemEdge{})
+	w := checkCDNUsage(ctx)
 	if len(w) != 0 {
 		t.Errorf("expected 0 warnings, got %d", len(w))
 	}
@@ -65,7 +75,8 @@ func TestCheckReverseProxySSL_HTTPNoWarning(t *testing.T) {
 	edges := []model.SystemEdge{
 		{ID: "e1", Source: "c1", Target: "rp1", ConnectionType: "sync", Protocol: "http"},
 	}
-	w := checkReverseProxySSL(nodes, edges)
+	ctx := makeCtx(nodes, edges)
+	w := checkReverseProxySSL(ctx)
 	if len(w) != 0 {
 		t.Errorf("expected 0 warnings for HTTP (not HTTPS), got %d", len(w))
 	}
