@@ -756,31 +756,35 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
       { id: 'tw-client', type: 'architecture', position: { x: 400, y: 0 }, data: { label: 'Client', componentType: 'client', properties: {} } },
       { id: 'tw-dns', type: 'architecture', position: { x: 700, y: 0 }, data: { label: 'DNS', componentType: 'dns', properties: {} } },
       { id: 'tw-cdn', type: 'architecture', position: { x: 700, y: 150 }, data: { label: 'CDN', componentType: 'cdn', properties: {} } },
-      { id: 'tw-lb', type: 'architecture', position: { x: 400, y: 150 }, data: { label: 'Load Balancer', componentType: 'load_balancer', properties: { algorithm: 'round_robin', layer: 'l7', replicas: 2 } } },
+      { id: 'tw-firewall', type: 'architecture', position: { x: 400, y: 150 }, data: { label: 'Firewall', componentType: 'firewall', properties: { mode: 'inline', layer: 'l7' } } },
+      { id: 'tw-lb', type: 'architecture', position: { x: 400, y: 300 }, data: { label: 'Load Balancer', componentType: 'load_balancer', properties: { algorithm: 'round_robin', layer: 'l7', replicas: 2 } } },
       
       // Reverse Proxy
-      { id: 'tw-rp', type: 'architecture', position: { x: 390, y: 350 }, data: { label: 'Reverse Proxy (Nginx)', componentType: 'reverse_proxy', properties: { product: 'nginx', sslTermination: true, replicas: 2 } } },
+      { id: 'tw-rp', type: 'architecture', position: { x: 390, y: 500 }, data: { label: 'Reverse Proxy (Nginx)', componentType: 'reverse_proxy', properties: { product: 'nginx', sslTermination: true, replicas: 2 } } },
       
       // Gateway
-      { id: 'tw-apigw', type: 'architecture', position: { x: 400, y: 550 }, data: { label: 'API Gateway', componentType: 'api_gateway', properties: { authEnabled: true, rateLimit: 5000, replicas: 2 } } },
+      { id: 'tw-apigw', type: 'architecture', position: { x: 400, y: 700 }, data: { label: 'API Gateway', componentType: 'api_gateway', properties: { authEnabled: true, rateLimit: 5000, replicas: 2 } } },
       
       // Core Services
-      { id: 'tw-user-srv', type: 'architecture', position: { x: 50, y: 800 }, data: { label: 'User Service', componentType: 'service', properties: { replicas: 2 } } },
-      { id: 'tw-tweet-srv', type: 'architecture', position: { x: 250, y: 800 }, data: { label: 'Tweet Service', componentType: 'service', properties: { replicas: 2 } } },
-      { id: 'tw-timeline-srv', type: 'architecture', position: { x: 450, y: 800 }, data: { label: 'Timeline Service', componentType: 'service', properties: { replicas: 3 } } },
-      { id: 'tw-media-srv', type: 'architecture', position: { x: 650, y: 800 }, data: { label: 'Media Service', componentType: 'service', properties: { replicas: 2 } } },
+      { id: 'tw-user-srv', type: 'architecture', position: { x: 50, y: 950 }, data: { label: 'User Service', componentType: 'service', properties: { replicas: 2, healthCheck: true } } },
+      { id: 'tw-tweet-srv', type: 'architecture', position: { x: 250, y: 950 }, data: { label: 'Tweet Service', componentType: 'service', properties: { replicas: 2, healthCheck: true } } },
+      { id: 'tw-timeline-srv', type: 'architecture', position: { x: 450, y: 950 }, data: { label: 'Timeline Service', componentType: 'service', properties: { replicas: 3, healthCheck: true } } },
+      { id: 'tw-media-srv', type: 'architecture', position: { x: 650, y: 950 }, data: { label: 'Media Service', componentType: 'service', properties: { replicas: 2, healthCheck: true } } },
       
       // Async & Storage
-      { id: 'tw-mq', type: 'architecture', position: { x: 250, y: 1050 }, data: { label: 'Message Queue', componentType: 'message_queue', properties: { product: 'kafka', queueType: 'pub_sub', hasDLQ: true } } },
-      { id: 'tw-storage', type: 'architecture', position: { x: 650, y: 1050 }, data: { label: 'Storage (S3)', componentType: 'storage', properties: { storageClass: 'standard', accessLevel: 'private' } } },
+      { id: 'tw-mq', type: 'architecture', position: { x: 250, y: 1200 }, data: { label: 'Message Queue', componentType: 'message_queue', properties: { product: 'kafka', queueType: 'pub_sub', hasDLQ: true } } },
+      { id: 'tw-storage', type: 'architecture', position: { x: 650, y: 1200 }, data: { label: 'Storage (S3)', componentType: 'storage', properties: { storageClass: 'standard', accessLevel: 'private' } } },
       
       // Async Workers
-      { id: 'tw-fanout-srv', type: 'architecture', position: { x: 150, y: 1300 }, data: { label: 'Fan-out Service', componentType: 'service', properties: { replicas: 3 } } },
-      { id: 'tw-search-srv', type: 'architecture', position: { x: 350, y: 1300 }, data: { label: 'Search Service', componentType: 'service', properties: { replicas: 2 } } },
+      { id: 'tw-fanout-srv', type: 'architecture', position: { x: 150, y: 1450 }, data: { label: 'Fan-out Service', componentType: 'service', properties: { replicas: 3 } } },
+      { id: 'tw-search-srv', type: 'architecture', position: { x: 350, y: 1450 }, data: { label: 'Search Service', componentType: 'service', properties: { replicas: 2 } } },
       
       // Data Layer
-      { id: 'tw-db', type: 'architecture', position: { x: 250, y: 1550 }, data: { label: 'Database (MySQL)', componentType: 'database', properties: { dbType: 'sql', readWriteRatio: 0.2, replicas: 2 } } },
-      { id: 'tw-cache', type: 'architecture', position: { x: 550, y: 1550 }, data: { label: 'Cache (Redis)', componentType: 'cache', properties: { cacheType: 'distributed', product: 'redis', evictionPolicy: 'lru', ttlSeconds: 3600 } } },
+      { id: 'tw-db', type: 'architecture', position: { x: 250, y: 1700 }, data: { label: 'Database (MySQL)', componentType: 'database', properties: { dbType: 'sql', readWriteRatio: 0.2, replicas: 2 } } },
+      { id: 'tw-cache', type: 'architecture', position: { x: 550, y: 1700 }, data: { label: 'Cache (Redis)', componentType: 'cache', properties: { cacheType: 'distributed', product: 'redis', evictionPolicy: 'lru', ttlSeconds: 3600 } } },
+      
+      // Observability
+      { id: 'tw-monitor', type: 'architecture', position: { x: 50, y: 1200 }, data: { label: 'Monitor', componentType: 'logger', properties: { product: 'prometheus', logType: 'all', alerting: true } } },
     ]
 
     const edgeStyle = { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }
@@ -789,7 +793,8 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
       // User Request Flow (Sync)
       { id: 'e-tw-client-dns', source: 'tw-client', target: 'tw-dns', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'dns' }, style: edgeStyle, type: 'handdrawn', animated: false },
       { id: 'e-tw-client-cdn', source: 'tw-client', target: 'tw-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
-      { id: 'e-tw-client-lb', source: 'tw-client', target: 'tw-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-tw-client-firewall', source: 'tw-client', target: 'tw-firewall', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-tw-firewall-lb', source: 'tw-firewall', target: 'tw-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
       { id: 'e-tw-lb-rp', source: 'tw-lb', target: 'tw-rp', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
       { id: 'e-tw-rp-apigw', source: 'tw-rp', target: 'tw-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
       
@@ -815,6 +820,11 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
       // Worker to Data (Sync - Worker Services access Data Layer)
       { id: 'e-tw-fanout-cache', source: 'tw-fanout-srv', target: 'tw-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'handdrawn', animated: false },
       { id: 'e-tw-search-db', source: 'tw-search-srv', target: 'tw-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'handdrawn', animated: false },
+
+      // Observability
+      { id: 'e-tw-user-monitor', source: 'tw-user-srv', target: 'tw-monitor', sourceHandle: 'left-source', targetHandle: 'right-target', data: { connectionType: 'async', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-tw-tweet-monitor', source: 'tw-tweet-srv', target: 'tw-monitor', sourceHandle: 'left-source', targetHandle: 'right-target', data: { connectionType: 'async', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-tw-timeline-monitor', source: 'tw-timeline-srv', target: 'tw-monitor', sourceHandle: 'left-source', targetHandle: 'right-target', data: { connectionType: 'async', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
     ]
 
     setNodes(twitterNodes)
@@ -836,31 +846,35 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
       { id: 'yt-dns', type: 'architecture', position: { x: 900, y: 50 }, data: { label: 'DNS', componentType: 'dns', properties: {} } },
       
       // Row 2: Entry Points
-      { id: 'yt-lb', type: 'architecture', position: { x: 500, y: 200 }, data: { label: 'Load Balancer', componentType: 'load_balancer', properties: { algorithm: 'round_robin', layer: 'l7', replicas: 2 } } },
-      { id: 'yt-cdn', type: 'architecture', position: { x: 900, y: 200 }, data: { label: 'CDN', componentType: 'cdn', properties: {} } },
+      { id: 'yt-firewall', type: 'architecture', position: { x: 500, y: 200 }, data: { label: 'Firewall', componentType: 'firewall', properties: { mode: 'inline', layer: 'l7' } } },
+      { id: 'yt-lb', type: 'architecture', position: { x: 500, y: 350 }, data: { label: 'Load Balancer', componentType: 'load_balancer', properties: { algorithm: 'round_robin', layer: 'l7', replicas: 2 } } },
+      { id: 'yt-cdn', type: 'architecture', position: { x: 900, y: 350 }, data: { label: 'CDN', componentType: 'cdn', properties: {} } },
       
       // Reverse Proxy
-      { id: 'yt-rp', type: 'architecture', position: { x: 490, y: 400 }, data: { label: 'Reverse Proxy (Nginx)', componentType: 'reverse_proxy', properties: { product: 'nginx', sslTermination: true, replicas: 2 } } },
+      { id: 'yt-rp', type: 'architecture', position: { x: 490, y: 550 }, data: { label: 'Reverse Proxy (Nginx)', componentType: 'reverse_proxy', properties: { product: 'nginx', sslTermination: true, replicas: 2 } } },
       
       // Row 3: Gateway
-      { id: 'yt-apigw', type: 'architecture', position: { x: 500, y: 600 }, data: { label: 'API Gateway', componentType: 'api_gateway', properties: { authEnabled: true, rateLimit: 10000 } } },
+      { id: 'yt-apigw', type: 'architecture', position: { x: 500, y: 750 }, data: { label: 'API Gateway', componentType: 'api_gateway', properties: { authEnabled: true, rateLimit: 10000 } } },
       
       // Row 4: Core Services
-      { id: 'yt-user-srv', type: 'architecture', position: { x: 100, y: 850 }, data: { label: 'User Service', componentType: 'service', properties: { replicas: 2 } } },
-      { id: 'yt-search-srv', type: 'architecture', position: { x: 300, y: 850 }, data: { label: 'Search Service', componentType: 'service', properties: { replicas: 2 } } },
-      { id: 'yt-reco-srv', type: 'architecture', position: { x: 500, y: 850 }, data: { label: 'Recommendation', componentType: 'service', properties: { replicas: 2 } } },
-      { id: 'yt-streaming-srv', type: 'architecture', position: { x: 700, y: 850 }, data: { label: 'Streaming', componentType: 'service', properties: { replicas: 3 } } },
-      { id: 'yt-metadata-srv', type: 'architecture', position: { x: 900, y: 850 }, data: { label: 'Metadata Service', componentType: 'service', properties: { replicas: 2 } } },
-      { id: 'yt-upload-srv', type: 'architecture', position: { x: 1100, y: 850 }, data: { label: 'Upload Service', componentType: 'service', properties: { replicas: 2 } } },
+      { id: 'yt-user-srv', type: 'architecture', position: { x: 100, y: 1000 }, data: { label: 'User Service', componentType: 'service', properties: { replicas: 2, healthCheck: true } } },
+      { id: 'yt-search-srv', type: 'architecture', position: { x: 300, y: 1000 }, data: { label: 'Search Service', componentType: 'service', properties: { replicas: 2, healthCheck: true } } },
+      { id: 'yt-reco-srv', type: 'architecture', position: { x: 500, y: 1000 }, data: { label: 'Recommendation', componentType: 'service', properties: { replicas: 2, healthCheck: true } } },
+      { id: 'yt-streaming-srv', type: 'architecture', position: { x: 700, y: 1000 }, data: { label: 'Streaming', componentType: 'service', properties: { replicas: 3, healthCheck: true } } },
+      { id: 'yt-metadata-srv', type: 'architecture', position: { x: 900, y: 1000 }, data: { label: 'Metadata Service', componentType: 'service', properties: { replicas: 2, healthCheck: true } } },
+      { id: 'yt-upload-srv', type: 'architecture', position: { x: 1100, y: 1000 }, data: { label: 'Upload Service', componentType: 'service', properties: { replicas: 2, healthCheck: true } } },
       
       // Row 5: Async & Workers
-      { id: 'yt-mq', type: 'architecture', position: { x: 1100, y: 1100 }, data: { label: 'Message Queue', componentType: 'message_queue', properties: { product: 'kafka', queueType: 'pub_sub', hasDLQ: true } } },
-      { id: 'yt-transcoding-srv', type: 'architecture', position: { x: 1100, y: 1350 }, data: { label: 'Transcoding', componentType: 'service', properties: { replicas: 5 } } },
+      { id: 'yt-mq', type: 'architecture', position: { x: 1100, y: 1250 }, data: { label: 'Message Queue', componentType: 'message_queue', properties: { product: 'kafka', queueType: 'pub_sub', hasDLQ: true } } },
+      { id: 'yt-transcoding-srv', type: 'architecture', position: { x: 1100, y: 1500 }, data: { label: 'Transcoding', componentType: 'service', properties: { replicas: 5, healthCheck: true } } },
       
       // Row 6: Data Layer
-      { id: 'yt-db', type: 'architecture', position: { x: 300, y: 1600 }, data: { label: 'Database', componentType: 'database', properties: { dbType: 'sql', readWriteRatio: 0.8 } } },
-      { id: 'yt-cache', type: 'architecture', position: { x: 600, y: 1600 }, data: { label: 'Cache', componentType: 'cache', properties: { cacheType: 'distributed', product: 'redis', evictionPolicy: 'lru', ttlSeconds: 3600 } } },
-      { id: 'yt-storage', type: 'architecture', position: { x: 1000, y: 1600 }, data: { label: 'Storage (S3)', componentType: 'storage', properties: { storageClass: 'standard' } } },
+      { id: 'yt-db', type: 'architecture', position: { x: 300, y: 1750 }, data: { label: 'Database', componentType: 'database', properties: { dbType: 'sql', readWriteRatio: 0.8 } } },
+      { id: 'yt-cache', type: 'architecture', position: { x: 600, y: 1750 }, data: { label: 'Cache', componentType: 'cache', properties: { cacheType: 'distributed', product: 'redis', evictionPolicy: 'lru', ttlSeconds: 3600 } } },
+      { id: 'yt-storage', type: 'architecture', position: { x: 1000, y: 1750 }, data: { label: 'Storage (S3)', componentType: 'storage', properties: { storageClass: 'standard' } } },
+
+      // Observability
+      { id: 'yt-monitor', type: 'architecture', position: { x: 100, y: 1250 }, data: { label: 'Monitor', componentType: 'logger', properties: { product: 'datadog', logType: 'all', alerting: true } } },
     ]
 
     const edgeStyle = { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }
@@ -869,7 +883,8 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
       // Request Flow
       { id: 'e-yt-client-dns', source: 'yt-client', target: 'yt-dns', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'dns' }, style: edgeStyle, type: 'handdrawn', animated: false },
       { id: 'e-yt-client-cdn', source: 'yt-client', target: 'yt-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
-      { id: 'e-yt-client-lb', source: 'yt-client', target: 'yt-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-client-firewall', source: 'yt-client', target: 'yt-firewall', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-firewall-lb', source: 'yt-firewall', target: 'yt-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
       { id: 'e-yt-lb-rp', source: 'yt-lb', target: 'yt-rp', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
       { id: 'e-yt-rp-apigw', source: 'yt-rp', target: 'yt-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
       
@@ -901,6 +916,10 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
       // Search & Reco
       { id: 'e-yt-search-db', source: 'yt-search-srv', target: 'yt-db', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'handdrawn', animated: false },
       { id: 'e-yt-reco-cache', source: 'yt-reco-srv', target: 'yt-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: edgeStyle, type: 'handdrawn', animated: false },
+
+      // Observability
+      { id: 'e-yt-streaming-monitor', source: 'yt-streaming-srv', target: 'yt-monitor', sourceHandle: 'left-source', targetHandle: 'right-target', data: { connectionType: 'async', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-yt-upload-monitor', source: 'yt-upload-srv', target: 'yt-monitor', sourceHandle: 'left-source', targetHandle: 'right-target', data: { connectionType: 'async', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
     ]
 
     setNodes(ytNodes)
@@ -922,33 +941,37 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
       { id: 'gg-dns', type: 'architecture', position: { x: 700, y: 0 }, data: { label: 'DNS', componentType: 'dns', properties: {} } },
       
       // Row 2: Entry Points
-      { id: 'gg-lb', type: 'architecture', position: { x: 400, y: 150 }, data: { label: 'Load Balancer', componentType: 'load_balancer', properties: { replicas: 2 } } },
-      { id: 'gg-cdn', type: 'architecture', position: { x: 700, y: 150 }, data: { label: 'CDN', componentType: 'cdn', properties: {} } },
+      { id: 'gg-firewall', type: 'architecture', position: { x: 400, y: 150 }, data: { label: 'Firewall', componentType: 'firewall', properties: { mode: 'inline', layer: 'l7' } } },
+      { id: 'gg-lb', type: 'architecture', position: { x: 400, y: 300 }, data: { label: 'Load Balancer', componentType: 'load_balancer', properties: { replicas: 2, healthCheck: true } } },
+      { id: 'gg-cdn', type: 'architecture', position: { x: 700, y: 300 }, data: { label: 'CDN', componentType: 'cdn', properties: {} } },
       
       // Reverse Proxy
-      { id: 'gg-rp', type: 'architecture', position: { x: 390, y: 350 }, data: { label: 'Reverse Proxy (Nginx)', componentType: 'reverse_proxy', properties: { product: 'nginx', sslTermination: true, replicas: 2 } } },
+      { id: 'gg-rp', type: 'architecture', position: { x: 390, y: 500 }, data: { label: 'Reverse Proxy (Nginx)', componentType: 'reverse_proxy', properties: { product: 'nginx', sslTermination: true, replicas: 2 } } },
       
       // Row 3: Gateway
-      { id: 'gg-apigw', type: 'architecture', position: { x: 400, y: 550 }, data: { label: 'API Gateway', componentType: 'api_gateway', properties: { authEnabled: true, rateLimit: 20000 } } },
+      { id: 'gg-apigw', type: 'architecture', position: { x: 400, y: 700 }, data: { label: 'API Gateway', componentType: 'api_gateway', properties: { authEnabled: true, rateLimit: 20000 } } },
       
       // Row 4: Core Services
-      { id: 'gg-auto-srv', type: 'architecture', position: { x: 0, y: 800 }, data: { label: 'Autocomplete Service', componentType: 'service', properties: { replicas: 2 } } },
-      { id: 'gg-query-srv', type: 'architecture', position: { x: 200, y: 800 }, data: { label: 'Query Service', componentType: 'service', properties: { replicas: 3 } } },
-      { id: 'gg-ranking-srv', type: 'architecture', position: { x: 400, y: 800 }, data: { label: 'Ranking Service', componentType: 'service', properties: { replicas: 3 } } },
-      { id: 'gg-ads-srv', type: 'architecture', position: { x: 600, y: 800 }, data: { label: 'Ads Service', componentType: 'service', properties: { replicas: 2 } } },
-      { id: 'gg-snippet-srv', type: 'architecture', position: { x: 800, y: 800 }, data: { label: 'Snippet Service', componentType: 'service', properties: { replicas: 2 } } },
-      { id: 'gg-crawler-srv', type: 'architecture', position: { x: 1000, y: 800 }, data: { label: 'Crawler Service', componentType: 'service', properties: { replicas: 3 } } },
+      { id: 'gg-auto-srv', type: 'architecture', position: { x: 0, y: 950 }, data: { label: 'Autocomplete Service', componentType: 'service', properties: { replicas: 2, healthCheck: true } } },
+      { id: 'gg-query-srv', type: 'architecture', position: { x: 200, y: 950 }, data: { label: 'Query Service', componentType: 'service', properties: { replicas: 3, healthCheck: true } } },
+      { id: 'gg-ranking-srv', type: 'architecture', position: { x: 400, y: 950 }, data: { label: 'Ranking Service', componentType: 'service', properties: { replicas: 3, healthCheck: true } } },
+      { id: 'gg-ads-srv', type: 'architecture', position: { x: 600, y: 950 }, data: { label: 'Ads Service', componentType: 'service', properties: { replicas: 2, healthCheck: true } } },
+      { id: 'gg-snippet-srv', type: 'architecture', position: { x: 800, y: 950 }, data: { label: 'Snippet Service', componentType: 'service', properties: { replicas: 2, healthCheck: true } } },
+      { id: 'gg-crawler-srv', type: 'architecture', position: { x: 1000, y: 950 }, data: { label: 'Crawler Service', componentType: 'service', properties: { replicas: 3, healthCheck: true } } },
       
       // Row 5: Async Middleware
-      { id: 'gg-mq', type: 'architecture', position: { x: 1000, y: 1050 }, data: { label: 'Message Queue', componentType: 'message_queue', properties: { product: 'kafka', hasDLQ: true } } },
+      { id: 'gg-mq', type: 'architecture', position: { x: 1000, y: 1200 }, data: { label: 'Message Queue', componentType: 'message_queue', properties: { product: 'kafka', hasDLQ: true } } },
       
       // Row 6: Indexing Worker
-      { id: 'gg-indexing-srv', type: 'architecture', position: { x: 1000, y: 1300 }, data: { label: 'Indexing Service', componentType: 'service', properties: { replicas: 2 } } },
+      { id: 'gg-indexing-srv', type: 'architecture', position: { x: 1000, y: 1450 }, data: { label: 'Indexing Service', componentType: 'service', properties: { replicas: 2, healthCheck: true } } },
       
       // Row 7: Data Layer
-      { id: 'gg-cache', type: 'architecture', position: { x: 100, y: 1550 }, data: { label: 'Cache (Results/Trie)', componentType: 'cache', properties: { product: 'redis', evictionPolicy: 'lru', ttlSeconds: 3600 } } },
-      { id: 'gg-db-index', type: 'architecture', position: { x: 500, y: 1550 }, data: { label: 'Database (Inverted Index)', componentType: 'database', properties: { dbType: 'nosql' } } },
-      { id: 'gg-storage', type: 'architecture', position: { x: 1000, y: 1550 }, data: { label: 'Storage (HTML)', componentType: 'storage', properties: { storageClass: 'standard' } } },
+      { id: 'gg-cache', type: 'architecture', position: { x: 100, y: 1700 }, data: { label: 'Cache (Results/Trie)', componentType: 'cache', properties: { product: 'redis', evictionPolicy: 'lru', ttlSeconds: 3600 } } },
+      { id: 'gg-db-index', type: 'architecture', position: { x: 500, y: 1700 }, data: { label: 'Database (Inverted Index)', componentType: 'database', properties: { dbType: 'nosql' } } },
+      { id: 'gg-storage', type: 'architecture', position: { x: 1000, y: 1700 }, data: { label: 'Storage (HTML)', componentType: 'storage', properties: { storageClass: 'standard' } } },
+
+      // Observability
+      { id: 'gg-monitor', type: 'architecture', position: { x: 0, y: 1200 }, data: { label: 'Monitor', componentType: 'logger', properties: { product: 'elk', logType: 'all', alerting: true } } },
     ]
 
     const edgeStyle = { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }
@@ -957,7 +980,8 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
       // Request Flow
       { id: 'e-gg-client-dns', source: 'gg-client', target: 'gg-dns', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'dns' }, style: edgeStyle, type: 'handdrawn', animated: false },
       { id: 'e-gg-client-cdn', source: 'gg-client', target: 'gg-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
-      { id: 'e-gg-client-lb', source: 'gg-client', target: 'gg-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-gg-client-firewall', source: 'gg-client', target: 'gg-firewall', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-gg-firewall-lb', source: 'gg-firewall', target: 'gg-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: edgeStyle, type: 'handdrawn', animated: false },
       { id: 'e-gg-lb-rp', source: 'gg-lb', target: 'gg-rp', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
       { id: 'e-gg-rp-apigw', source: 'gg-rp', target: 'gg-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
       
@@ -980,6 +1004,10 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
       { id: 'e-gg-crawler-mq', source: 'gg-crawler-srv', target: 'gg-mq', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'handdrawn', animated: false },
       { id: 'e-gg-mq-indexing', source: 'gg-mq', target: 'gg-indexing-srv', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'async', protocol: 'amqp' }, style: edgeStyle, type: 'handdrawn', animated: false },
       { id: 'e-gg-indexing-db', source: 'gg-indexing-srv', target: 'gg-db-index', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: edgeStyle, type: 'handdrawn', animated: false },
+
+      // Observability
+      { id: 'e-gg-query-monitor', source: 'gg-query-srv', target: 'gg-monitor', sourceHandle: 'left-source', targetHandle: 'right-target', data: { connectionType: 'async', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
+      { id: 'e-gg-ranking-monitor', source: 'gg-ranking-srv', target: 'gg-monitor', sourceHandle: 'left-source', targetHandle: 'right-target', data: { connectionType: 'async', protocol: 'http' }, style: edgeStyle, type: 'handdrawn', animated: false },
     ]
 
     setNodes(googleNodes)
