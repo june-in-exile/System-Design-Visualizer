@@ -6,7 +6,7 @@ ArchitectMind is a web-based tool for visualizing and analyzing system architect
 
 - `backend/`: Go-based API using the Gin framework.
   - `main.go`: Entry point, CORS configuration, and route definitions.
-  - `handler/`: API request handlers and 35+ validation rules (e.g., `check_availability.go`).
+  - `handler/`: API request handlers and 38+ validation rules (e.g., `check_availability.go`).
   - `model/`: Data structures for nodes, edges, and protocols.
 - `frontend/`: React-based visualizer using Vite and React Flow.
   - `src/components/Canvas.tsx`: Main diagramming area with Undo, Merge, and Duplicate.

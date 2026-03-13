@@ -80,16 +80,16 @@ func TestPostTopology_WithWarnings(t *testing.T) {
 		t.Error("expected success=true")
 	}
 
-	// Should at least have client_direct_db warning
-	hasClientDB := false
+	// Should at least have invalid_connection warning
+	hasInvalidConn := false
 	for _, warn := range resp.Warnings {
-		if warn.Rule == "client_direct_db" {
-			hasClientDB = true
+		if warn.Rule == "invalid_connection" {
+			hasInvalidConn = true
 			break
 		}
 	}
-	if !hasClientDB {
-		t.Error("expected client_direct_db warning")
+	if !hasInvalidConn {
+		t.Error("expected invalid_connection warning")
 	}
 }
 

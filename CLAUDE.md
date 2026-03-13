@@ -20,7 +20,7 @@ ArchitectMind is a system design visualizer with a React Flow canvas and a Go Gi
 ## Architecture
 
 - **Analysis**: `POST /api/topology` sends nodes/edges to backend.
-- **Validation Rules**: Implemented in `backend/handler/check_*.go`. Over 35 rules covering Availability, Performance, Security, etc.
+- **Validation Rules**: Implemented in `backend/handler/check_*.go`. Over 38 rules covering Availability, Performance, Security, etc.
 - **Frontend State**: Managed in `Canvas.tsx` (nodes/edges) with history for Undo. Multi-tab support via `useCanvasTabs`.
 - **Export**: Utilities in `src/utils/` for Excalidraw, Image, Mermaid, and PDF.
 - **Presets**: Standard Demo, Twitter, YouTube, and Google architectures available in the toolbar.

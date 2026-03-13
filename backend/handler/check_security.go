@@ -5,27 +5,6 @@ import (
 	"github.com/architectmind/backend/model"
 )
 
-// checkClientDirectAccess prohibits direct connection from Client to sensitive backends.
-func checkClientDirectAccess(ctx model.TopologyContext, targetRole, rule, message, solution string) []Warning {
-	var warnings []Warning
-	for _, edge := range ctx.Edges {
-		source, okS := ctx.NodeByID[edge.Source]
-		target, okT := ctx.NodeByID[edge.Target]
-		if !okS || !okT {
-			continue
-		}
-		if model.NodeHasRole(source, "client") && model.NodeHasRole(target, targetRole) {
-			warnings = append(warnings, Warning{
-				Rule:     rule,
-				Message:  fmt.Sprintf(message, source.Label, target.Label),
-				Solution: solution,
-				NodeIDs:  []string{source.ID, target.ID},
-			})
-		}
-	}
-	return warnings
-}
-
 // checkMissingFirewall warns if there's a Client and LB/API Gateway but no Firewall,
 // or if a Firewall exists but is not connected to the entry points.
 func checkMissingFirewall(ctx model.TopologyContext) []Warning {
@@ -151,4 +130,53 @@ func checkFirewallL3Only(ctx model.TopologyContext) []Warning {
 		}
 	}
 	return warnings
+}
+
+// checkInvalidConnection detects architecturally invalid connections
+// using the ForbiddenConnections lookup table.
+func checkInvalidConnection(ctx model.TopologyContext) []Warning {
+	var warnings []Warning
+
+	for _, edge := range ctx.Edges {
+		source, okS := ctx.NodeByID[edge.Source]
+		target, okT := ctx.NodeByID[edge.Target]
+		if !okS || !okT {
+			continue
+		}
+
+		// Check all source roles against all target roles
+		for _, srcRole := range model.GetEffectiveRoles(source) {
+			forbidden, hasForbidden := model.ForbiddenConnections[srcRole]
+			if !hasForbidden {
+				continue
+			}
+			for _, tgtRole := range model.GetEffectiveRoles(target) {
+				for _, f := range forbidden {
+					if f == tgtRole {
+						reason := getConnectionReason(srcRole, tgtRole)
+						warnings = append(warnings, Warning{
+							Rule:    "invalid_connection",
+							Message: fmt.Sprintf("🚫 不合理的連線：%s (%s) → %s (%s)。", source.Label, srcRole, target.Label, tgtRole),
+							Solution: reason + " 請檢查連線方向或在兩者之間加入適當的中間層。",
+							NodeIDs: []string{source.ID, target.ID},
+						})
+					}
+				}
+			}
+		}
+	}
+	return warnings
+}
+
+// getConnectionReason returns a human-readable reason for a forbidden connection.
+func getConnectionReason(srcRole, tgtRole string) string {
+	if reasons, ok := model.ForbiddenConnectionReasons[srcRole]; ok {
+		if reason, ok := reasons[tgtRole]; ok {
+			return reason
+		}
+		if reason, ok := reasons["*"]; ok {
+			return reason
+		}
+	}
+	return "此連線方向不符合系統設計最佳實踐。"
 }

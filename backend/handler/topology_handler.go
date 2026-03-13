@@ -104,18 +104,7 @@ func validate(t model.SystemTopology) []Warning {
 	warnings = append(warnings, checkMQDLQ(ctx)...)
 	warnings = append(warnings, checkAsyncPeakShaving(ctx)...)
 	warnings = append(warnings, checkSyncUpload(ctx)...)
-	warnings = append(warnings, checkClientDirectAccess(ctx,
-		"database",
-		"client_direct_db",
-		"🚫 安全風險：禁止從 %q 直接連線至 %q。",
-		"Client 不應直接操作資料庫。請在兩者之間加入 API Gateway 或 Service 層進行身份驗證與數據抽象。",
-	)...)
-	warnings = append(warnings, checkClientDirectAccess(ctx,
-		"cache",
-		"client_direct_cache",
-		"🧊 暴露風險：不建議從 %q 直接連線至 %q。",
-		"不建議 Client 直接操作快取。這可能導致快取穿透風險或數據洩漏。應透過後端 Service 進行快取邏輯封裝。",
-	)...)
+	warnings = append(warnings, checkInvalidConnection(ctx)...)
 	warnings = append(warnings, checkEntryPointSPOF(ctx, "reverse_proxy", "reverse_proxy_spof", "🔀", "Reverse Proxy")...)
 	warnings = append(warnings, checkReverseProxySSL(ctx)...)
 	warnings = append(warnings, checkCDNOrigin(ctx)...)
