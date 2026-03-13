@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/topology.go",
+      "src": "api/index.go",
       "use": "@vercel/go"
     },
     {
@@ -16,7 +16,7 @@
   "rewrites": [
     {
       "source": "/api/topology",
-      "destination": "/api/topology.go"
+      "destination": "/api/index"
     },
     {
       "source": "/(.*)",
