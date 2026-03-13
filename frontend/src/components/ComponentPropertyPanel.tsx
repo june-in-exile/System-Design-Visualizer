@@ -361,6 +361,272 @@ export default function PropertyPanel({
     })
   }
 
+  const renderClientSection = () => (
+    <>
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="The type of client consuming the system"
+        >
+          Client Type
+        </label>
+        <select
+          value={(properties.clientType as string) || 'web'}
+          onChange={(e) => handlePropertyChange('clientType', e.target.value)}
+          title={getTooltip(
+            CLIENT_TYPES.find(opt => opt.value === ((properties.clientType as string) || 'web'))?.label || '',
+            CLIENT_TYPES.find(opt => opt.value === ((properties.clientType as string) || 'web'))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {CLIENT_TYPES.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {['mobile', 'desktop'].includes(properties.clientType as string) && (
+        <div style={{ marginBottom: 16 }}>
+          <label
+            style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+            title="The platform this client runs on"
+          >
+            Platform
+          </label>
+          <select
+            value={(properties.platform as string) || ''}
+            onChange={(e) => handlePropertyChange('platform', e.target.value)}
+            title={getTooltip(
+              CLIENT_PLATFORMS.find(opt => opt.value === ((properties.platform as string) || ''))?.label || '',
+              CLIENT_PLATFORMS.find(opt => opt.value === ((properties.platform as string) || ''))?.description
+            )}
+            style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+          >
+            {CLIENT_PLATFORMS.map((opt) => (
+              <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="How the client authenticates with backend services"
+        >
+          Authentication Method
+        </label>
+        <select
+          value={(properties.authMethod as string) || ''}
+          onChange={(e) => handlePropertyChange('authMethod', e.target.value)}
+          title={getTooltip(
+            CLIENT_AUTH_METHODS.find(opt => opt.value === ((properties.authMethod as string) || ''))?.label || '',
+            CLIENT_AUTH_METHODS.find(opt => opt.value === ((properties.authMethod as string) || ''))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {CLIENT_AUTH_METHODS.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+    </>
+  )
+
+  const renderDNSSection = () => (
+    <>
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="The DNS hosting provider or service"
+        >
+          Provider
+        </label>
+        <select
+          value={(properties.provider as string) || ''}
+          onChange={(e) => handlePropertyChange('provider', e.target.value || undefined)}
+          title={getTooltip(
+            DNS_PROVIDERS.find(opt => opt.value === ((properties.provider as string) || ''))?.label || '',
+            DNS_PROVIDERS.find(opt => opt.value === ((properties.provider as string) || ''))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {DNS_PROVIDERS.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="How DNS resolves requests to different endpoints"
+        >
+          Routing Policy
+        </label>
+        <select
+          value={(properties.routingPolicy as string) || 'simple'}
+          onChange={(e) => handlePropertyChange('routingPolicy', e.target.value)}
+          title={getTooltip(
+            DNS_ROUTING_POLICIES.find(opt => opt.value === ((properties.routingPolicy as string) || 'simple'))?.label || '',
+            DNS_ROUTING_POLICIES.find(opt => opt.value === ((properties.routingPolicy as string) || 'simple'))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {DNS_ROUTING_POLICIES.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}
+          title="Enable DNS-level health checks to automatically remove unhealthy endpoints from rotation"
+        >
+          <input
+            type="checkbox"
+            checked={(properties.healthCheck as boolean) ?? false}
+            onChange={(e) => handlePropertyChange('healthCheck', e.target.checked)}
+          />
+          Health Check
+        </label>
+      </div>
+    </>
+  )
+
+  const renderCDNSection = () => (
+    <>
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="The CDN provider for content delivery"
+        >
+          Provider
+        </label>
+        <select
+          value={(properties.provider as string) || ''}
+          onChange={(e) => handlePropertyChange('provider', e.target.value || undefined)}
+          title={getTooltip(
+            CDN_PROVIDERS.find(opt => opt.value === ((properties.provider as string) || ''))?.label || '',
+            CDN_PROVIDERS.find(opt => opt.value === ((properties.provider as string) || ''))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {CDN_PROVIDERS.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="The type of content cached and served by the CDN"
+        >
+          Content Type
+        </label>
+        <select
+          value={(properties.contentType as string) || 'static'}
+          onChange={(e) => handlePropertyChange('contentType', e.target.value)}
+          title={getTooltip(
+            CDN_CONTENT_TYPES.find(opt => opt.value === ((properties.contentType as string) || 'static'))?.label || '',
+            CDN_CONTENT_TYPES.find(opt => opt.value === ((properties.contentType as string) || 'static'))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {CDN_CONTENT_TYPES.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="How long content is cached at edge nodes before revalidation"
+        >
+          Cache TTL
+        </label>
+        <select
+          value={(properties.cacheTTL as string) || 'medium'}
+          onChange={(e) => handlePropertyChange('cacheTTL', e.target.value)}
+          title={getTooltip(
+            CDN_CACHE_TTLS.find(opt => opt.value === ((properties.cacheTTL as string) || 'medium'))?.label || '',
+            CDN_CACHE_TTLS.find(opt => opt.value === ((properties.cacheTTL as string) || 'medium'))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {CDN_CACHE_TTLS.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+    </>
+  )
+
+  const renderAPIGatewaySection = () => (
+    <>
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="The API Gateway product or managed service"
+        >
+          Product
+        </label>
+        <select
+          value={(properties.product as string) || ''}
+          onChange={(e) => handlePropertyChange('product', e.target.value || undefined)}
+          title={getTooltip(
+            API_GATEWAY_PRODUCTS.find(opt => opt.value === ((properties.product as string) || ''))?.label || '',
+            API_GATEWAY_PRODUCTS.find(opt => opt.value === ((properties.product as string) || ''))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {API_GATEWAY_PRODUCTS.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="Authentication method enforced at the gateway level"
+        >
+          Authentication
+        </label>
+        <select
+          value={(properties.authentication as string) || ''}
+          onChange={(e) => handlePropertyChange('authentication', e.target.value || undefined)}
+          title={getTooltip(
+            API_GATEWAY_AUTH_METHODS.find(opt => opt.value === ((properties.authentication as string) || ''))?.label || '',
+            API_GATEWAY_AUTH_METHODS.find(opt => opt.value === ((properties.authentication as string) || ''))?.description
+          )}
+          style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+        >
+          {API_GATEWAY_AUTH_METHODS.map((opt) => (
+            <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer' }}
+          title="Limit request rate per client/API key to protect backend services from overload"
+        >
+          <input
+            type="checkbox"
+            checked={(properties.rateLimiting as boolean) ?? false}
+            onChange={(e) => handlePropertyChange('rateLimiting', e.target.checked)}
+          />
+          Rate Limiting
+        </label>
+      </div>
+    </>
+  )
+
   const renderDatabaseSection = () => (
     <>
       <div style={{ marginBottom: 16 }}>
@@ -1116,6 +1382,10 @@ export default function PropertyPanel({
 
   const renderRoleProperties = (role: ComponentType) => {
     switch (role) {
+      case 'client': return renderClientSection()
+      case 'dns': return renderDNSSection()
+      case 'cdn': return renderCDNSection()
+      case 'api_gateway': return renderAPIGatewaySection()
       case 'database': return renderDatabaseSection()
       case 'load_balancer': return renderLoadBalancerSection()
       case 'reverse_proxy': return renderReverseProxySection()
