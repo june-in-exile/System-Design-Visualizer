@@ -30,6 +30,15 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
     description: 'Content Delivery Network: Geographically distributed group of servers which work together to provide fast delivery of Internet content.',
     defaultProperties: {},
   },
+  firewall: {
+    label: 'Firewall',
+    color: '#4b5563',
+    icon: '',
+    description: 'Web Application Firewall: Filters and monitors HTTP traffic between the client and the application, blocking malicious requests.',
+    defaultProperties: {
+      mode: 'inline',
+    },
+  },
   load_balancer: {
     label: 'Load Balancer',
     color: '#4b5563',
@@ -118,6 +127,16 @@ export const NODE_TYPE_CONFIG: Record<ComponentType, NodeTypeConfig> = {
       accessLevel: 'private',
       storageClass: 'standard',
       versioning: false,
+    },
+  },
+  logger: {
+    label: 'Monitor',
+    color: '#4b5563',
+    icon: '',
+    description: 'Logging and monitoring system: Collects metrics, logs, and traces from all services for observability and alerting.',
+    defaultProperties: {
+      logType: 'all',
+      retentionDays: 30,
     },
   },
   

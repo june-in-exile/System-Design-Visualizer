@@ -10,6 +10,8 @@ export type ComponentType =
   | 'dns'
   | 'storage'
   | 'reverse_proxy'
+  | 'firewall'
+  | 'logger'
 
 export type ConnectionType = 'sync' | 'async' | 'replication' | 'cdn_origin' | 'unspecified'
 
@@ -88,6 +90,20 @@ export interface ReverseProxyProperties {
   replicas?: number
 }
 
+export interface FirewallProperties {
+  product?: string
+  mode: 'inline' | 'monitor'
+  rateLimit?: number
+  replicas?: number
+}
+
+export interface LoggerProperties {
+  product?: string
+  logType: 'metrics' | 'logs' | 'traces' | 'all'
+  retentionDays?: number
+  replicas?: number
+}
+
 export type ComponentProperties =
   | DatabaseProperties
   | LoadBalancerProperties
@@ -96,6 +112,8 @@ export type ComponentProperties =
   | StorageProperties
   | ServiceProperties
   | ReverseProxyProperties
+  | FirewallProperties
+  | LoggerProperties
   | Record<string, unknown>
 
 export interface SystemNode {

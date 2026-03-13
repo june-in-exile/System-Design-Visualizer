@@ -48,6 +48,8 @@ var ValidComponentTypes = map[string]bool{
 	"dns":           true,
 	"storage":       true,
 	"reverse_proxy": true,
+	"firewall":      true,
+	"logger":        true,
 }
 
 // ValidConnectionTypes enumerates all supported connection types.

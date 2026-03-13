@@ -16,6 +16,8 @@ const COMPONENT_COLORS: Record<string, string> = {
   dns: '#64748b',
   storage: '#f97316',
   reverse_proxy: '#0ea5e9',
+  firewall: '#dc2626',
+  logger: '#059669',
 }
 
 function getStrokeColor(componentType: string): string {

@@ -669,7 +669,7 @@ export default function PropertyPanel({
           type="text"
           inputMode="numeric"
           placeholder="0 (No Expiration)"
-          value={properties.ttlSeconds !== undefined ? properties.ttlSeconds : ''}
+          value={properties.ttlSeconds != null ? String(properties.ttlSeconds) : ''}
           onChange={(e) => {
             const val = e.target.value
             if (val === '') {
@@ -694,12 +694,15 @@ export default function PropertyPanel({
       case 'storage': return renderStorageSection()
       case 'message_queue': return renderMessageQueueSection()
       case 'cache': return renderCacheSection()
+      case 'firewall':
+      case 'logger':
+        return null
       default: return null
     }
   }
 
   const supportsReplicas = roles.some(role => 
-    ['service', 'database', 'load_balancer', 'cache', 'reverse_proxy'].includes(role)
+    ['service', 'database', 'load_balancer', 'cache', 'reverse_proxy', 'firewall', 'logger'].includes(role)
   )
 
   return (

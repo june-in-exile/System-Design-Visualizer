@@ -708,22 +708,25 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
     const demoNodes: Node[] = [
       { id: 'demo-client', type: 'architecture', position: { x: 400, y: 50 }, data: { label: 'Client', componentType: 'client', properties: {} } },
       { id: 'demo-dns', type: 'architecture', position: { x: 700, y: 50 }, data: { label: 'DNS', componentType: 'dns', properties: {} } },
-      { id: 'demo-cdn', type: 'architecture', position: { x: 650, y: 250 }, data: { label: 'CDN', componentType: 'cdn', properties: {} } },
-      { id: 'demo-lb', type: 'architecture', position: { x: 400, y: 250 }, data: { label: 'Load Balancer', componentType: 'load_balancer', properties: { algorithm: 'round_robin', layer: 'l7' } } },
-      { id: 'demo-reverse-proxy', type: 'architecture', position: { x: 400, y: 450 }, data: { label: 'Reverse Proxy', componentType: 'reverse_proxy', properties: { product: 'nginx', sslTermination: true } } },
-      { id: 'demo-apigw', type: 'architecture', position: { x: 400, y: 650 }, data: { label: 'API Gateway', componentType: 'api_gateway', properties: { rateLimit: 1000, authEnabled: true } } },
-      { id: 'demo-service', type: 'architecture', position: { x: 400, y: 850 }, data: { label: 'Service', componentType: 'service', properties: { replicas: 3 } } },
-      { id: 'demo-mq', type: 'architecture', position: { x: 700, y: 850 }, data: { label: 'Message Queue', componentType: 'message_queue', properties: { queueType: 'kafka' } } },
-      { id: 'demo-db-master', type: 'architecture', position: { x: 250, y: 1050 }, data: { label: 'Database', componentType: 'database', properties: { dbType: 'sql' } } },
-      { id: 'demo-db-slave', type: 'architecture', position: { x: 450, y: 1050 }, data: { label: 'Database', componentType: 'database', properties: { dbType: 'sql' } } },
-      { id: 'demo-cache', type: 'architecture', position: { x: 650, y: 1050 }, data: { label: 'Cache', componentType: 'cache', properties: { cacheType: 'distributed' } } },
-      { id: 'demo-storage', type: 'architecture', position: { x: 850, y: 650 }, data: { label: 'Storage', componentType: 'storage', properties: {} } }
+      { id: 'demo-firewall', type: 'architecture', position: { x: 400, y: 250 }, data: { label: 'Firewall', componentType: 'firewall', properties: { mode: 'inline' } } },
+      { id: 'demo-cdn', type: 'architecture', position: { x: 650, y: 450 }, data: { label: 'CDN', componentType: 'cdn', properties: {} } },
+      { id: 'demo-lb', type: 'architecture', position: { x: 400, y: 450 }, data: { label: 'Load Balancer', componentType: 'load_balancer', properties: { algorithm: 'round_robin', layer: 'l7' } } },
+      { id: 'demo-reverse-proxy', type: 'architecture', position: { x: 400, y: 650 }, data: { label: 'Reverse Proxy', componentType: 'reverse_proxy', properties: { product: 'nginx', sslTermination: true } } },
+      { id: 'demo-apigw', type: 'architecture', position: { x: 400, y: 850 }, data: { label: 'API Gateway', componentType: 'api_gateway', properties: { rateLimit: 1000, authEnabled: true } } },
+      { id: 'demo-service', type: 'architecture', position: { x: 400, y: 1050 }, data: { label: 'Service', componentType: 'service', properties: { replicas: 3 } } },
+      { id: 'demo-mq', type: 'architecture', position: { x: 700, y: 1050 }, data: { label: 'Message Queue', componentType: 'message_queue', properties: { queueType: 'kafka' } } },
+      { id: 'demo-db-master', type: 'architecture', position: { x: 250, y: 1250 }, data: { label: 'Database', componentType: 'database', properties: { dbType: 'sql' } } },
+      { id: 'demo-db-slave', type: 'architecture', position: { x: 450, y: 1250 }, data: { label: 'Database', componentType: 'database', properties: { dbType: 'sql' } } },
+      { id: 'demo-cache', type: 'architecture', position: { x: 650, y: 1250 }, data: { label: 'Cache', componentType: 'cache', properties: { cacheType: 'distributed' } } },
+      { id: 'demo-storage', type: 'architecture', position: { x: 850, y: 850 }, data: { label: 'Storage', componentType: 'storage', properties: {} } },
+      { id: 'demo-logger', type: 'architecture', position: { x: 150, y: 1050 }, data: { label: 'Logger', componentType: 'logger', properties: { logType: 'all', retentionDays: 30 } } }
     ]
 
     const demoEdges: Edge[] = [
       { id: 'e-client-dns', source: 'demo-client', target: 'demo-dns', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'dns' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
       { id: 'e-client-cdn', source: 'demo-client', target: 'demo-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
-      { id: 'e-client-lb', source: 'demo-client', target: 'demo-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-client-firewall', source: 'demo-client', target: 'demo-firewall', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-firewall-lb', source: 'demo-firewall', target: 'demo-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
       { id: 'e-cdn-storage', source: 'demo-cdn', target: 'demo-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
       { id: 'e-lb-proxy', source: 'demo-lb', target: 'demo-reverse-proxy', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
       { id: 'e-proxy-apigw', source: 'demo-reverse-proxy', target: 'demo-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
@@ -731,7 +734,8 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
       { id: 'e-service-mq', source: 'demo-service', target: 'demo-mq', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'async', protocol: 'amqp' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
       { id: 'e-service-dbm', source: 'demo-service', target: 'demo-db-master', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
       { id: 'e-service-dbs', source: 'demo-service', target: 'demo-db-slave', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
-      { id: 'e-service-cache', source: 'demo-service', target: 'demo-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false }
+      { id: 'e-service-cache', source: 'demo-service', target: 'demo-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-service-logger', source: 'demo-service', target: 'demo-logger', sourceHandle: 'left-source', targetHandle: 'right-target', data: { connectionType: 'async', protocol: 'http' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false }
     ]
 
     setNodes(demoNodes)

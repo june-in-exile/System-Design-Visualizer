@@ -124,6 +124,8 @@ npm run dev
 | 15 | **禁止 Client 直接連線快取** | Client 節點直接連線至 Cache，可能導致安全風險或快取穿透。 | 建立從 **Client** 直連 **Cache** 的連線。 |
 | 16 | **協定不匹配 (Protocol Mismatch)** | 連線使用了與目標組件類型不匹配的協議（如對 SQL Database 使用 HTTP 而非 Database Protocol）。 | 建立連線，並在連線屬性中設定與目標不符的 **Protocol**（例如選取 RESP 連接到 SQL 資料庫）。 |
 | 17 | **屬性不匹配 (Conn/Protocol Mismatch)** | 連線類型與通訊協定邏輯不一致（如同步連線搭配異步協定 AMQP）。 | 建立連線，將 **Connection Type** 設為 **Synchronous**，但 **Protocol** 選擇 **AMQP**。 |
+| 18 | **缺少 Firewall/WAF** | 架構中有 Client 與 LB/API Gateway，但缺少 Firewall，存在安全風險。 | 放置 **Client** 與 **Load Balancer**，但不放置 **Firewall**。 |
+| 19 | **缺少 Logger/Monitor** | 架構中有 3 個（含）以上 Service 但缺少 Logger/Monitor，缺乏觀測性。 | 放置 **3 個或更多 Service**，但不放置 **Monitor**。 |
 
 ## 📂 專案結構
 

@@ -125,6 +125,8 @@ func validate(t model.SystemTopology) []Warning {
 	warnings = append(warnings, checkClientToCache(nodeByID, t.Edges)...)
 	warnings = append(warnings, checkReverseProxySPOF(t.Nodes)...)
 	warnings = append(warnings, checkReverseProxySSL(nodeByID, t.Edges)...)
+	warnings = append(warnings, checkMissingFirewall(t.Nodes)...)
+	warnings = append(warnings, checkMissingLogger(t.Nodes)...)
 
 	return warnings
 }
@@ -989,4 +991,65 @@ func checkClientToCache(nodes map[string]model.SystemNode, edges []model.SystemE
 		}
 	}
 	return warnings
+}
+
+// checkMissingFirewall warns if there's a Client and LB/API Gateway but no Firewall.
+func checkMissingFirewall(nodes []model.SystemNode) []Warning {
+	hasClient := false
+	hasEntryPoint := false
+	hasFirewall := false
+	var clientIDs []string
+
+	for _, node := range nodes {
+		if model.NodeHasRole(node, "client") {
+			hasClient = true
+			clientIDs = append(clientIDs, node.ID)
+		}
+		if model.NodeHasRole(node, "load_balancer") || model.NodeHasRole(node, "api_gateway") {
+			hasEntryPoint = true
+		}
+		if model.NodeHasRole(node, "firewall") {
+			hasFirewall = true
+		}
+	}
+
+	if hasClient && hasEntryPoint && !hasFirewall {
+		return []Warning{{
+			Rule:     "missing_firewall",
+			Message:  "架構中缺少 Firewall/WAF。Client 直接連線至入口節點，可能存在安全風險。",
+			Solution: "建議在 Client 與 Load Balancer/API Gateway 之間加入 Firewall 或 WAF，進行流量過濾與惡意請求攔截。",
+			NodeIDs:  clientIDs,
+		}}
+	}
+	return nil
+}
+
+// checkMissingLogger warns if there are 3+ Services but no Logger.
+func checkMissingLogger(nodes []model.SystemNode) []Warning {
+	serviceCount := 0
+	hasLogger := false
+	var serviceIDs []string
+
+	for _, node := range nodes {
+		if model.NodeHasRole(node, "service") {
+			serviceCount++
+			serviceIDs = append(serviceIDs, node.ID)
+		}
+		if model.NodeHasRole(node, "logger") {
+			hasLogger = true
+		}
+	}
+
+	if serviceCount >= 3 && !hasLogger {
+		if len(serviceIDs) > 3 {
+			serviceIDs = serviceIDs[:3]
+		}
+		return []Warning{{
+			Rule:     "missing_observability",
+			Message:  "架構中有多個 Service 但缺少 Logger/Monitor。在生產環境中缺乏觀測性將難以除錯與監控。",
+			Solution: "建議加入 Logger/Monitor 節點（如 ELK Stack、Prometheus + Grafana、Datadog），並讓各 Service 連線至該節點。",
+			NodeIDs:  serviceIDs,
+		}}
+	}
+	return nil
 }
