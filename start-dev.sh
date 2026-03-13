@@ -1,13 +1,15 @@
 #!/bin/bash
 
+DIR="$(cd "$(dirname "$0")" && pwd)"
+
 echo "Starting backend..."
-cd api && go run main.go &
+cd "$DIR/api" && go run _cmd/main.go &
 BACKEND_PID=$!
 
 sleep 2
 
 echo "Starting frontend..."
-cd frontend && npm run dev &
+cd "$DIR/frontend" && npm run dev &
 FRONTEND_PID=$!
 
 echo "Backend PID: $BACKEND_PID"

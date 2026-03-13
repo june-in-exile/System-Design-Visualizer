@@ -1,9 +1,9 @@
-package main
+package handler
 
 import (
 	"net/http"
 
-	"github.com/architectmind/backend/handler"
+	backendHandler "github.com/architectmind/backend/handler"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -16,16 +16,16 @@ func init() {
 	app.Use(gin.Recovery())
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"}, // Vercel 部署環境下前後端同網域，或是可依需求限縮
+		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,
 	}))
 
-	// 定義路由。在 Vercel 中，我們可以直接將 API 邏輯掛載在根路徑或加上 /api 前綴
-	// 由於這個檔案被命名為 topology.go，請求 /api/topology 會直接調用此 Handler
-	app.POST("/api/topology", handler.PostTopology)
-	app.POST("/topology", handler.PostTopology) // 為了保險也支援不帶前綴的路徑
+	// 定義路由。在 Vercel 中，這個 Handler 會被掛載在 /api/index
+	// 我們透過別名 backendHandler 呼叫原本的 PostTopology
+	app.POST("/api/topology", backendHandler.PostTopology)
+	app.POST("/api/index/topology", backendHandler.PostTopology)
 }
 
 // Handler 是 Vercel Go Runtime 的進入點
