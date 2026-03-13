@@ -75,21 +75,18 @@ export default function EdgePropertyPanel({
 
   const handleProtocolChange = (newProtocol: EdgeProtocol) => {
     onEdgeDataChange(selectedEdge.id, {
-      ...edgeData,
       protocol: newProtocol,
     })
   }
 
   const handleConnectionTypeChange = (newConnectionType: ConnectionType) => {
     onEdgeDataChange(selectedEdge.id, {
-      ...edgeData,
       connectionType: newConnectionType,
     })
   }
 
   const handleLabelChange = (newLabel: string) => {
     onEdgeDataChange(selectedEdge.id, {
-      ...edgeData,
       label: newLabel,
     })
   }

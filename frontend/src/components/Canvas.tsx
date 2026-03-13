@@ -408,35 +408,74 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
   )
 
   const onEdgeDataChange = useCallback(
-    (edgeId: string, newData: Record<string, unknown>) => {
+    (edgeId: string, partialData: Record<string, unknown>) => {
       pushHistory()
-      setEdges((eds) =>
-        eds.map((edge) =>
-          edge.id === edgeId ? { ...edge, data: newData } : edge
-        )
-      )
+      setEdges((eds) => {
+        const targetEdge = eds.find(e => e.id === edgeId)
+        const isSelected = targetEdge?.selected || false;
+        return eds.map((edge) => {
+          let apply = false;
+          if (isSelected) {
+            if (edge.id === edgeId) apply = true;
+            else if (edge.selected) {
+              apply = selectedNodeIds.length >= 2 
+                ? (selectedNodeIds.includes(edge.source) && selectedNodeIds.includes(edge.target))
+                : true;
+            }
+          } else {
+            apply = edge.id === edgeId;
+          }
+          return apply ? { ...edge, data: { ...(edge.data as Record<string, unknown>), ...partialData } } : edge;
+        });
+      })
     },
-    [setEdges, pushHistory]
+    [setEdges, pushHistory, selectedNodeIds]
   )
 
   const onEdgeAnimatedChange = useCallback(
     (edgeId: string, animated: boolean) => {
       pushHistory()
-      setEdges((eds) =>
-        eds.map((edge) =>
-          edge.id === edgeId ? { ...edge, animated } : edge
-        )
-      )
+      setEdges((eds) => {
+        const targetEdge = eds.find(e => e.id === edgeId)
+        const isSelected = targetEdge?.selected || false;
+        return eds.map((edge) => {
+          let apply = false;
+          if (isSelected) {
+            if (edge.id === edgeId) apply = true;
+            else if (edge.selected) {
+              apply = selectedNodeIds.length >= 2 
+                ? (selectedNodeIds.includes(edge.source) && selectedNodeIds.includes(edge.target))
+                : true;
+            }
+          } else {
+            apply = edge.id === edgeId;
+          }
+          return apply ? { ...edge, animated } : edge;
+        });
+      })
     },
-    [setEdges, pushHistory]
+    [setEdges, pushHistory, selectedNodeIds]
   )
 
   const onEdgeDirectionChange = useCallback(
     (edgeId: string, direction: 'uni' | 'bi' | 'none') => {
       pushHistory()
-      setEdges((eds) =>
-        eds.map((edge) => {
-          if (edge.id !== edgeId) return edge
+      setEdges((eds) => {
+        const targetEdge = eds.find(e => e.id === edgeId)
+        const isSelected = targetEdge?.selected || false;
+        return eds.map((edge) => {
+          let apply = false;
+          if (isSelected) {
+            if (edge.id === edgeId) apply = true;
+            else if (edge.selected) {
+              apply = selectedNodeIds.length >= 2 
+                ? (selectedNodeIds.includes(edge.source) && selectedNodeIds.includes(edge.target))
+                : true;
+            }
+          } else {
+            apply = edge.id === edgeId;
+          }
+          if (!apply) return edge;
           
           const color = isDarkMode ? '#d1d5db' : '#b1b1b7'
           let markerEnd: Edge['markerEnd'] = undefined
@@ -451,22 +490,36 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
           
           return {
             ...edge,
-            data: { ...edge.data, direction },
+            data: { ...(edge.data as Record<string, unknown>), direction },
             markerEnd,
             markerStart,
           }
-        })
-      )
+        });
+      })
     },
-    [setEdges, pushHistory, isDarkMode]
+    [setEdges, pushHistory, isDarkMode, selectedNodeIds]
   )
 
   const onEdgeReverse = useCallback(
     (edgeId: string) => {
       pushHistory()
-      setEdges((eds) =>
-        eds.map((edge) => {
-          if (edge.id !== edgeId) return edge
+      setEdges((eds) => {
+        const targetEdge = eds.find(e => e.id === edgeId)
+        const isSelected = targetEdge?.selected || false;
+        return eds.map((edge) => {
+          let apply = false;
+          if (isSelected) {
+            if (edge.id === edgeId) apply = true;
+            else if (edge.selected) {
+              apply = selectedNodeIds.length >= 2 
+                ? (selectedNodeIds.includes(edge.source) && selectedNodeIds.includes(edge.target))
+                : true;
+            }
+          } else {
+            apply = edge.id === edgeId;
+          }
+          if (!apply) return edge;
+          
           const oldSourceHandle = edge.sourceHandle ?? ''
           const oldTargetHandle = edge.targetHandle ?? ''
           return {
@@ -476,24 +529,26 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
             sourceHandle: oldTargetHandle.replace('-target', '-source'),
             targetHandle: oldSourceHandle.replace('-source', '-target'),
           }
-        })
-      )
+        });
+      })
     },
-    [setEdges, pushHistory]
+    [setEdges, pushHistory, selectedNodeIds]
   )
 
   const onSelectionChange = useCallback(({ nodes: selectedNodes, edges: selectedEdges }: { nodes: Node[]; edges: Edge[] }) => {
-    if (selectedNodes.length > 0) {
-      const selIds = new Set(selectedNodes.map(n => n.id))
-      setEdges(eds => eds.map(edge => ({
-        ...edge,
-        selected: selIds.has(edge.source) || selIds.has(edge.target)
-      })))
+    const nodeIds = selectedNodes.map(n => n.id)
+    setSelectedNodeIds(nodeIds)
+    setSelectedNodeId(nodeIds.length > 0 ? nodeIds[0] : null)
+    
+    let preferredEdges = selectedEdges
+    if (nodeIds.length >= 2) {
+      const internalEdges = selectedEdges.filter(e => nodeIds.includes(e.source) && nodeIds.includes(e.target))
+      if (internalEdges.length > 0) {
+        preferredEdges = internalEdges
+      }
     }
-    setSelectedNodeIds(selectedNodes.map(n => n.id))
-    setSelectedNodeId(selectedNodes.length > 0 ? selectedNodes[0].id : null)
-    setSelectedEdgeId(selectedEdges.length > 0 ? selectedEdges[0].id : null)
-  }, [setEdges])
+    setSelectedEdgeId(preferredEdges.length > 0 ? preferredEdges[0].id : null)
+  }, [])
 
   const onConnect: OnConnect = useCallback(
     (params) => {
@@ -1091,7 +1146,9 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
               }
 
               const displayLabel = edgeLabel || autoLabel || undefined
-              const color = e.selected ? '#3b82f6' : isDarkMode ? '#d1d5db' : '#b1b1b7'
+              const isNodeSelected = selectedNodeIds.includes(e.source) || selectedNodeIds.includes(e.target);
+              const isHighlighted = e.selected || isNodeSelected;
+              const color = isHighlighted ? '#3b82f6' : isDarkMode ? '#d1d5db' : '#b1b1b7'
               const direction = edgeData.direction as string | undefined
               const arrowMarker = { type: MarkerType.ArrowClosed, color }
               const markerEnd = direction === 'none' ? undefined : arrowMarker
@@ -1109,7 +1166,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
                 style: {
                   ...e.style,
                   stroke: color,
-                  strokeWidth: e.selected ? 3 : 2,
+                  strokeWidth: isHighlighted ? 3 : 2,
                 },
               }
             })}
