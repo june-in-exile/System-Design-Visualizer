@@ -705,32 +705,30 @@ export default function PropertyPanel({
           )}
           style={{ width: '100%', padding: '6px 8px', border: '1px solid var(--border-color)', borderRadius: 4, fontSize: 13, backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}
         >
-          <option value="">Default (Auto-detect)</option>
+          <option value="">(unspecified)</option>
           {CONSISTENCY_LEVELS.map((opt) => (
             <option key={opt.value} value={opt.value} title={opt.description}>{opt.label}</option>
           ))}
         </select>
       </div>
 
-      {properties.dbType === 'sql' && (
-        <div style={{ marginBottom: 16 }}>
-          <label 
-            style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
-            title="The estimated balance between read and write operations. High read ratios favor caching and replicas."
-          >
-            Read/Write Ratio ({(properties.readWriteRatio as number) || 0})
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.1"
-            value={(properties.readWriteRatio as number) || 0}
-            onChange={(e) => handlePropertyChange('readWriteRatio', parseFloat(e.target.value))}
-            style={{ width: '100%' }}
-          />
-        </div>
-      )}
+      <div style={{ marginBottom: 16 }}>
+        <label
+          style={{ display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}
+          title="The estimated balance between read and write operations. High read ratios favor caching and replicas."
+        >
+          Read/Write Ratio ({(properties.readWriteRatio as number) || 0})
+        </label>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.1"
+          value={(properties.readWriteRatio as number) || 0}
+          onChange={(e) => handlePropertyChange('readWriteRatio', parseFloat(e.target.value))}
+          style={{ width: '100%' }}
+        />
+      </div>
     </>
   )
 

@@ -1,27 +1,15 @@
 import type { Node, Edge } from '@xyflow/react'
 
 // ============================================================
-// 顏色對照表（與 nodeConfig.ts 保持一致）
+// 中性配色（與 nodeConfig.ts 保持一致）
+// 只有警告狀態才使用黃色，一般情況下統一使用中性灰
 // ============================================================
 
-const COMPONENT_COLORS: Record<string, string> = {
-  client: '#6366f1',
-  load_balancer: '#f59e0b',
-  api_gateway: '#10b981',
-  service: '#3b82f6',
-  database: '#ef4444',
-  cache: '#8b5cf6',
-  message_queue: '#ec4899',
-  cdn: '#14b8a6',
-  dns: '#64748b',
-  storage: '#f97316',
-  reverse_proxy: '#0ea5e9',
-  firewall: '#dc2626',
-  logger: '#059669',
-}
+const NEUTRAL_COLOR = '#4b5563'
+const WARNING_COLOR = '#eab308'
 
-function getStrokeColor(componentType: string): string {
-  return COMPONENT_COLORS[componentType] || '#1e1e1e'
+function getStrokeColor(_componentType: string, hasWarning = false): string {
+  return hasWarning ? WARNING_COLOR : NEUTRAL_COLOR
 }
 
 // ============================================================
@@ -80,10 +68,14 @@ export function toExcalidraw(nodes: Node[], edges: Edge[]): string {
     const data = node.data as Record<string, unknown>
     const label = (data.label as string) || node.id
     const componentType = (data.componentType as string) || 'service'
-    const color = getStrokeColor(componentType)
+    const hasWarning = (data.hasWarning as boolean) || false
+    const color = getStrokeColor(componentType, hasWarning)
 
     const rectId = `rect-${node.id}`
     const textId = `text-${node.id}`
+
+    const textWidth = NODE_WIDTH - 20
+    const textHeight = 24
 
     elements.push({
       id: rectId,
@@ -94,7 +86,7 @@ export function toExcalidraw(nodes: Node[], edges: Edge[]): string {
       height: NODE_HEIGHT,
       strokeColor: color,
       strokeWidth: 1,
-      backgroundColor: `${color}22`,
+      backgroundColor: `${color}12`,
       fillStyle: 'solid',
       roughness: 1,
       opacity: 100,
@@ -106,10 +98,10 @@ export function toExcalidraw(nodes: Node[], edges: Edge[]): string {
     elements.push({
       id: textId,
       type: 'text',
-      x: node.position.x + NODE_WIDTH / 2,
-      y: node.position.y + NODE_HEIGHT / 2,
-      width: NODE_WIDTH - 20,
-      height: 24,
+      x: node.position.x + (NODE_WIDTH - textWidth) / 2,
+      y: node.position.y + (NODE_HEIGHT - textHeight) / 2,
+      width: textWidth,
+      height: textHeight,
       text: label,
       fontSize: 16,
       fontFamily: 1,
