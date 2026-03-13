@@ -47,3 +47,5 @@ go.work.sum
 .eslintcache
 .stylelintcache
 .worktrees/
+.vercel
+.env*.local

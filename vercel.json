@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/index.go",
+      "src": "api/handler/serverless.go",
       "use": "@vercel/go"
     },
     {
@@ -16,7 +16,7 @@
   "rewrites": [
     {
       "source": "/api/topology",
-      "destination": "/api/index"
+      "destination": "/api/handler/serverless"
     },
     {
       "source": "/(.*)",

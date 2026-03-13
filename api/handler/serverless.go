@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 
-	backendHandler "github.com/architectmind/backend/handler"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -22,13 +21,11 @@ func init() {
 		AllowCredentials: true,
 	}))
 
-	// 定義路由。在 Vercel 中，這個 Handler 會被掛載在 /api/index
-	// 我們透過別名 backendHandler 呼叫原本的 PostTopology
-	app.POST("/api/topology", backendHandler.PostTopology)
-	app.POST("/api/index/topology", backendHandler.PostTopology)
+	app.POST("/api/topology", PostTopology)
+	app.POST("/api/handler/topology", PostTopology)
 }
 
-// Handler 是 Vercel Go Runtime 的進入點
+// Handler is the Vercel Go Runtime entry point.
 func Handler(w http.ResponseWriter, r *http.Request) {
 	app.ServeHTTP(w, r)
 }
