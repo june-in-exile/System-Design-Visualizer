@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"testing"
 	"github.com/architectmind/backend/model"
+	"testing"
 )
 
 func TestCheckProtocolMismatch_Unspecified(t *testing.T) {
@@ -92,7 +92,7 @@ func TestCheckReverseProxySPOF_SingleWithReplica(t *testing.T) {
 
 func TestCheckReverseProxySSL_HTTPSWithoutTermination(t *testing.T) {
 	nodes := map[string]model.SystemNode{
-		"c1":  {ID: "c1", ComponentType: "client", Label: "Browser"},
+		"c1": {ID: "c1", ComponentType: "client", Label: "Browser"},
 		"rp1": {ID: "rp1", ComponentType: "reverse_proxy", Label: "Nginx", Properties: map[string]interface{}{
 			"sslTermination": false,
 		}},
@@ -108,7 +108,7 @@ func TestCheckReverseProxySSL_HTTPSWithoutTermination(t *testing.T) {
 
 func TestCheckReverseProxySSL_HTTPSWithTermination(t *testing.T) {
 	nodes := map[string]model.SystemNode{
-		"c1":  {ID: "c1", ComponentType: "client", Label: "Browser"},
+		"c1": {ID: "c1", ComponentType: "client", Label: "Browser"},
 		"rp1": {ID: "rp1", ComponentType: "reverse_proxy", Label: "Nginx", Properties: map[string]interface{}{
 			"sslTermination": true,
 		}},
@@ -142,7 +142,7 @@ func TestCheckAsyncPeakShaving_ReverseProxy(t *testing.T) {
 func TestCheckSPOF_ReverseProxySingleService(t *testing.T) {
 	nodes := map[string]model.SystemNode{
 		"rp1": {ID: "rp1", ComponentType: "reverse_proxy", Label: "Nginx"},
-		"s1":  {ID: "s1", ComponentType: "service", Label: "API", Properties: map[string]interface{}{
+		"s1": {ID: "s1", ComponentType: "service", Label: "API", Properties: map[string]interface{}{
 			"replicas":  float64(1),
 			"stateless": true,
 		}},

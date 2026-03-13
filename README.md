@@ -78,6 +78,23 @@ npm install
 npm run dev
 ```
 
+## ✅ 測試 (Backend Tests)
+
+目前測試集中於後端。請在 `backend` 目錄下執行：
+
+```bash
+cd backend
+go test ./... -v -count=1
+```
+
+若要查看覆蓋率：
+
+```bash
+go test ./... -coverprofile=coverage.out
+go tool cover -func=coverage.out
+go tool cover -html=coverage.out
+```
+
 ## 🖥 如何使用
 
 1. **一鍵生成預設架構 (Presets)**：
@@ -131,3 +148,8 @@ npm run dev
 
 - `/frontend`: 包含 React 原始碼、React Flow 組件、自定義 Hook 與 API 調用邏輯。
 - `/backend`: 包含 Go API 處理程序 (Handlers)、數據模型 (Models) 與驗證引擎。
+
+## 🗺️ 路線圖 (Roadmap / TODO)
+
+- [ ] **Terraform 整合**：研究與 [Terraform](https://developer.hashicorp.com/terraform) 串接，實現從架構圖自動生成 IaC (Infrastructure as Code) 設定檔。
+- [ ] **數據儀表板 (Dashboard)**：加入即時數據模擬面版，根據用戶設定的節點參數（如 Replicas, Read/Write Ratio），動態計算並顯示預估的 DAU, QPS, 延遲等系統指標。
