@@ -1176,8 +1176,8 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
                       border: 'none',
                       backgroundColor: 'transparent',
                       color: 'var(--text-primary)',
-                      fontSize: 16,
-                      fontWeight: 500,
+                      fontSize: 14,
+                      fontWeight: 400,
                       textAlign: 'left',
                       cursor: 'pointer',
                     }}
@@ -1568,6 +1568,7 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
             <div
               style={{
                 width: propertyPanelWidth,
+                height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 borderLeft: '1px solid var(--border-color)',

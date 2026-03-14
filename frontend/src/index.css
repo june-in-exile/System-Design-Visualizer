@@ -3,7 +3,7 @@
   --font-hand: 'Caveat', 'Virgil', 'Comic Neue', cursive;
   --bg-primary: #fafaf8;
   --bg-secondary: #f5f5f0;
-  --bg-tertiary: #f3f4f6;
+  --bg-tertiary: #e5e7eb;
   --text-primary: #1f2937;
   --text-secondary: #4b5563;
   --border-color: #e5e7eb;
@@ -112,6 +112,20 @@ button:disabled {
 .tab-active {
   border-bottom: 2px solid var(--btn-primary-bg) !important;
   background-color: var(--bg-tertiary);
+}
+
+input, select, textarea {
+  transition: all 0.2s ease;
+}
+
+input:hover, select:hover, textarea:hover {
+  border-color: var(--text-secondary) !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px var(--bg-tertiary);
 }
 
 /* Hand-drawn handle styles */

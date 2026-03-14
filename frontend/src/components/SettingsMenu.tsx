@@ -77,7 +77,7 @@ export default function SettingsMenu({ theme, setTheme, getNodes, getEdges }: Se
     textAlign: 'left',
     cursor: disabled ? 'not-allowed' : 'pointer',
     borderRadius: 6,
-    transition: 'background-color 0.2s',
+    transition: 'all 0.2s ease',
   })
 
   const renderMainView = () => {

@@ -329,10 +329,8 @@ export default function PropertyPanel({
     return (
       <aside
         style={{
-          width: 300,
+          width: '100%',
           padding: 16,
-          borderLeft: '1px solid var(--border-color)',
-          backgroundColor: 'var(--bg-secondary)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -1428,10 +1426,8 @@ export default function PropertyPanel({
   return (
     <aside
       style={{
-        width: 300,
+        width: '100%',
         padding: 16,
-        borderLeft: '1px solid var(--border-color)',
-        backgroundColor: 'var(--bg-secondary)',
         overflowY: 'auto',
         flex: 1,
       }}
