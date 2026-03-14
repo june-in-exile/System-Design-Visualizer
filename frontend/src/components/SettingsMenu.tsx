@@ -6,8 +6,8 @@ import { exportPdf } from '../utils/exportPdf'
 import { toExcalidraw, downloadExcalidraw } from '../utils/exportExcalidraw'
 
 interface SettingsMenuProps {
-  theme: 'light' | 'dark' | 'warm' | 'dream'
-  setTheme: (theme: 'light' | 'dark' | 'warm' | 'dream') => void
+  theme: 'light' | 'dark' | 'warm' | 'dream' | 'cyberpunk'
+  setTheme: (theme: 'light' | 'dark' | 'warm' | 'dream' | 'cyberpunk') => void
   getNodes: () => Node[]
   getEdges: () => Edge[]
 }
@@ -32,6 +32,12 @@ export default function SettingsMenu({ theme, setTheme, getNodes, getEdges }: Se
       document.addEventListener('mousedown', handleClickOutside)
     }
     return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) {
+      setView('main')
+    }
   }, [isOpen])
 
   const effectiveView = isOpen ? view : 'main'
@@ -80,7 +86,8 @@ export default function SettingsMenu({ theme, setTheme, getNodes, getEdges }: Se
       if (theme === 'light') return 'Light'
       if (theme === 'dark') return 'Dark'
       if (theme === 'warm') return 'Warm'
-      return 'Dream'
+      if (theme === 'dream') return 'Dream'
+      return 'CyberPunk'
     }
 
     return (
@@ -152,6 +159,15 @@ export default function SettingsMenu({ theme, setTheme, getNodes, getEdges }: Se
       >
         <span>Dream Mode</span>
         {theme === 'dream' && <span>✓</span>}
+      </button>
+      <button
+        onClick={() => setTheme('cyberpunk')}
+        style={{ ...itemStyle(), fontWeight: theme === 'cyberpunk' ? 700 : 400 }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)' }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+      >
+        <span>CyberPunk Mode</span>
+        {theme === 'cyberpunk' && <span>✓</span>}
       </button>
     </>
   )

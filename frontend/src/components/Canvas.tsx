@@ -46,7 +46,7 @@ function generateNodeId(): string {
 }
 
 interface CanvasProps {
-  theme: 'light' | 'dark' | 'warm' | 'dream';
+  theme: 'light' | 'dark' | 'warm' | 'dream' | 'cyberpunk';
   initialNodes?: Node[];
   initialEdges?: Edge[];
   onStateChange?: (nodes: Node[], edges: Edge[]) => void;
@@ -75,15 +75,17 @@ const CONNECTION_TYPE_LABELS: Record<string, string> = {
 }
 
 function Canvas({ theme, initialNodes = [], initialEdges = [], onStateChange }: CanvasProps) {
-  const isDarkMode = theme === 'dark'
+  const isDarkMode = theme === 'dark' || theme === 'cyberpunk'
   const isWarmMode = theme === 'warm'
   const isDreamMode = theme === 'dream'
+  const isCyberPunk = theme === 'cyberpunk'
   
-  const defaultEdgeColor = isDarkMode ? '#d1d5db' : isWarmMode ? '#6B543D' : isDreamMode ? '#83A2FE' : '#b1b1b7'
-  const defaultLabelBg = isDarkMode ? '#1f2937' : isWarmMode ? '#EBE4D1' : isDreamMode ? '#F5F3FF' : '#ffffff'
-  const gridColor = isDarkMode ? '#444' : isWarmMode ? '#D6C2A1' : isDreamMode ? '#DBC5FC' : '#ccc'
-  const tooltipBg = isDarkMode ? '#1e293b' : isWarmMode ? '#EBD8C7' : isDreamMode ? '#ECB2FF' : '#f1f5f9'
-  const tooltipHover = isDarkMode ? '#1e293b' : isWarmMode ? '#EBE2A4' : isDreamMode ? '#DBC5FC' : '#f8fafc'
+  const defaultEdgeColor = isCyberPunk ? '#E8D44A' : isDarkMode ? '#d1d5db' : isWarmMode ? '#6B543D' : isDreamMode ? '#83A2FE' : '#b1b1b7'
+  const defaultLabelBg = isCyberPunk ? '#0a0a0c' : isDarkMode ? '#1f2937' : isWarmMode ? '#EBE4D1' : isDreamMode ? '#F5F3FF' : '#ffffff'
+  const gridColor = isCyberPunk ? '#bc00ff' : isDarkMode ? '#444' : isWarmMode ? '#D6C2A1' : isDreamMode ? '#DBC5FC' : '#ccc'
+  const tooltipBg = isCyberPunk ? '#0f0f0f' : isDarkMode ? '#1e293b' : isWarmMode ? '#EBD8C7' : isDreamMode ? '#ECB2FF' : '#f1f5f9'
+  const tooltipHover = isCyberPunk ? '#1a1a1a' : isDarkMode ? '#1e293b' : isWarmMode ? '#EBE2A4' : isDreamMode ? '#DBC5FC' : '#f8fafc'
+
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges)

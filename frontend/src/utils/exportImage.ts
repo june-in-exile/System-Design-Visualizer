@@ -5,7 +5,7 @@ import type { Node } from '@xyflow/react'
 
 export async function exportPng(
   nodes: Node[],
-  theme: 'light' | 'dark' | 'warm' | 'dream',
+  theme: 'light' | 'dark' | 'warm' | 'dream' | 'cyberpunk',
   filename = 'architecture.png'
 ): Promise<void> {
   const viewport = document.querySelector('.react-flow__viewport') as HTMLElement | null
@@ -16,7 +16,7 @@ export async function exportPng(
   const bounds = getNodesBounds(nodes)
   const padding = 50
 
-  const backgroundColor = theme === 'dark' ? '#1f2937' : theme === 'warm' ? '#EBE4D1' : theme === 'dream' ? '#F5F3FF' : '#ffffff'
+  const backgroundColor = theme === 'dark' ? '#1f2937' : theme === 'warm' ? '#EBE4D1' : theme === 'dream' ? '#F5F3FF' : theme === 'cyberpunk' ? '#050505' : '#ffffff'
 
   const blob = await toBlob(viewport, {
     width: bounds.width + padding * 2,

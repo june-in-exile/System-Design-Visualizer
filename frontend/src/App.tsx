@@ -5,14 +5,14 @@ import TabBar from './components/TabBar'
 import { useCanvasTabs } from './hooks/useCanvasTabs'
 
 function App() {
-  const [theme, setTheme] = useState<'light' | 'dark' | 'warm' | 'dream'>(() => {
-    const saved = localStorage.getItem('theme') as 'light' | 'dark' | 'warm' | 'dream'
+  const [theme, setTheme] = useState<'light' | 'dark' | 'warm' | 'dream' | 'cyberpunk'>(() => {
+    const saved = localStorage.getItem('theme') as 'light' | 'dark' | 'warm' | 'dream' | 'cyberpunk'
     if (saved) return saved
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   })
 
   useEffect(() => {
-    document.documentElement.classList.remove('dark', 'warm', 'dream')
+    document.documentElement.classList.remove('dark', 'warm', 'dream', 'cyberpunk')
     if (theme !== 'light') {
       document.documentElement.classList.add(theme)
     }

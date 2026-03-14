@@ -5,7 +5,7 @@ import type { Node } from '@xyflow/react'
 
 export async function exportPdf(
   nodes: Node[],
-  theme: 'light' | 'dark' | 'warm' | 'dream',
+  theme: 'light' | 'dark' | 'warm' | 'dream' | 'cyberpunk',
   filename = 'architecture.pdf'
 ): Promise<void> {
   const viewport = document.querySelector('.react-flow__viewport') as HTMLElement | null
@@ -18,7 +18,7 @@ export async function exportPdf(
   const width = bounds.width + padding * 2
   const height = bounds.height + padding * 2
 
-  const backgroundColor = theme === 'dark' ? '#1f2937' : theme === 'warm' ? '#EBE4D1' : theme === 'dream' ? '#F5F3FF' : '#ffffff'
+  const backgroundColor = theme === 'dark' ? '#1f2937' : theme === 'warm' ? '#EBE4D1' : theme === 'dream' ? '#F5F3FF' : theme === 'cyberpunk' ? '#050505' : '#ffffff'
 
   const dataUrl = await toPng(viewport, {
     width,
@@ -37,8 +37,8 @@ export async function exportPdf(
     format: [width + 100, height + 100],
   })
 
-  const textColor = theme === 'dark' ? '#f9fafb' : theme === 'warm' ? '#433422' : theme === 'dream' ? '#312E81' : '#1f2937'
-  const subTextColor = theme === 'dark' ? '#d1d5db' : theme === 'warm' ? '#6B543D' : theme === 'dream' ? '#4338CA' : '#4b5563'
+  const textColor = theme === 'dark' ? '#f9fafb' : theme === 'warm' ? '#433422' : theme === 'dream' ? '#312E81' : theme === 'cyberpunk' ? '#00f3ff' : '#1f2937'
+  const subTextColor = theme === 'dark' ? '#d1d5db' : theme === 'warm' ? '#6B543D' : theme === 'dream' ? '#4338CA' : theme === 'cyberpunk' ? '#ff0055' : '#4b5563'
 
   pdf.setFontSize(16)
   pdf.setTextColor(textColor)

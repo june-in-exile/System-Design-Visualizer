@@ -64,19 +64,19 @@
 }
 
 .cyberpunk {
-  /* CyberPunk Theme */
-  --bg-primary: #050505;
-  --bg-secondary: #0f0f0f;
-  --bg-tertiary: #1a1a1a;
-  --text-primary: #00f3ff;
-  --text-secondary: #ff0055;
-  --border-color: #00f3ff;
-  --node-text-secondary: #bc00ff;
-  --btn-primary-bg: #ff0055;
-  --btn-primary-text: #ffffff;
-  --btn-disabled-bg: #222222;
-  --btn-active-bg: #00f3ff;
-  --accent: #ff0055;
+  /* CyberPunk Theme — inspired by Cyberpunk 2077 cover palette */
+  --bg-primary: #0a0a0c;
+  --bg-secondary: #12111a;
+  --bg-tertiary: #1c1b26;
+  --text-primary: #E8D44A;
+  --text-secondary: #c4b340;
+  --border-color: #E8D44A;
+  --node-text-secondary: #9a8d38;
+  --btn-primary-bg: #FF2058;
+  --btn-primary-text: #0a0a0c;
+  --btn-disabled-bg: #1c1b26;
+  --btn-active-bg: #E8D44A;
+  --accent: #ffffff;
 }
 
 

@@ -6,8 +6,8 @@ import SettingsMenu from './SettingsMenu'
 const COMPONENT_TYPES = Object.keys(NODE_TYPE_CONFIG) as ComponentType[]
 
 interface SidebarProps {
-  theme: 'light' | 'dark' | 'warm' | 'dream';
-  setTheme: (theme: 'light' | 'dark' | 'warm' | 'dream') => void;
+  theme: 'light' | 'dark' | 'warm' | 'dream' | 'cyberpunk';
+  setTheme: (theme: 'light' | 'dark' | 'warm' | 'dream' | 'cyberpunk') => void;
   getNodes: () => Node[];
   getEdges: () => Edge[];
 }
