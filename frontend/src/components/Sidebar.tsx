@@ -138,13 +138,11 @@ function Sidebar({}: SidebarProps) {
       <div style={{ padding: '0 16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <h3
           style={{
-            margin: '0 0 12px',
-            fontSize: 14,
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            fontWeight: 700,
+            display: 'block',
+            marginBottom: 12,
+            fontSize: 13,
+            fontWeight: 500,
             color: 'var(--text-secondary)',
-            opacity: 0.8,
           }}
         >
           Components
