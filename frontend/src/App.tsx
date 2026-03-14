@@ -31,6 +31,7 @@ function App() {
     closeTab,
     renameTab,
     updateCanvasStateRef,
+    getCurrentState,
   } = useCanvasTabs()
 
   const handleCanvasStateChange = useCallback(
@@ -51,7 +52,12 @@ function App() {
         color: 'var(--text-primary)',
       }}
     >
-      <Sidebar isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
+      <Sidebar 
+        isDarkMode={isDarkMode} 
+        toggleDarkMode={toggleDarkMode} 
+        getNodes={() => getCurrentState().nodes}
+        getEdges={() => getCurrentState().edges}
+      />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <TabBar
           tabs={tabs}

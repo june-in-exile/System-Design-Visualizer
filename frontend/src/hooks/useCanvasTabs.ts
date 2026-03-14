@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type { Node, Edge } from '@xyflow/react'
 import type { SystemParams } from '../types/topology'
 
@@ -32,8 +32,13 @@ export function useCanvasTabs() {
   })
   const [activeTabId, setActiveTabId] = useState<string>(() => tabs[0].id)
   const canvasStateRef = useRef<{ nodes: Node[]; edges: Edge[]; params: SystemParams } | null>(null)
+  const activeTabRef = useRef<CanvasTab>(tabs[0])
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0]
+
+  useEffect(() => {
+    activeTabRef.current = activeTab
+  }, [activeTab])
 
   const saveCurrentCanvasState = useCallback(() => {
     const state = canvasStateRef.current
@@ -95,6 +100,13 @@ export function useCanvasTabs() {
     []
   )
 
+  const getCurrentState = useCallback(() => {
+    const current = canvasStateRef.current
+    if (current) return current
+    const tab = activeTabRef.current
+    return { nodes: [...tab.nodes], edges: [...tab.edges], params: { ...tab.params } }
+  }, [])
+
   return {
     tabs,
     activeTab,
@@ -104,5 +116,6 @@ export function useCanvasTabs() {
     closeTab,
     renameTab,
     updateCanvasStateRef,
+    getCurrentState,
   }
 }

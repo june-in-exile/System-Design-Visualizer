@@ -19,7 +19,6 @@ import ArchitectureNode from '../nodes/ArchitectureNode'
 import HandDrawnEdge from '../edges/HandDrawnEdge'
 import ComponentPropertyPanel from './ComponentPropertyPanel'
 import EdgePropertyPanel from './EdgePropertyPanel'
-import ExportMenu from './ExportMenu'
 import SystemParamsPanel from './SystemParamsPanel'
 import ToolbarButton from './ToolbarButton'
 import { NODE_TYPE_CONFIG } from '../nodes/nodeConfig'
@@ -88,6 +87,8 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
   )
   const [analyzing, setAnalyzing] = useState(false)
   const [showWarnings, setShowWarnings] = useState(false)
+  const [showPresets, setShowPresets] = useState(false)
+  const presetsRef = useRef<HTMLDivElement>(null)
   const [dismissedWarnings, setDismissedWarnings] = useState<Set<number>>(new Set())
   const [systemParams, setSystemParams] = useState<SystemParams>({})
 
@@ -98,6 +99,17 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
   useEffect(() => {
     panelHeightRef.current = panelHeight
   }, [panelHeight])
+
+  useEffect(() => {
+    if (!showPresets) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (presetsRef.current && !presetsRef.current.contains(e.target as HTMLElement)) {
+        setShowPresets(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showPresets])
 
   const onDragStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
@@ -1058,11 +1070,6 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
           onClick={undo}
           disabled={historyRef.current.length === 0}
         />
-        <ExportMenu nodes={nodes} edges={edges} isDarkMode={isDarkMode} />
-        <SystemParamsPanel
-          params={systemParams}
-          onChange={setSystemParams}
-        />
         {canMerge && (
           <ToolbarButton
             label="Merge"
@@ -1233,71 +1240,70 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
               </div>
             )}
 
-            <div style={{ position: 'absolute', bottom: 16, left: 70, zIndex: 10, display: 'flex', gap: 8 }}>
-              <button
-                onClick={handleDemo}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: 6,
-                  border: '1px solid var(--border-color)',
-                  backgroundColor: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                }}
-              >
-                Demo
-              </button>
-              <button
-                onClick={handleTwitter}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: 6,
-                  border: '1px solid var(--border-color)',
-                  backgroundColor: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                }}
-              >
-                Twitter
-              </button>
-              <button
-                onClick={handleYouTube}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: 6,
-                  border: '1px solid var(--border-color)',
-                  backgroundColor: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                }}
-              >
-                YouTube
-              </button>
-              <button
-                onClick={handleGoogle}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: 6,
-                  border: '1px solid var(--border-color)',
-                  backgroundColor: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                }}
-              >
-                Google
-              </button>
+            <div style={{ position: 'absolute', bottom: 16, left: 70, zIndex: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
+              <SystemParamsPanel
+                params={systemParams}
+                onChange={setSystemParams}
+              />
+              <div ref={presetsRef} style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setShowPresets(prev => !prev)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 6,
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--bg-secondary)',
+                    color: 'var(--text-primary)',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}
+                >
+                  Demo ▾
+                </button>
+                {showPresets && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '100%',
+                    left: 0,
+                    marginBottom: 6,
+                    minWidth: 130,
+                    borderRadius: 6,
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--bg-secondary)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    overflow: 'hidden',
+                  }}>
+                    {[
+                      { label: 'Basic', handler: handleDemo },
+                      { label: 'Twitter', handler: handleTwitter },
+                      { label: 'YouTube', handler: handleYouTube },
+                      { label: 'Google', handler: handleGoogle },
+                    ].map(({ label, handler }) => (
+                      <button
+                        key={label}
+                        onClick={() => { handler(); setShowPresets(false) }}
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          padding: '8px 14px',
+                          border: 'none',
+                          backgroundColor: 'transparent',
+                          color: 'var(--text-primary)',
+                          fontSize: 13,
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)' }}
+                        onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </ReactFlow>
           </div>

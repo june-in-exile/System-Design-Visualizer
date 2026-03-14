@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import type { SystemParams } from '../types/topology'
 
 interface SystemParamsPanelProps {
@@ -11,18 +11,6 @@ const LATENCY_OPTIONS = ['p99 < 500ms', 'p99 < 200ms', 'p99 < 100ms', 'p95 < 50m
 
 export default function SystemParamsPanel({ params, onChange }: SystemParamsPanelProps) {
   const [open, setOpen] = useState(false)
-  const panelRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [open])
 
   const handleChange = useCallback((key: keyof SystemParams, value: unknown) => {
     onChange({ ...params, [key]: value })
@@ -62,7 +50,7 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
   }
 
   return (
-    <div ref={panelRef} style={{ position: 'relative' }}>
+    <div style={{ position: 'relative' }}>
       <button
         onClick={() => setOpen(!open)}
         style={{
@@ -93,24 +81,50 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
       </button>
 
       {open && (
+        <>
+        <div
+          onClick={() => setOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.35)',
+            zIndex: 999,
+          }}
+        />
         <div style={{
-          position: 'absolute',
-          top: '100%',
-          left: 0,
-          marginTop: 8,
-          width: 320,
-          padding: 16,
-          borderRadius: 8,
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 380,
+          padding: 24,
+          borderRadius: 12,
           border: '1px solid var(--border-color)',
           backgroundColor: 'var(--bg-secondary)',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-          zIndex: 100,
-          maxHeight: '70vh',
+          boxShadow: '0 16px 48px rgba(0,0,0,0.25)',
+          zIndex: 1000,
+          maxHeight: '80vh',
           overflowY: 'auto',
         }}>
-          <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
-            System Parameters
-          </h4>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <h4 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>
+              System Parameters
+            </h4>
+            <button
+              onClick={() => setOpen(false)}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                color: 'var(--text-secondary)',
+                fontSize: 18,
+                cursor: 'pointer',
+                padding: '2px 6px',
+                lineHeight: 1,
+              }}
+            >
+              ✕
+            </button>
+          </div>
           <p style={{ margin: '0 0 16px', fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
             設定系統容量參數，Analyze 時會根據這些參數產生更精準的建議。所有欄位皆為選填。
           </p>
@@ -182,7 +196,7 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
 
           <div style={{ marginBottom: 14 }}>
             <label style={labelStyle}>
-              Read/Write Ratio：{params.readWriteRatio !== undefined ? `${Math.round(params.readWriteRatio * 100)}% 讀` : '未設定'}
+              Read/Write Ratio：{params.readWriteRatio !== undefined ? `${Math.round(params.readWriteRatio * 100)}% 讀` : 'Unspecified'}
             </label>
             <input
               type="range"
@@ -206,7 +220,7 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
               onChange={(e) => handleChange('latencyTarget', e.target.value || undefined)}
               style={inputStyle}
             >
-              <option value="">(未設定)</option>
+              <option value="">(Unspecified)</option>
               {LATENCY_OPTIONS.map(opt => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
@@ -220,7 +234,7 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
               onChange={(e) => handleChange('availability', e.target.value || undefined)}
               style={inputStyle}
             >
-              <option value="">(未設定)</option>
+              <option value="">(Unspecified)</option>
               {AVAILABILITY_OPTIONS.map(opt => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
@@ -246,6 +260,7 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
             </button>
           )}
         </div>
+        </>
       )}
     </div>
   )

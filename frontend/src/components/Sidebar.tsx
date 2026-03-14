@@ -1,14 +1,18 @@
+import type { Node, Edge } from '@xyflow/react'
 import type { ComponentType } from '../types/topology'
 import { NODE_TYPE_CONFIG } from '../nodes/nodeConfig'
+import SettingsMenu from './SettingsMenu'
 
 const COMPONENT_TYPES = Object.keys(NODE_TYPE_CONFIG) as ComponentType[]
 
 interface SidebarProps {
   isDarkMode: boolean;
   toggleDarkMode: () => void;
+  getNodes: () => Node[];
+  getEdges: () => Edge[];
 }
 
-function Sidebar({ isDarkMode, toggleDarkMode }: SidebarProps) {
+function Sidebar({ isDarkMode, toggleDarkMode, getNodes, getEdges }: SidebarProps) {
   const onDragStart = (
     event: React.DragEvent,
     componentType: ComponentType
@@ -69,26 +73,12 @@ function Sidebar({ isDarkMode, toggleDarkMode }: SidebarProps) {
         })}
       </div>
       
-      <button
-        onClick={toggleDarkMode}
-        style={{
-          marginTop: 'auto',
-          padding: '8px 12px',
-          borderRadius: 6,
-          border: '1px solid var(--border-color)',
-          backgroundColor: 'var(--bg-primary)',
-          color: 'var(--text-primary)',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 8,
-          fontSize: 13,
-          fontWeight: 500,
-        }}
-      >
-        {isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
-      </button>
+      <SettingsMenu 
+        isDarkMode={isDarkMode} 
+        toggleDarkMode={toggleDarkMode} 
+        getNodes={getNodes}
+        getEdges={getEdges}
+      />
     </aside>
   )
 }
