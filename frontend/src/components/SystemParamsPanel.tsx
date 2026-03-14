@@ -12,8 +12,12 @@ const LATENCY_OPTIONS = ['p99 < 500ms', 'p99 < 200ms', 'p99 < 100ms', 'p95 < 50m
 export default function SystemParamsPanel({ params, onChange }: SystemParamsPanelProps) {
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState({ x: 0, y: 0 })
+  const [height, setHeight] = useState(600)
   const [dragging, setDragging] = useState(false)
+  const [resizing, setResizing] = useState(false)
+  
   const dragRef = useRef({ startX: 0, startY: 0, initialX: 0, initialY: 0 })
+  const resizeRef = useRef({ startY: 0, initialHeight: 0, initialPosY: 0 })
 
   const handleChange = useCallback((key: keyof SystemParams, value: unknown) => {
     onChange({ ...params, [key]: value })
@@ -41,22 +45,47 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
     e.preventDefault()
   }
 
+  const onResizeMouseDown = (e: React.MouseEvent) => {
+    setResizing(true)
+    resizeRef.current = {
+      startY: e.clientY,
+      initialHeight: height,
+      initialPosY: pos.y,
+    }
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
-      if (!dragging) return
-      const dx = e.clientX - dragRef.current.startX
-      const dy = e.clientY - dragRef.current.startY
-      setPos({
-        x: dragRef.current.initialX + dx,
-        y: dragRef.current.initialY + dy,
-      })
+      if (dragging) {
+        const dx = e.clientX - dragRef.current.startX
+        const dy = e.clientY - dragRef.current.startY
+        setPos({
+          x: dragRef.current.initialX + dx,
+          y: dragRef.current.initialY + dy,
+        })
+      } else if (resizing) {
+        const dy = e.clientY - resizeRef.current.startY
+        const newHeight = Math.max(300, resizeRef.current.initialHeight + dy)
+        const heightDiff = newHeight - resizeRef.current.initialHeight
+        
+        setHeight(newHeight)
+        // Compensate Y position because translate(-50%, -50%) grows from center.
+        // Moving pos.y by half the height difference keeps the top edge fixed.
+        setPos(prev => ({
+          ...prev,
+          y: resizeRef.current.initialPosY + heightDiff / 2
+        }))
+      }
     }
 
     const onMouseUp = () => {
       setDragging(false)
+      setResizing(false)
     }
 
-    if (dragging) {
+    if (dragging || resizing) {
       window.addEventListener('mousemove', onMouseMove)
       window.addEventListener('mouseup', onMouseUp)
     }
@@ -64,7 +93,7 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup', onMouseUp)
     }
-  }, [dragging])
+  }, [dragging, resizing])
 
   const estimatedPeakQPS = params.dau ? Math.ceil(params.dau / 86400 * 10) : null
 
@@ -93,7 +122,10 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
       <button
         onClick={() => {
           setOpen(!open)
-          if (!open) setPos({ x: 0, y: 0 }) // Reset position when opening
+          if (!open) {
+            setPos({ x: 0, y: 0 }) // Reset position
+            setHeight(600) // Reset height
+          }
         }}
         style={{
           padding: '6px 12px',
@@ -129,7 +161,7 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'transparent', // Transparent background so we can see the canvas
+            backgroundColor: 'transparent',
             zIndex: 999,
           }}
         />
@@ -139,6 +171,7 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
           left: '50%',
           transform: `translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px))`,
           width: 380,
+          height: height,
           padding: 24,
           paddingTop: 12,
           borderRadius: 12,
@@ -146,10 +179,13 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
           backgroundColor: 'var(--bg-secondary)',
           boxShadow: '0 16px 48px rgba(0,0,0,0.25)',
           zIndex: 1000,
-          maxHeight: '80vh',
-          overflowY: 'auto',
-          userSelect: dragging ? 'none' : 'auto',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          userSelect: (dragging || resizing) ? 'none' : 'auto',
         }}>
+          {/* Header / Drag Handle */}
           <div 
             onMouseDown={onMouseDown}
             style={{ 
@@ -163,6 +199,7 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
               margin: '0 -24px 12px',
               paddingLeft: 24,
               paddingRight: 12,
+              flexShrink: 0,
             }}
           >
             <h4 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', pointerEvents: 'none' }}>
@@ -183,140 +220,164 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
               ✕
             </button>
           </div>
-          <p style={{ margin: '0 0 16px', fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-            設定系統容量參數，Analyze 時會根據這些參數產生更精準的建議。所有欄位皆為選填。
-          </p>
 
-          <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>DAU (日活躍用戶)</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="e.g., 1000000"
-              value={params.dau ?? ''}
-              onChange={(e) => handleNumberChange('dau', e.target.value)}
-              style={inputStyle}
-            />
-            {estimatedPeakQPS && (
-              <div style={{ fontSize: 11, color: 'var(--accent)', marginTop: 4 }}>
-                💡 預估 Peak QPS ≈ {estimatedPeakQPS.toLocaleString()}（DAU/86400 × 10）
+          {/* Scrollable Content */}
+          <div style={{ flex: 1, overflowY: 'auto', margin: '0 -12px', padding: '0 12px' }}>
+            <p style={{ margin: '0 0 16px', fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+              設定系統容量參數，Analyze 時會根據這些參數產生更精準的建議。所有欄位皆為選填。
+            </p>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>DAU (日活躍用戶)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="e.g., 1000000"
+                value={params.dau ?? ''}
+                onChange={(e) => handleNumberChange('dau', e.target.value)}
+                style={inputStyle}
+              />
+              {estimatedPeakQPS && (
+                <div style={{ fontSize: 11, color: 'var(--accent)', marginTop: 4 }}>
+                  💡 預估 Peak QPS ≈ {estimatedPeakQPS.toLocaleString()}（DAU/86400 × 10）
+                </div>
+              )}
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>Peak QPS (尖峰每秒請求)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder={estimatedPeakQPS ? `建議 ≥ ${estimatedPeakQPS}` : 'e.g., 10000'}
+                value={params.peakQPS ?? ''}
+                onChange={(e) => handleNumberChange('peakQPS', e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>Avg QPS (平均每秒請求)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="e.g., 2000"
+                value={params.avgQPS ?? ''}
+                onChange={(e) => handleNumberChange('avgQPS', e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>Storage (GB)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="e.g., 500"
+                value={params.storageGB ?? ''}
+                onChange={(e) => handleNumberChange('storageGB', e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>Daily Growth (GB/天)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="e.g., 10"
+                value={params.dailyGrowthGB ?? ''}
+                onChange={(e) => handleNumberChange('dailyGrowthGB', e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>
+                Read/Write Ratio：{params.readWriteRatio !== undefined ? `${Math.round(params.readWriteRatio * 100)}% 讀` : 'Unspecified'}
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={params.readWriteRatio ?? 0.8}
+                onChange={(e) => handleChange('readWriteRatio', parseFloat(e.target.value))}
+                style={{ width: '100%' }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-secondary)' }}>
+                <span>寫多</span>
+                <span>讀多</span>
               </div>
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>Latency Target</label>
+              <select
+                value={params.latencyTarget ?? ''}
+                onChange={(e) => handleChange('latencyTarget', e.target.value || undefined)}
+                style={inputStyle}
+              >
+                <option value="">(Unspecified)</option>
+                {LATENCY_OPTIONS.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={labelStyle}>Availability Target</label>
+              <select
+                value={params.availability ?? ''}
+                onChange={(e) => handleChange('availability', e.target.value || undefined)}
+                style={inputStyle}
+              >
+                <option value="">(Unspecified)</option>
+                {AVAILABILITY_OPTIONS.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+
+            {hasParams && (
+              <button
+                onClick={() => onChange({})}
+                style={{
+                  width: '100%',
+                  padding: '6px',
+                  borderRadius: 4,
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-secondary)',
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  marginTop: 4,
+                  marginBottom: 12,
+                }}
+              >
+                清除所有參數
+              </button>
             )}
           </div>
 
-          <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>Peak QPS (尖峰每秒請求)</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder={estimatedPeakQPS ? `建議 ≥ ${estimatedPeakQPS}` : 'e.g., 10000'}
-              value={params.peakQPS ?? ''}
-              onChange={(e) => handleNumberChange('peakQPS', e.target.value)}
-              style={inputStyle}
-            />
+          {/* Resize Handle */}
+          <div
+            onMouseDown={onResizeMouseDown}
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 12,
+              cursor: 'ns-resize',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1001,
+            }}
+          >
+            <div style={{ width: 30, height: 4, borderRadius: 2, backgroundColor: 'var(--border-color)', opacity: 0.5 }} />
           </div>
-
-          <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>Avg QPS (平均每秒請求)</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="e.g., 2000"
-              value={params.avgQPS ?? ''}
-              onChange={(e) => handleNumberChange('avgQPS', e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-
-          <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>Storage (GB)</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="e.g., 500"
-              value={params.storageGB ?? ''}
-              onChange={(e) => handleNumberChange('storageGB', e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-
-          <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>Daily Growth (GB/天)</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              placeholder="e.g., 10"
-              value={params.dailyGrowthGB ?? ''}
-              onChange={(e) => handleNumberChange('dailyGrowthGB', e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-
-          <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>
-              Read/Write Ratio：{params.readWriteRatio !== undefined ? `${Math.round(params.readWriteRatio * 100)}% 讀` : 'Unspecified'}
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={params.readWriteRatio ?? 0.8}
-              onChange={(e) => handleChange('readWriteRatio', parseFloat(e.target.value))}
-              style={{ width: '100%' }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-secondary)' }}>
-              <span>寫多</span>
-              <span>讀多</span>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>Latency Target</label>
-            <select
-              value={params.latencyTarget ?? ''}
-              onChange={(e) => handleChange('latencyTarget', e.target.value || undefined)}
-              style={inputStyle}
-            >
-              <option value="">(Unspecified)</option>
-              {LATENCY_OPTIONS.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>Availability Target</label>
-            <select
-              value={params.availability ?? ''}
-              onChange={(e) => handleChange('availability', e.target.value || undefined)}
-              style={inputStyle}
-            >
-              <option value="">(Unspecified)</option>
-              {AVAILABILITY_OPTIONS.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </div>
-
-          {hasParams && (
-            <button
-              onClick={() => onChange({})}
-              style={{
-                width: '100%',
-                padding: '6px',
-                borderRadius: 4,
-                border: '1px solid var(--border-color)',
-                backgroundColor: 'transparent',
-                color: 'var(--text-secondary)',
-                fontSize: 12,
-                cursor: 'pointer',
-                marginTop: 4,
-              }}
-            >
-              清除所有參數
-            </button>
-          )}
         </div>
         </>
       )}
