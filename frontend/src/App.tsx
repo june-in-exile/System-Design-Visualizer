@@ -19,14 +19,6 @@ function App() {
     localStorage.setItem('theme', theme)
   }, [theme])
 
-  const toggleTheme = () => {
-    setTheme(prev => {
-      if (prev === 'light') return 'dark'
-      if (prev === 'dark') return 'warm'
-      return 'light'
-    })
-  }
-
   const {
     tabs,
     activeTab,
