@@ -22,25 +22,24 @@ export default function SettingsMenu({ theme, setTheme, getNodes, getEdges }: Se
   const [statusMessage, setStatusMessage] = useState('')
   const menuRef = useRef<HTMLDivElement>(null)
 
+  const handleToggle = useCallback(() => {
+    setIsOpen((prev) => {
+      if (prev) setView('main')
+      return !prev
+    })
+  }, [])
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as HTMLElement)) {
-        setIsOpen(false)
+        handleToggle()
       }
     }
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside, true)
     }
     return () => document.removeEventListener('mousedown', handleClickOutside, true)
-  }, [isOpen])
-
-  useEffect(() => {
-    if (!isOpen) {
-      setView('main')
-    }
-  }, [isOpen])
-
-  const effectiveView = isOpen ? view : 'main'
+  }, [isOpen, handleToggle])
 
   const showStatus = useCallback((message: string, type: ExportStatus) => {
     setStatus(type)
@@ -234,7 +233,7 @@ export default function SettingsMenu({ theme, setTheme, getNodes, getEdges }: Se
   return (
     <div ref={menuRef} style={{ position: 'relative' }}>
       <button
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={handleToggle}
         onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--btn-active-bg)' }}
         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-primary)' }}
         style={{
@@ -276,7 +275,7 @@ export default function SettingsMenu({ theme, setTheme, getNodes, getEdges }: Se
             padding: 4,
           }}
         >
-          {effectiveView === 'main' ? renderMainView() : effectiveView === 'export' ? renderExportView() : renderThemeView()}
+          {view === 'main' ? renderMainView() : view === 'export' ? renderExportView() : renderThemeView()}
         </div>
       )}
 

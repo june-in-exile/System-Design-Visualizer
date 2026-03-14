@@ -152,11 +152,12 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
   }, [])
 
   const historyRef = useRef<{ nodes: Node[]; edges: Edge[] }[]>([])
+  const redoRef = useRef<{ nodes: Node[]; edges: Edge[] }[]>([])
   const isUndoRedoRef = useRef(false)
   const prevNodesRef = useRef<Node[]>([])
   const prevEdgesRef = useRef<Edge[]>([])
 
-  const MAX_HISTORY = 10
+  const MAX_HISTORY = 20
 
   const buildWarningsByNode = useCallback((warnings: Warning[]): Map<string, Warning[]> => {
     const map = new Map<string, Warning[]>()
@@ -206,13 +207,14 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
     const edgeRemoved = prevEdgeIds.size > currentEdgeIds.size
     
     if (nodeAdded || nodeRemoved || edgeAdded || edgeRemoved) {
-      historyRef.current.push({ 
-        nodes: [...prevNodesRef.current], 
-        edges: [...prevEdgesRef.current] 
+      historyRef.current.push({
+        nodes: [...prevNodesRef.current],
+        edges: [...prevEdgesRef.current]
       })
       if (historyRef.current.length > MAX_HISTORY) {
         historyRef.current.shift()
       }
+      redoRef.current = []
     }
     
     prevNodesRef.current = [...nodes]
@@ -229,19 +231,34 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
     if (historyRef.current.length > MAX_HISTORY) {
       historyRef.current.shift()
     }
+    redoRef.current = []
   }, [nodes, edges])
 
   const undo = useCallback(() => {
     if (historyRef.current.length === 0) return
-    
+
     isUndoRedoRef.current = true
+    redoRef.current.push({ nodes: [...nodes], edges: [...edges] })
     const previousState = historyRef.current.pop()
     if (previousState) {
       setNodes(previousState.nodes)
       setEdges(previousState.edges)
     }
     setTimeout(() => { isUndoRedoRef.current = false }, 0)
-  }, [setNodes, setEdges])
+  }, [nodes, edges, setNodes, setEdges])
+
+  const redo = useCallback(() => {
+    if (redoRef.current.length === 0) return
+
+    isUndoRedoRef.current = true
+    historyRef.current.push({ nodes: [...nodes], edges: [...edges] })
+    const nextState = redoRef.current.pop()
+    if (nextState) {
+      setNodes(nextState.nodes)
+      setEdges(nextState.edges)
+    }
+    setTimeout(() => { isUndoRedoRef.current = false }, 0)
+  }, [nodes, edges, setNodes, setEdges])
 
   // Auto-show warnings panel when analysis returns warnings
   useEffect(() => {
@@ -250,54 +267,92 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
     }
   }, [analyzing, analysisResult])
 
+  const selectedNodes = nodes.filter((n) => selectedNodeIds.includes(n.id))
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) || null
 
-  const duplicateSelectedNode = useCallback(() => {
-    if (!selectedNode) return
+  const duplicateNodes = useCallback((nodeIds: string[], offset = { x: 50, y: 50 }, selectNew = true) => {
+    if (nodeIds.length === 0) return
     
     pushHistory()
-    const data = selectedNode.data as Record<string, unknown>
-    const newNodeId = generateNodeId()
-    const newNode: Node = {
-      id: newNodeId,
-      type: 'architecture',
-      position: {
-        x: selectedNode.position.x + 50,
-        y: selectedNode.position.y + 50,
-      },
-      data: {
-        label: data.label as string,
-        componentType: data.componentType as ComponentType,
-        properties: { ...(data.properties as Record<string, unknown>) },
-      },
+    
+    const idMap = new Map<string, string>()
+    const newNodes: Node[] = []
+    
+    // We need current nodes and edges to perform the duplication
+    // Using functional updates to ensure we have the latest state if needed, 
+    // but here we can just use the state from the closure as it's stable enough for the start of a drag.
+    
+    // 1. Duplicate Nodes
+    nodes.forEach(node => {
+      if (nodeIds.includes(node.id)) {
+        const newNodeId = generateNodeId()
+        idMap.set(node.id, newNodeId)
+        
+        const data = node.data as Record<string, unknown>
+        newNodes.push({
+          ...node,
+          id: newNodeId,
+          position: {
+            x: node.position.x + offset.x,
+            y: node.position.y + offset.y,
+          },
+          selected: selectNew,
+          data: {
+            ...data,
+            properties: { ...(data.properties as Record<string, unknown>) },
+          }
+        })
+      }
+    })
+    
+    // 2. Duplicate Edges
+    const newEdges: Edge[] = []
+    edges.forEach(edge => {
+      const sourceIsDuplicated = idMap.has(edge.source)
+      const targetIsDuplicated = idMap.has(edge.target)
+      
+      if (sourceIsDuplicated || targetIsDuplicated) {
+        const newSource = sourceIsDuplicated ? idMap.get(edge.source)! : edge.source
+        const newTarget = targetIsDuplicated ? idMap.get(edge.target)! : edge.target
+        
+        const newEdgeId = `edge-${newSource}-${newTarget}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+        
+        newEdges.push({
+          ...edge,
+          id: newEdgeId,
+          source: newSource,
+          target: newTarget,
+          selected: selectNew,
+        })
+      }
+    })
+
+    if (selectNew) {
+      setNodes(nds => nds.map(n => ({ ...n, selected: false })).concat(newNodes.map(n => ({ ...n, selected: false }))))
+      setEdges(eds => eds.map(e => ({ ...e, selected: false })).concat(newEdges.map(e => ({ ...e, selected: false }))))
+      
+      const newNodeIds = newNodes.map(n => n.id)
+      setSelectedNodeIds(newNodeIds)
+      if (newNodeIds.length > 0) setSelectedNodeId(newNodeIds[0])
+    } else {
+      setNodes(nds => [...nds, ...newNodes])
+      setEdges(eds => [...eds, ...newEdges])
     }
-    
-    const connectedEdges = edges.filter(
-      (e) => e.source === selectedNode.id || e.target === selectedNode.id
-    )
-    
-    const newEdges: Edge[] = connectedEdges.map((edge) => ({
-      id: `edge-${newNodeId}-${edge.source === selectedNode.id ? edge.target : edge.source}`,
-      source: edge.source === selectedNode.id ? newNodeId : edge.source,
-      target: edge.target === selectedNode.id ? newNodeId : edge.target,
-      sourceHandle: edge.sourceHandle,
-      targetHandle: edge.targetHandle,
-      data: edge.data,
-      style: edge.style,
-      type: edge.type,
-      animated: edge.animated,
-    }))
-    
-    setNodes((nds) => [...nds, newNode])
-    setEdges((eds) => [...eds, ...newEdges])
-    setSelectedNodeId(newNodeId)
-  }, [selectedNode, edges, setNodes, setEdges, pushHistory])
+  }, [nodes, edges, pushHistory, setNodes, setEdges])
+
+  const onNodeDragStart = useCallback((event: React.MouseEvent, _node: Node) => {
+    if (event.shiftKey) {
+      const draggedNodeIds = [_node.id]
+      duplicateNodes(draggedNodeIds, { x: 0, y: 0 }, false)
+    }
+  }, [duplicateNodes])
 
   const canMerge = selectedNodeIds.length === 2
-  const selectedNodeForSplit = selectedNode
-    ? ((selectedNode.data as Record<string, unknown>).roles as ComponentType[] | undefined)
+  const selectedNodeForSplit = selectedNodes.length > 0 ? selectedNodes[0] : null
+  const selectedNodeForSplitData = selectedNodeForSplit
+    ? ((selectedNodeForSplit.data as Record<string, unknown>).roles as ComponentType[] | undefined)
     : undefined
-  const canSplit = selectedNodeForSplit && selectedNodeForSplit.length > 1
+  const canSplit = selectedNodeForSplitData && selectedNodeForSplitData.length > 1
 
   const mergeSelectedNodes = useCallback(() => {
     if (selectedNodeIds.length !== 2) return
@@ -380,8 +435,8 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
   }, [selectedNodeIds, nodes, pushHistory, setNodes, setEdges])
 
   const splitSelectedNode = useCallback(() => {
-    if (!selectedNode) return
-    const data = selectedNode.data as Record<string, unknown>
+    if (!selectedNodeForSplit) return
+    const data = selectedNodeForSplit.data as Record<string, unknown>
     const mergedFrom = data.mergedFrom as {
       primary: { id: string; data: Record<string, unknown>; position: { x: number; y: number } }
       secondary: { id: string; data: Record<string, unknown>; position: { x: number; y: number } }
@@ -406,17 +461,17 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
     }
 
     setNodes(nds => [
-      ...nds.filter(n => n.id !== selectedNode.id),
+      ...nds.filter(n => n.id !== selectedNodeForSplit.id),
       restoredPrimary,
       restoredSecondary,
     ])
 
     // Restore edges: redirect merged edges back
     setEdges(eds => eds.map(e => {
-      if (e.source === selectedNode.id && e.id.endsWith('-merged')) {
+      if (e.source === selectedNodeForSplit.id && e.id.endsWith('-merged')) {
         return { ...e, source: mergedFrom.primary.id, id: e.id.replace('-merged', '') }
       }
-      if (e.target === selectedNode.id && e.id.endsWith('-merged')) {
+      if (e.target === selectedNodeForSplit.id && e.id.endsWith('-merged')) {
         return { ...e, target: mergedFrom.primary.id, id: e.id.replace('-merged', '') }
       }
       return e
@@ -424,7 +479,7 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
 
     setSelectedNodeId(null)
     setSelectedNodeIds([])
-  }, [selectedNode, pushHistory, setNodes, setEdges])
+  }, [selectedNodeForSplit, pushHistory, setNodes, setEdges])
 
   const onNodeDataChange = useCallback(
     (nodeId: string, newData: Record<string, unknown>) => {
@@ -725,11 +780,10 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
           handleAnalyze()
         }
       }
-      if (e.ctrlKey && e.key === 'd') {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
         e.preventDefault()
-        duplicateSelectedNode()
-      }
-      if (e.ctrlKey && e.key === 'z') {
+        redo()
+      } else if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
         e.preventDefault()
         undo()
       }
@@ -740,7 +794,7 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [nodes.length, analyzing, handleAnalyze, duplicateSelectedNode, undo, canMerge, mergeSelectedNodes])
+  }, [nodes.length, analyzing, handleAnalyze, undo, redo, canMerge, mergeSelectedNodes])
 
   const handleDemo = useCallback(() => {
     pushHistory()
@@ -1078,18 +1132,6 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
           onClick={handleAnalyze}
           disabled={analyzing || nodes.length === 0}
         />
-        <ToolbarButton
-          label="Duplicate"
-          shortcut="Ctrl+D"
-          onClick={duplicateSelectedNode}
-          disabled={!selectedNode}
-        />
-        <ToolbarButton
-          label="Undo"
-          shortcut="Ctrl+Z"
-          onClick={undo}
-          disabled={historyRef.current.length === 0}
-        />
         {canMerge && (
           <ToolbarButton
             label="Merge"
@@ -1259,7 +1301,9 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
             })}
             selectionMode={SelectionMode.Partial}
             selectionOnDrag
+            panOnDrag={false}
             panOnScroll
+            selectionKeyCode={null}
             multiSelectionKeyCode="Shift"
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
@@ -1268,6 +1312,7 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
             onDrop={onDrop}
             onDragOver={onDragOver}
             onNodesDelete={onNodesDelete}
+            onNodeDragStart={onNodeDragStart}
             onSelectionChange={onSelectionChange}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
