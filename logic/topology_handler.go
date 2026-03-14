@@ -44,7 +44,7 @@ func validate(t model.SystemTopology) []Warning {
 			warnings = append(warnings, Warning{
 				Rule:     "schema",
 				Message:  fmt.Sprintf("unknown component type %q on node %q", node.ComponentType, node.ID),
-				Solution: "請在節點屬性中選擇正確的組件類型 (Component Type)。",
+				Solution: "Please select a valid Component Type in the node properties.",
 				NodeIDs:  []string{node.ID},
 			})
 		}
@@ -54,7 +54,7 @@ func validate(t model.SystemTopology) []Warning {
 				warnings = append(warnings, Warning{
 					Rule:     "schema",
 					Message:  fmt.Sprintf("unknown role %q on node %q", role, node.ID),
-					Solution: "請確保合併節點的所有角色都是有效的組件類型。",
+					Solution: "Ensure all roles in the merged node are valid component types.",
 					NodeIDs:  []string{node.ID},
 				})
 			}
@@ -66,7 +66,7 @@ func validate(t model.SystemTopology) []Warning {
 			warnings = append(warnings, Warning{
 				Rule:     "schema",
 				Message:  fmt.Sprintf("unknown connection type %q on edge %q", edge.ConnectionType, edge.ID),
-				Solution: "請在連線屬性中選擇正確的連線類型 (Connection Type)。",
+				Solution: "Please select a valid Connection Type in the connection properties.",
 				NodeIDs:  []string{},
 			})
 		}
@@ -74,7 +74,7 @@ func validate(t model.SystemTopology) []Warning {
 			warnings = append(warnings, Warning{
 				Rule:     "schema",
 				Message:  fmt.Sprintf("edge %q references unknown source node %q", edge.ID, edge.Source),
-				Solution: "請確保連線的出發點已連接到有效的節點。",
+				Solution: "Ensure the source of the connection is a valid node.",
 				NodeIDs:  []string{},
 			})
 		}
@@ -82,7 +82,7 @@ func validate(t model.SystemTopology) []Warning {
 			warnings = append(warnings, Warning{
 				Rule:     "schema",
 				Message:  fmt.Sprintf("edge %q references unknown target node %q", edge.ID, edge.Target),
-				Solution: "請確保連線的目標點已連接到有效的節點。",
+				Solution: "Ensure the target of the connection is a valid node.",
 				NodeIDs:  []string{},
 			})
 		}

@@ -56,8 +56,8 @@ func checkAsyncDecoupling(ctx model.TopologyContext) []Warning {
 			if isTimeConsuming && !isDecoupled && len(synchronousCallers) > 0 {
 				warnings = append(warnings, Warning{
 					Rule:     "async_decoupling",
-					Message:  fmt.Sprintf("📬 異步解耦提醒：服務 %q 似乎涉及耗時操作且目前接收同步呼叫。", node.Label),
-					Solution: "建議在呼叫方與此服務之間加入 Message Queue (MQ)，將操作改為異步處理，以提高系統吞吐量。",
+					Message:  fmt.Sprintf("📬 Asynchronous Decoupling Reminder: Service %q appears to involve time-consuming operations and currently receives synchronous calls.", node.Label),
+					Solution: "Consider adding a Message Queue (MQ) between the caller and this service to change the operation to asynchronous processing, improving system throughput.",
 					NodeIDs:  append([]string{id}, synchronousCallers...),
 				})
 			}
@@ -76,8 +76,8 @@ func checkMQConsumer(ctx model.TopologyContext) []Warning {
 		if len(ctx.Outgoing[id]) == 0 {
 			warnings = append(warnings, Warning{
 				Rule:     "mq_consumer_missing",
-				Message:  fmt.Sprintf("📥 MQ 消費者缺失檢查：%q 目前沒有任何消費者 (Consumer)。", node.Label),
-				Solution: "Message Queue 節點缺乏輸出連線，訊息將在隊列中堆積。請將此節點連接至處理訊息的 Service。",
+				Message:  fmt.Sprintf("📥 MQ Consumer Missing: %q currently has no consumers.", node.Label),
+				Solution: "Message Queue node lacks outgoing connections; messages will accumulate in the queue. Please connect this node to a Service that processes messages.",
 				NodeIDs:  []string{id},
 			})
 		}
@@ -103,8 +103,8 @@ func checkMQDLQ(ctx model.TopologyContext) []Warning {
 		if !mqProps.HasDLQ {
 			warnings = append(warnings, Warning{
 				Rule:     "mq_dlq_missing",
-				Message:  fmt.Sprintf("💀 死信隊列 (DLQ) 提醒：%q 未配置死信隊列或重試機制。", node.Label),
-				Solution: "使用 Message Queue home未配置死信隊列 (Dead Letter Queue)，可能導致處理失敗的訊息直接丟失。建議在屬性中啟用 DLQ。",
+				Message:  fmt.Sprintf("💀 Dead Letter Queue (DLQ) Reminder: %q does not have a Dead Letter Queue or retry mechanism configured.", node.Label),
+				Solution: "Using a Message Queue without a Dead Letter Queue may cause failed messages to be lost. It is recommended to enable DLQ in the properties.",
 				NodeIDs:  []string{node.ID},
 			})
 		}
@@ -141,8 +141,8 @@ func checkAsyncPeakShaving(ctx model.TopologyContext) []Warning {
 			if dbProps.ReadWriteRatio < 0.5 {
 				warnings = append(warnings, Warning{
 					Rule:     "async_peak_shaving",
-					Message:  fmt.Sprintf("🌊 異步削峰實踐建議：流量入口 %q 直接連線至高負載寫入資料庫 %q。", node.Label, target.Label),
-					Solution: "高頻寫入建議先將請求發送至 Message Queue (MQ) 進行削峰填谷 (Load Leveling)，再由後端異步寫入資料庫，以減輕資料庫壓力並提升系統穩定性。",
+					Message:  fmt.Sprintf("🌊 Asynchronous Peak Shaving Suggestion: Entry node %q connects directly to high-write database %q.", node.Label, target.Label),
+					Solution: "For high-frequency writes, it is recommended to send requests to a Message Queue (MQ) for peak shaving (Load Leveling) first, then have the backend asynchronously write to the database to reduce database pressure and improve stability.",
 					NodeIDs:  []string{id, targetID},
 				})
 			}
@@ -165,8 +165,8 @@ func checkSyncUpload(ctx model.TopologyContext) []Warning {
 			if labelContains(source.Label, "upload") || labelContains(source.Label, "media") || labelContains(source.Label, "transcode") {
 				warnings = append(warnings, Warning{
 					Rule:     "sync_upload_bottleneck",
-					Message:  fmt.Sprintf("📤 同步上傳瓶頸：服務 %q 同步上傳至 Storage。", source.Label),
-					Solution: "大檔案上傳建議改為異步流程：Service 產生 Presigned URL 給 Client 直傳 Storage，完成後再透過 MQ 通知 Service 處理後續。",
+					Message:  fmt.Sprintf("📤 Synchronous Upload Bottleneck: Service %q is performing synchronous uploads to Storage.", source.Label),
+					Solution: "For large file uploads, an asynchronous process is recommended: Service generates a Presigned URL for the Client to upload directly to Storage, then notifies the Service via MQ to handle subsequent processing.",
 					NodeIDs:  []string{edge.Source, edge.Target},
 				})
 			}

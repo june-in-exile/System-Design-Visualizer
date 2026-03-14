@@ -15,7 +15,7 @@ func init() {
 	app = gin.New()
 	app.Use(gin.Recovery())
 
-	// 這裡的 CORS 設定與前端部署一致
+	// CORS configuration consistent with frontend deployment
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -23,8 +23,8 @@ func init() {
 		AllowCredentials: true,
 	}))
 
-	// Vercel 自動對應到 /api/topology，但 Gin 也需要註冊這個路徑
-	// 同時加上 Catch-all，確保無論 rewrite 怎麼變都能接到
+	// Vercel automatically maps to /api/topology, but Gin also needs to register this path.
+	// A catch-all is added to ensure it works regardless of rewrite rules.
 	app.POST("/api/topology", logic.PostTopology)
 	app.NoRoute(func(c *gin.Context) {
 		if c.Request.Method == http.MethodPost {

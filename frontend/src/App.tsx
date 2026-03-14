@@ -43,7 +43,7 @@ function App() {
       style={{
         display: 'flex',
         height: '100vh',
-        width: '100vw',
+        width: '100%',
         backgroundColor: 'var(--bg-primary)',
         color: 'var(--text-primary)',
       }}
@@ -66,6 +66,7 @@ function App() {
         <Canvas
           key={activeTabId}
           theme={theme}
+          setTheme={setTheme}
           initialNodes={[...activeTab.nodes]}
           initialEdges={[...activeTab.edges]}
           onStateChange={handleCanvasStateChange}

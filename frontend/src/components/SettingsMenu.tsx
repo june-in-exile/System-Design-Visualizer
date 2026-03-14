@@ -29,9 +29,9 @@ export default function SettingsMenu({ theme, setTheme, getNodes, getEdges }: Se
       }
     }
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('mousedown', handleClickOutside, true)
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside, true)
   }, [isOpen])
 
   useEffect(() => {
@@ -176,7 +176,7 @@ export default function SettingsMenu({ theme, setTheme, getNodes, getEdges }: Se
     <>
       <button
         onClick={() => setView('main')}
-        style={{ ...itemStyle, color: 'var(--text-secondary)', marginBottom: 4 }}
+        style={{ ...itemStyle(), color: 'var(--text-secondary)', marginBottom: 4 }}
         onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)' }}
         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
       >
@@ -232,38 +232,41 @@ export default function SettingsMenu({ theme, setTheme, getNodes, getEdges }: Se
   )
 
   return (
-    <div ref={menuRef} style={{ position: 'relative', marginTop: 'auto' }}>
+    <div ref={menuRef} style={{ position: 'relative' }}>
       <button
         onClick={() => setIsOpen((prev) => !prev)}
         onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--btn-active-bg)' }}
         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-primary)' }}
         style={{
-          width: '100%',
-          padding: '8px 12px',
+          width: 36,
+          height: 36,
           borderRadius: 6,
           border: '1px solid var(--border-color)',
           backgroundColor: 'var(--bg-primary)',
           color: 'var(--text-primary)',
-          fontSize: 13,
-          fontWeight: 500,
           cursor: 'pointer',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 8,
+          gap: 4,
           transition: 'background-color 0.2s',
+          padding: 0,
         }}
+        title="Settings"
       >
-        Settings
+        <div style={{ width: 18, height: 2, backgroundColor: 'currentColor', borderRadius: 1 }} />
+        <div style={{ width: 18, height: 2, backgroundColor: 'currentColor', borderRadius: 1 }} />
+        <div style={{ width: 18, height: 2, backgroundColor: 'currentColor', borderRadius: 1 }} />
       </button>
 
       {isOpen && (
         <div
           style={{
             position: 'absolute',
-            bottom: '100%',
-            left: 0,
-            marginBottom: 8,
+            top: '100%',
+            right: 0,
+            marginTop: 8,
             minWidth: 200,
             backgroundColor: 'var(--bg-primary)',
             border: '1px solid var(--border-color)',
@@ -281,9 +284,9 @@ export default function SettingsMenu({ theme, setTheme, getNodes, getEdges }: Se
         <div
           style={{
             position: 'absolute',
-            bottom: '100%',
-            left: 210,
-            marginBottom: 8,
+            top: '100%',
+            right: 210,
+            marginTop: 8,
             padding: '6px 12px',
             borderRadius: 6,
             fontSize: 12,

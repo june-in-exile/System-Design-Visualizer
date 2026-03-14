@@ -37,9 +37,9 @@ func checkSPOF(ctx model.TopologyContext) []Warning {
 		if len(serviceIDs) == 1 && !isRedundant {
 			warnings = append(warnings, Warning{
 				Rule: "spof",
-				Message: fmt.Sprintf("⚠️ 檢測到單點故障 (SPOF)：Load Balancer %q 後方僅連接 1 個 Service 節點複本。",
+				Message: fmt.Sprintf("⚠️ Single Point of Failure (SPOF) Detected: Load Balancer %q is connected to only 1 Service node replica.",
 					node.Label),
-				Solution: "增加 Service 節點數量 or 在屬性面板中提高 Replicas 複本數。",
+				Solution: "Increase the number of Service nodes or increase the Replicas count in the properties panel.",
 				NodeIDs:  append([]string{id}, serviceIDs...),
 			})
 		} else if len(serviceIDs) > 1 {
@@ -80,8 +80,8 @@ func checkEntryPointSPOF(ctx model.TopologyContext, role, rule, emoji, label str
 
 	return []Warning{{
 		Rule:     rule,
-		Message:  fmt.Sprintf("%s 入口單點故障：整體架構中僅存在 1 個 %s。", emoji, label),
-		Solution: fmt.Sprintf("生產環境建議部署多個 %s，或在屬性面板中將 Replicas 複本數設為 2 以上。", label),
+		Message:  fmt.Sprintf("%s Entry SPOF: Only 1 %s exists in the entire architecture.", emoji, label),
+		Solution: fmt.Sprintf("Deploying multiple %s instances or setting Replicas to 2+ in the properties panel is recommended for production.", label),
 		NodeIDs:  []string{node.ID},
 	}}
 }
@@ -104,8 +104,8 @@ func checkNoAutoScalingSingle(ctx model.TopologyContext) []Warning {
 		if !svcProps.AutoScaling && svcProps.Replicas == 1 {
 			warnings = append(warnings, Warning{
 				Rule:     "no_autoscaling_single",
-				Message:  fmt.Sprintf("⚠️ 單一複本缺乏可用性：服務 %q 僅有 1 個 Replica 且未啟用自動擴縮。", node.Label),
-				Solution: "建議啟用 Auto Scaling 或將 Replicas 增加至 2 以上以確保可用性，防止流量突增時成為瓶頸。",
+				Message:  fmt.Sprintf("⚠️ Single Replica Lacks Availability: Service %q has only 1 Replica and Auto Scaling is disabled.", node.Label),
+				Solution: "Enable Auto Scaling or increase Replicas to 2+ to ensure availability and prevent bottlenecks during traffic surges.",
 				NodeIDs:  []string{node.ID},
 			})
 		}
@@ -146,8 +146,8 @@ func checkNoHealthCheckBehindLB(ctx model.TopologyContext) []Warning {
 		if !svcProps.HealthCheck {
 			warnings = append(warnings, Warning{
 				Rule:     "no_healthcheck_behind_lb",
-				Message:  fmt.Sprintf("🏥 健康檢查缺失：服務 %q 位於 Load Balancer 後方但未啟用健康檢查。", target.Label),
-				Solution: "建議在服務中暴露 /health 端點並在 Load Balancer 中設定 health check 間隔，以便自動偵測並移除不健康的實例。",
+				Message:  fmt.Sprintf("🏥 Health Check Missing: Service %q is behind a Load Balancer but has no health check enabled.", target.Label),
+				Solution: "Expose a /health endpoint in the service and configure a health check interval in the Load Balancer to automatically detect and remove unhealthy instances.",
 				NodeIDs:  []string{target.ID},
 			})
 		}
@@ -173,8 +173,8 @@ func checkServerlessReplicas(ctx model.TopologyContext) []Warning {
 		if svcProps.ComputeType == "serverless" && svcProps.Replicas > 1 {
 			warnings = append(warnings, Warning{
 				Rule:     "serverless_replicas",
-				Message:  fmt.Sprintf("⚠️ Serverless 不需手動設定 Replicas：服務 %q 為 Serverless 運算且設定了多個複本。", node.Label),
-				Solution: "Serverless 模式下 Replicas 由雲端平台自動管理，手動設定 replicas 無意義。建議移除 replicas 設定，改由平台自動擴縮。",
+				Message:  fmt.Sprintf("⚠️ Serverless Does Not Need Manual Replicas: Service %q is a serverless computation but has multiple replicas set manually.", node.Label),
+				Solution: "Replicas are managed automatically by the cloud platform in serverless mode. Setting them manually is redundant. Remove the replicas setting and let the platform scale automatically.",
 				NodeIDs:  []string{node.ID},
 			})
 		}

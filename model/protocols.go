@@ -103,52 +103,52 @@ var ValidConnectionProtocolPairs = map[string]map[string]bool{
 // ForbiddenConnections defines source→target role pairs that are architecturally invalid.
 // Key = source role, Value = list of forbidden target roles.
 var ForbiddenConnections = map[string][]string{
-	// 入口節點 → CDN（流量已進入基礎設施，不應繞回 CDN）
+	// Entry Node → CDN (Traffic already inside infrastructure should not route back to CDN)
 	"firewall": {"cdn"},
 
-	// 入口節點 → 資料層（跳過 Service 層，違反分層架構）
+	// Entry Node → Data Layer (Skip Service Layer, violates layered architecture)
 	"load_balancer": {"cdn", "database", "cache", "message_queue"},
 	"reverse_proxy": {"cdn", "database", "cache", "message_queue"},
 	"api_gateway":   {"cdn", "database", "cache", "message_queue"},
 
-	// 資料層 → 入口層/Client（資料層是被動的，不主動連線）
+	// Data Layer → Entry Layer/Client (Data Layer is passive, should not initiate connections)
 	"database": {"client", "load_balancer", "reverse_proxy", "api_gateway", "firewall", "cdn"},
 	"cache":    {"client", "load_balancer", "reverse_proxy", "api_gateway", "firewall", "cdn"},
 	"storage":  {"client"},
 
-	// MQ → Client（Client 不應直接消費 MQ）
+	// MQ → Client (Client should not directly consume MQ)
 	"message_queue": {"client"},
 
-	// CDN → 資料層（CDN 只應 origin pull 到 Storage 或入口節點）
+	// CDN → Data Layer (CDN should only origin pull to Storage or Entry Nodes)
 	"cdn": {"database", "cache", "message_queue"},
 
-	// DNS 只對 Client 有意義
+	// DNS is only relevant for Clients
 	"dns": {"service", "database", "cache", "message_queue", "storage",
 		"load_balancer", "reverse_proxy", "api_gateway", "firewall", "cdn", "logger"},
 
-	// Logger/Monitor 是被動接收端，不應有 outgoing 連線
+	// Logger/Monitor are passive sinks, should not have outgoing connections
 	"logger": {"service", "database", "cache", "message_queue", "storage",
 		"client", "cdn", "load_balancer", "reverse_proxy", "api_gateway", "firewall", "dns"},
 
-	// Client 不應直連資料層 (原 client_direct_db/cache)
+	// Client should not connect directly to Data Layer
 	"client": {"database", "cache"},
 }
 
 // ForbiddenConnectionReasons provides human-readable explanations for each category.
 var ForbiddenConnectionReasons = map[string]map[string]string{
-	"firewall":      {"cdn": "流量已進入基礎設施後不應繞回 CDN，CDN 應位於 Firewall 前方"},
-	"load_balancer": {"cdn": "同上", "database": "入口節點不應跳過 Service 層直接存取資料庫", "cache": "入口節點不應跳過 Service 層直接存取快取", "message_queue": "入口節點不應跳過 Service 層直接存取 MQ"},
-	"reverse_proxy": {"cdn": "同上", "database": "入口節點不應跳過 Service 層直接存取資料庫", "cache": "入口節點不應跳過 Service 層直接存取快取", "message_queue": "入口節點不應跳過 Service 層直接存取 MQ"},
-	"api_gateway":   {"cdn": "同上", "database": "入口節點不應跳過 Service 層直接存取資料庫", "cache": "入口節點不應跳過 Service 層直接存取快取", "message_queue": "入口節點不應跳過 Service 層直接存取 MQ"},
-	"database":      {"*": "資料庫是被動元件，不應主動連線至入口層或 Client"},
-	"cache":         {"*": "快取是被動元件，不應主動連線至入口層或 Client"},
-	"storage":       {"client": "Object Storage 不應直連 Client，應透過 CDN 或 Service 分發"},
-	"message_queue": {"client": "Client 不應直接消費 MQ，應由 Service 處理後推送"},
-	"cdn":           {"*": "CDN 只應 origin pull 至 Storage 或入口節點，不應存取資料層"},
-	"dns":           {"*": "DNS 只做域名解析，不路由實際流量至後端元件"},
-	"logger":        {"*": "Logger/Monitor 是被動接收端（sink），不應主動連線至其他元件"},
+	"firewall":      {"cdn": "Traffic should not route back to CDN after entering infrastructure; CDN should be in front of Firewall."},
+	"load_balancer": {"cdn": "Same as above", "database": "Entry nodes should not bypass Service layer to access Database directly", "cache": "Entry nodes should not bypass Service layer to access Cache directly", "message_queue": "Entry nodes should not bypass Service layer to access MQ directly"},
+	"reverse_proxy": {"cdn": "Same as above", "database": "Entry nodes should not bypass Service layer to access Database directly", "cache": "Entry nodes should not bypass Service layer to access Cache directly", "message_queue": "Entry nodes should not bypass Service layer to access MQ directly"},
+	"api_gateway":   {"cdn": "Same as above", "database": "Entry nodes should not bypass Service layer to access Database directly", "cache": "Entry nodes should not bypass Service layer to access Cache directly", "message_queue": "Entry nodes should not bypass Service layer to access MQ directly"},
+	"database":      {"*": "Database is a passive component and should not initiate connections to entry layer or Client"},
+	"cache":         {"*": "Cache is a passive component and should not initiate connections to entry layer or Client"},
+	"storage":       {"client": "Object Storage should not connect directly to Client; it should be distributed via CDN or Service"},
+	"message_queue": {"client": "Client should not directly consume MQ; it should be processed and pushed by a Service"},
+	"cdn":           {"*": "CDN should only origin pull to Storage or Entry nodes and should not access the data layer"},
+	"dns":           {"*": "DNS only performs domain resolution and does not route actual traffic to backend components"},
+	"logger":        {"*": "Logger/Monitor is a passive sink and should not initiate connections to other components"},
 	"client": {
-		"database": "Client 不應直接操作資料庫。請在兩者之間加入 API Gateway 或 Service 層進行身份驗證與數據抽象。",
-		"cache":    "不建議 Client 直接操作快取。這可能導致快取穿透風險或數據洩漏。應透過後端 Service 進行快取邏輯封裝。",
+		"database": "Client should not operate directly on the database. Add an API Gateway or Service layer in between for authentication and data abstraction.",
+		"cache":    "Direct cache access by Client is not recommended. This can lead to cache penetration risks or data leaks. Cache logic should be encapsulated in a backend Service.",
 	},
 }

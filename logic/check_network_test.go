@@ -65,7 +65,7 @@ func TestCheckCDNUsage_NoClient_NoWarning(t *testing.T) {
 	}
 }
 
-// --- checkReverseProxySSL (補充現有測試) ---
+// --- checkReverseProxySSL (Additional Tests) ---
 
 func TestCheckReverseProxySSL_HTTPNoWarning(t *testing.T) {
 	nodes := map[string]model.SystemNode{

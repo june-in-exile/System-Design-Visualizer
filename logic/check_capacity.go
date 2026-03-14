@@ -33,8 +33,8 @@ func checkHighQPSNoCache(ctx model.TopologyContext) []Warning {
 	}
 	return []Warning{{
 		Rule:     "high_qps_no_cache",
-		Message:  fmt.Sprintf("⚡ 高流量缺少快取層：Peak QPS 為 %d，但架構中沒有 Cache 節點。", ctx.Params.PeakQPS),
-		Solution: "建議加入 Cache（如 Redis）以降低資料庫壓力，一般可減少 60-80%% 的 DB 查詢。",
+		Message:  fmt.Sprintf("⚡ High Traffic Missing Cache: Peak QPS is %d, but no Cache nodes exist in the architecture.", ctx.Params.PeakQPS),
+		Solution: "Consider adding a Cache (e.g., Redis) to reduce database pressure, typically reducing DB queries by 60-80%.",
 		NodeIDs:  []string{},
 	}}
 }
@@ -59,8 +59,8 @@ func checkHighQPSSingleLB(ctx model.TopologyContext) []Warning {
 		if lbProps.Replicas <= 1 {
 			warnings = append(warnings, Warning{
 				Rule:     "high_qps_single_lb",
-				Message:  fmt.Sprintf("⚖️ 高流量單一 LB：Peak QPS 為 %d，但 %q 僅有 1 個複本。", ctx.Params.PeakQPS, node.Label),
-				Solution: "Peak QPS 超過 10,000 時建議 LB 至少 2 個複本，避免入口成為瓶頸。",
+				Message:  fmt.Sprintf("⚖️ High Traffic Single LB: Peak QPS is %d, but %q has only 1 replica.", ctx.Params.PeakQPS, node.Label),
+				Solution: "When Peak QPS exceeds 10,000, at least 2 LB replicas are recommended to avoid entry bottlenecks.",
 				NodeIDs:  []string{node.ID},
 			})
 		}
@@ -88,8 +88,8 @@ func checkHighQPSNoAutoScaling(ctx model.TopologyContext) []Warning {
 		if !svcProps.AutoScaling {
 			warnings = append(warnings, Warning{
 				Rule:     "high_qps_no_autoscaling",
-				Message:  fmt.Sprintf("📈 高流量未自動擴縮：Peak QPS 為 %d，服務 %q 未啟用 Auto Scaling。", ctx.Params.PeakQPS, node.Label),
-				Solution: "高流量場景下建議啟用 Auto Scaling，根據 CPU/記憶體/請求數自動調整複本數。",
+				Message:  fmt.Sprintf("📈 High Traffic No Auto Scaling: Peak QPS is %d, and service %q has Auto Scaling disabled.", ctx.Params.PeakQPS, node.Label),
+				Solution: "In high traffic scenarios, it is recommended to enable Auto Scaling to automatically adjust replica counts based on CPU/Memory/Requests.",
 				NodeIDs:  []string{node.ID},
 			})
 		}
@@ -108,8 +108,8 @@ func checkHighDAUNoCDN(ctx model.TopologyContext) []Warning {
 	}
 	return []Warning{{
 		Rule:     "high_dau_no_cdn",
-		Message:  fmt.Sprintf("🌐 高用戶量缺少 CDN：DAU 為 %d，但架構中沒有 CDN 節點。", ctx.Params.DAU),
-		Solution: "DAU 超過 10 萬時建議加入 CDN，將靜態資源分發到邊緣節點以降低延遲和後端負載。",
+		Message:  fmt.Sprintf("🌐 High User Volume Missing CDN: DAU is %d, but no CDN nodes exist in the architecture.", ctx.Params.DAU),
+		Solution: "When DAU exceeds 100,000, it is recommended to add a CDN to distribute static resources to edge nodes, reducing latency and backend load.",
 		NodeIDs:  []string{},
 	}}
 }
@@ -134,8 +134,8 @@ func checkStorageGrowthNoPartitioning(ctx model.TopologyContext) []Warning {
 		if dbProps.ScalingStrategy != "horizontal" {
 			warnings = append(warnings, Warning{
 				Rule:     "storage_growth_no_partitioning",
-				Message:  fmt.Sprintf("💾 資料增長但未水平擴展：每日增長 %.0f GB，資料庫 %q 未設定水平擴展策略。", ctx.Params.DailyGrowthGB, node.Label),
-				Solution: "每日資料增長超過 10 GB 時，建議考慮分庫分表 (Sharding) 或使用支援水平擴展的資料庫。",
+				Message:  fmt.Sprintf("💾 Data Growth Missing Horizontal Scaling: Daily growth is %.0f GB, and database %q has no horizontal scaling strategy set.", ctx.Params.DailyGrowthGB, node.Label),
+				Solution: "When daily data growth exceeds 10 GB, consider Database Sharding or using a database that supports horizontal scaling.",
 				NodeIDs:  []string{node.ID},
 			})
 		}
@@ -164,8 +164,8 @@ func checkHighAvailabilityInsufficientReplicas(ctx model.TopologyContext) []Warn
 		if svcProps.Replicas < 3 {
 			warnings = append(warnings, Warning{
 				Rule:     "high_availability_insufficient_replicas",
-				Message:  fmt.Sprintf("🛡️ 高可用性複本不足：目標 %s，但服務 %q 僅有 %d 個複本。", avail, node.Label, svcProps.Replicas),
-				Solution: fmt.Sprintf("可用性目標 %s 至少需要 3 個 Service 複本，搭配健康檢查與自動故障轉移。", avail),
+				Message:  fmt.Sprintf("🛡️ Insufficient Replicas for High Availability: Target is %s, but service %q has only %d replica(s).", avail, node.Label, svcProps.Replicas),
+				Solution: fmt.Sprintf("An availability target of %s requires at least 3 service replicas, combined with health checks and automatic failover.", avail),
 				NodeIDs:  []string{node.ID},
 			})
 		}
@@ -193,8 +193,8 @@ func checkLatencyLongSyncChain(ctx model.TopologyContext) []Warning {
 	if maxDepth > 3 {
 		return []Warning{{
 			Rule:     "latency_long_sync_chain",
-			Message:  fmt.Sprintf("⏱️ 嚴格延遲目標 + 長同步鏈：目標 %s，但同步呼叫鏈深度達 %d 層。", target, maxDepth),
-			Solution: "嚴格延遲要求下，建議將部分同步呼叫改為非同步，或使用 Cache 縮短關鍵路徑。",
+			Message:  fmt.Sprintf("⏱️ Strict Latency Target + Long Sync Chain: Target is %s, but synchronous call chain depth reaches %d layers.", target, maxDepth),
+			Solution: "Under strict latency requirements, consider changing some synchronous calls to asynchronous or using Cache to shorten critical paths.",
 			NodeIDs:  []string{},
 		}}
 	}
@@ -254,8 +254,8 @@ func checkReadHeavyNoReadReplica(ctx model.TopologyContext) []Warning {
 		}
 		return []Warning{{
 			Rule:     "read_heavy_no_read_replica",
-			Message:  fmt.Sprintf("📖 讀多寫少但無讀寫分離：讀佔比 %.0f%%，但僅有 %d 個資料庫節點。", ctx.Params.ReadWriteRatio*100, len(dbNodes)),
-			Solution: "讀寫比超過 80%% 讀時，建議設定讀寫分離（Read Replica），將讀流量分散到從庫以提升效能。",
+			Message:  fmt.Sprintf("📖 Read-Heavy Missing Read Replicas: Read ratio is %.0f%%, but there is only %d database node(s).", ctx.Params.ReadWriteRatio*100, len(dbNodes)),
+			Solution: "When the read/write ratio exceeds 80% reads, it is recommended to set up Read Replicas to distribute read traffic and improve performance.",
 			NodeIDs:  ids,
 		}}
 	}

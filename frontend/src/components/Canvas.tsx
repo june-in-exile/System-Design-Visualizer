@@ -21,6 +21,7 @@ import ComponentPropertyPanel from './ComponentPropertyPanel'
 import EdgePropertyPanel from './EdgePropertyPanel'
 import SystemParamsPanel from './SystemParamsPanel'
 import ToolbarButton from './ToolbarButton'
+import SettingsMenu from './SettingsMenu'
 import { NODE_TYPE_CONFIG } from '../nodes/nodeConfig'
 import { analyzeTopology } from '../api/topologyApi'
 import type {
@@ -47,6 +48,7 @@ function generateNodeId(): string {
 
 interface CanvasProps {
   theme: 'light' | 'dark' | 'warm' | 'dream' | 'cyberpunk';
+  setTheme: (theme: 'light' | 'dark' | 'warm' | 'dream' | 'cyberpunk') => void;
   initialNodes?: Node[];
   initialEdges?: Edge[];
   onStateChange?: (nodes: Node[], edges: Edge[]) => void;
@@ -74,7 +76,7 @@ const CONNECTION_TYPE_LABELS: Record<string, string> = {
   unspecified: '',
 }
 
-function Canvas({ theme, initialNodes = [], initialEdges = [], onStateChange }: CanvasProps) {
+function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onStateChange }: CanvasProps) {
   const isDarkMode = theme === 'dark' || theme === 'cyberpunk'
   const isWarmMode = theme === 'warm'
   const isDreamMode = theme === 'dream'
@@ -118,8 +120,8 @@ function Canvas({ theme, initialNodes = [], initialEdges = [], onStateChange }: 
         setShowPresets(false)
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('mousedown', handleClickOutside, true)
+    return () => document.removeEventListener('mousedown', handleClickOutside, true)
   }, [showPresets])
 
   const onDragStart = useCallback((e: React.MouseEvent) => {
@@ -700,7 +702,7 @@ function Canvas({ theme, initialNodes = [], initialEdges = [], onStateChange }: 
         totalRules: 0,
         rulesPassed: 0,
         warnings: [
-          { rule: 'error', message, solution: '請檢查後端服務是否正常啟動，並重試。', nodeIds: [] } as Warning,
+          { rule: 'error', message, solution: 'Please ensure the backend service is running and try again.', nodeIds: [] } as Warning,
         ],
       })
     } finally {
@@ -1118,23 +1120,24 @@ function Canvas({ theme, initialNodes = [], initialEdges = [], onStateChange }: 
             </span>
           </div>
         )}
-        <div ref={presetsRef} style={{ position: 'relative', marginLeft: 'auto' }}>
-            <button
-              onClick={() => setShowPresets(prev => !prev)}
-              style={{
-                padding: '6px 14px',
-                borderRadius: 6,
-                border: '1px solid var(--border-color)',
-                backgroundColor: 'var(--bg-secondary)',
-                color: 'var(--text-primary)',
-                fontSize: 16,
-                fontWeight: 600,
-                cursor: 'pointer',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}
-            >
-              Demo ▾
-            </button>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div ref={presetsRef} style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowPresets(prev => !prev)}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 6,
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
+                  fontSize: 16,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
+              >
+                Demo ▾
+              </button>
             {showPresets && (
               <div style={{
                 position: 'absolute',
@@ -1179,9 +1182,17 @@ function Canvas({ theme, initialNodes = [], initialEdges = [], onStateChange }: 
             </div>
           )}
         </div>
+
+        <SettingsMenu 
+          theme={theme} 
+          setTheme={setTheme} 
+          getNodes={() => nodes}
+          getEdges={() => edges}
+        />
       </div>
-      <div ref={reactFlowWrapper} style={{ flex: 1, display: 'flex' }}>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+    </div>
+    <div ref={reactFlowWrapper} style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
           <div style={{ flex: 1, position: 'relative' }}>
             <ReactFlow
               nodes={nodes.map(node => {

@@ -33,8 +33,8 @@ func checkMissingFirewall(ctx model.TopologyContext) []Warning {
 	if hasClient && hasEntryPoint && !hasFirewall {
 		return []Warning{{
 			Rule:     "missing_firewall",
-			Message:  "🛡️ 缺少 Firewall/WAF：架構中有 Client 與入口節點 (LB/API Gateway)，但缺少 Firewall。",
-			Solution: "建議在 Client 與 Load Balancer/API Gateway 之間加入 Firewall 或 WAF，進行流量過濾與惡意請求攔截。",
+			Message:  "🛡️ Firewall/WAF Missing: Architecture contains Clients and entry nodes (LB/API Gateway), but lacks a Firewall.",
+			Solution: "It is recommended to add a Firewall or WAF between Clients and Load Balancers/API Gateways for traffic filtering and malicious request blocking.",
 			NodeIDs:  clientIDs,
 		}}
 	}
@@ -57,8 +57,8 @@ func checkMissingFirewall(ctx model.TopologyContext) []Warning {
 		if !connected {
 			return []Warning{{
 				Rule:     "missing_firewall",
-				Message:  "🛡️ Firewall 未正確連線：架構中有 Firewall 但未連線至入口節點。",
-				Solution: "建議將 Firewall 連接至 Load Balancer 或 API Gateway，以發揮流量過濾與安全防護的效果。",
+				Message:  "🛡️ Firewall Not Correctly Connected: Firewall exists but is not connected to any entry nodes.",
+				Solution: "Consider connecting the Firewall to the Load Balancer or API Gateway to enable traffic filtering and security protection.",
 				NodeIDs:  append(firewallIDs, entryPointIDs...),
 			}}
 		}
@@ -85,8 +85,8 @@ func checkFirewallMonitorMode(ctx model.TopologyContext) []Warning {
 		if fwProps.Mode == "monitor" {
 			warnings = append(warnings, Warning{
 				Rule:     "firewall_monitor_mode",
-				Message:  fmt.Sprintf("🛡️ Firewall 監控模式提醒：%q 目前為監控模式 (Monitor)，惡意流量不會被攔截。", node.Label),
-				Solution: "若已完成測試，建議將 Firewall 切換為 Inline 模式以啟用實際攔截。",
+				Message:  fmt.Sprintf("🛡️ Firewall Monitor Mode Reminder: %q is currently in Monitor mode; malicious traffic will not be blocked.", node.Label),
+				Solution: "Once testing is complete, it is recommended to switch the Firewall to Inline mode to enable actual blocking.",
 				NodeIDs:  []string{node.ID},
 			})
 		}
@@ -123,8 +123,8 @@ func checkFirewallL3Only(ctx model.TopologyContext) []Warning {
 		if fwProps.Layer == "l3" {
 			warnings = append(warnings, Warning{
 				Rule:     "firewall_l3_only",
-				Message:  fmt.Sprintf("🛡️ 防護層級不足：%q 僅在 L3/L4 層運作，無法防禦應用層攻擊（如 SQL Injection、XSS）。", node.Label),
-				Solution: "建議升級為 L7 WAF 或額外加入應用層 Firewall 以保護 API 端點。",
+				Message:  fmt.Sprintf("🛡️ Insufficient Protection Level: %q operates only at L3/L4 and cannot defend against application-layer attacks (e.g., SQL Injection, XSS).", node.Label),
+				Solution: "Consider upgrading to an L7 WAF or adding an application-layer Firewall to protect API endpoints.",
 				NodeIDs:  []string{node.ID},
 			})
 		}
@@ -156,8 +156,8 @@ func checkInvalidConnection(ctx model.TopologyContext) []Warning {
 						reason := getConnectionReason(srcRole, tgtRole)
 						warnings = append(warnings, Warning{
 							Rule:    "invalid_connection",
-							Message: fmt.Sprintf("🚫 不合理的連線：%s (%s) → %s (%s)。", source.Label, srcRole, target.Label, tgtRole),
-							Solution: reason + " 請檢查連線方向或在兩者之間加入適當的中間層。",
+							Message: fmt.Sprintf("🚫 Invalid Connection: %s (%s) → %s (%s).", source.Label, srcRole, target.Label, tgtRole),
+							Solution: reason + " Please check the connection direction or add an appropriate intermediate layer.",
 							NodeIDs: []string{source.ID, target.ID},
 						})
 					}
@@ -178,5 +178,5 @@ func getConnectionReason(srcRole, tgtRole string) string {
 			return reason
 		}
 	}
-	return "此連線方向不符合系統設計最佳實踐。"
+	return "This connection direction does not align with system design best practices."
 }

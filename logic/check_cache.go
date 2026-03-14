@@ -23,8 +23,8 @@ func checkCacheEviction(ctx model.TopologyContext) []Warning {
 		if cacheProps.EvictionPolicy == "" || cacheProps.EvictionPolicy == "none" {
 			warnings = append(warnings, Warning{
 				Rule:     "cache_eviction",
-				Message:  fmt.Sprintf("🧊 快取失效策略提醒：%q 未配置適當的失效演算法。", node.Label),
-				Solution: "請設定 Eviction Policy (如 LRU, LFU)，以確保在記憶體用罄時能正確處理舊數據。",
+				Message:  fmt.Sprintf("🧊 Cache Eviction Policy Reminder: %q has no appropriate eviction algorithm configured.", node.Label),
+				Solution: "Please set an Eviction Policy (e.g., LRU, LFU) to ensure old data is handled correctly when memory is exhausted.",
 				NodeIDs:  []string{node.ID},
 			})
 		}
@@ -69,9 +69,9 @@ func checkCacheConsistency(ctx model.TopologyContext) []Warning {
 		if hasCache && hasDB && !anyCacheHasTTL {
 			warnings = append(warnings, Warning{
 				Rule: "cache_consistency",
-				Message: fmt.Sprintf("⚡ 快取一致性權衡：Service %q 同時連接 Cache 與 Database。",
+				Message: fmt.Sprintf("⚡ Cache Consistency Tradeoff: Service %q is connected to both Cache and Database.",
 					node.Label),
-				Solution: "明確快取更新策略（如 Cache-aside），並設定合理的 TTL 以防數據過期。",
+				Solution: "Define a clear cache update strategy (e.g., Cache-aside) and set a reasonable TTL to prevent data staleness.",
 				NodeIDs:  append([]string{id}, involvedIDs...),
 			})
 		}
@@ -115,8 +115,8 @@ func checkCacheOnly(ctx model.TopologyContext) []Warning {
 		if hasCache && !hasDB {
 			warnings = append(warnings, Warning{
 				Rule:     "cache_no_fallback",
-				Message:  fmt.Sprintf("❄️ 快取回退缺失：Service %q 僅連線至 Cache 而無 Database/Storage 回退路徑。", node.Label),
-				Solution: "在 Cache-aside 模式下，當 Cache miss 或失效時，應有資料庫作為最終資料來源 (Fallback)。請為該 Service 建立與資料庫的連線。",
+				Message:  fmt.Sprintf("❄️ Missing Cache Fallback: Service %q connects only to Cache without a Database/Storage fallback path.", node.Label),
+				Solution: "In a Cache-aside pattern, when a Cache miss or eviction occurs, a database should serve as the ultimate data source (Fallback). Please establish a connection between this Service and a database.",
 				NodeIDs:  append([]string{id}, cacheIDs...),
 			})
 		}

@@ -17,7 +17,7 @@ func setupRouter() *gin.Engine {
 	return r
 }
 
-// --- 正常流程 ---
+// --- Happy Path ---
 
 func TestPostTopology_MinimalValid(t *testing.T) {
 	body := map[string]interface{}{
@@ -93,7 +93,7 @@ func TestPostTopology_WithWarnings(t *testing.T) {
 	}
 }
 
-// --- 錯誤處理 ---
+// --- Error Handling ---
 
 func TestPostTopology_InvalidJSON(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/api/topology", bytes.NewReader([]byte("not json")))
@@ -196,7 +196,7 @@ func TestPostTopology_UnknownConnectionType(t *testing.T) {
 	}
 }
 
-// --- 完整場景：健康架構 ---
+// --- Full Scenario: Healthy Architecture ---
 
 func TestPostTopology_HealthyArchitecture_NoWarnings(t *testing.T) {
 	body := map[string]interface{}{

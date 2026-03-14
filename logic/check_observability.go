@@ -56,8 +56,8 @@ func checkMissingLogger(ctx model.TopologyContext) []Warning {
 			}
 			return []Warning{{
 				Rule:     "missing_observability",
-				Message:  "📊 缺少 Logger/Monitor：架構中存在 Service 但缺少 Logger/Monitor 節點。",
-				Solution: "建議加入 Logger/Monitor 節點（如 ELK Stack、Prometheus），並讓各 Service 連線至該節點以收集觀測數據。",
+				Message:  "📊 Missing Logger/Monitor: Services exist in the architecture, but no Logger/Monitor nodes are present.",
+				Solution: "Consider adding a Logger/Monitor node (e.g., ELK Stack, Prometheus) and connecting all Services to it to collect observational data.",
 				NodeIDs:  nodeIDs,
 			}}
 		} else {
@@ -70,15 +70,15 @@ func checkMissingLogger(ctx model.TopologyContext) []Warning {
 					labels = append(labels, svc.Label)
 				}
 			}
-			msg := fmt.Sprintf("📊 觀測性缺失：Service %s 等尚未連線至 Logger/Monitor。", joinLabels(labels))
+			msg := fmt.Sprintf("📊 Missing Observability: Service %s and others are not connected to a Logger/Monitor.", joinLabels(labels))
 			if len(disconnectedServices) == 1 {
-				msg = fmt.Sprintf("📊 觀測性缺失：Service %q 尚未連線至 Logger/Monitor。", disconnectedServices[0].Label)
+				msg = fmt.Sprintf("📊 Missing Observability: Service %q is not connected to a Logger/Monitor.", disconnectedServices[0].Label)
 			}
 
 			return []Warning{{
 				Rule:     "incomplete_service_observability",
 				Message:  msg,
-				Solution: "請將這些 Service 連接至 Logger/Monitor 節點，以確保系統具備完整的監控與除錯能力。",
+				Solution: "Please connect these Services to a Logger/Monitor node to ensure full monitoring and debugging capabilities.",
 				NodeIDs:  nodeIDs,
 			}}
 		}
@@ -119,22 +119,22 @@ func checkIncompleteObservability(ctx model.TopologyContext) []Warning {
 		if logProps.LogType == "metrics" {
 			warnings = append(warnings, Warning{
 				Rule:     "incomplete_observability",
-				Message:  fmt.Sprintf("📊 觀測性不完整：%q 僅收集 Metrics，缺少 Logs 和 Traces。微服務架構中缺乏 distributed tracing 將難以定位跨服務的效能瓶頸。", node.Label),
-				Solution: "建議將 logType 設為 All，或額外加入 Traces 類型的 Logger（如 Jaeger）實現完整觀測性。",
+				Message:  fmt.Sprintf("📊 Incomplete Observability: %q only collects Metrics, lacking Logs and Traces. Without distributed tracing in a microservices architecture, identifying performance bottlenecks across services is difficult.", node.Label),
+				Solution: "Consider setting logType to 'All' or adding Traces-type Loggers (e.g., Jaeger) to achieve complete observability.",
 				NodeIDs:  []string{node.ID},
 			})
 		} else if logProps.LogType == "logs" {
 			warnings = append(warnings, Warning{
 				Rule:     "incomplete_observability",
-				Message:  fmt.Sprintf("📊 觀測性不完整：%q 僅收集 Logs，缺少 Metrics 和 Traces。沒有 Metrics 將無法設定有效的告警規則。", node.Label),
-				Solution: "建議將 logType 設為 All，或額外加入 Metrics 類型的 Logger（如 Prometheus）。",
+				Message:  fmt.Sprintf("📊 Incomplete Observability: %q only collects Logs, lacking Metrics and Traces. Without Metrics, effective alerting rules cannot be set.", node.Label),
+				Solution: "Consider setting logType to 'All' or adding Metrics-type Loggers (e.g., Prometheus).",
 				NodeIDs:  []string{node.ID},
 			})
 		} else if logProps.LogType == "traces" {
 			warnings = append(warnings, Warning{
 				Rule:     "incomplete_observability",
-				Message:  fmt.Sprintf("📊 觀測性不完整：%q 僅收集 Traces，缺少 Metrics 和 Logs。缺乏 Metrics 和 Logs 將無法進行全面的問題診斷。", node.Label),
-				Solution: "建議將 logType 設為 All，或額外加入 Metrics 和 Logs 類型的 Logger。",
+				Message:  fmt.Sprintf("📊 Incomplete Observability: %q only collects Traces, lacking Metrics and Logs. Comprehensive diagnosis will be impossible without Metrics and Logs.", node.Label),
+				Solution: "Consider setting logType to 'All' or adding both Metrics and Logs-type Loggers.",
 				NodeIDs:  []string{node.ID},
 			})
 		}
@@ -160,8 +160,8 @@ func checkAlertingDisabled(ctx model.TopologyContext) []Warning {
 		if !logProps.Alerting {
 			warnings = append(warnings, Warning{
 				Rule:     "alerting_disabled",
-				Message:  fmt.Sprintf("🔔 告警未啟用：%q 未啟用告警功能。問題發生時將無法及時收到通知，只能依賴人工巡檢。", node.Label),
-				Solution: "建議啟用告警並配置通知管道（如 Slack、PagerDuty、Email），設定關鍵指標的閾值觸發條件。",
+				Message:  fmt.Sprintf("🔔 Alerting Disabled: %q has alerting turned off. You will not receive timely notifications when issues occur, and will have to rely on manual checks.", node.Label),
+				Solution: "It is recommended to enable alerting and configure notification channels (e.g., Slack, PagerDuty, Email) with threshold triggers for critical metrics.",
 				NodeIDs:  []string{node.ID},
 			})
 		}

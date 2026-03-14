@@ -224,11 +224,11 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
           {/* Scrollable Content */}
           <div style={{ flex: 1, overflowY: 'auto', margin: '0 -12px', padding: '0 12px' }}>
             <p style={{ margin: '0 0 16px', fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-              設定系統容量參數，Analyze 時會根據這些參數產生更精準的建議。所有欄位皆為選填。
+              Set system capacity parameters. Analysis will provide more accurate recommendations based on these values. All fields are optional.
             </p>
 
             <div style={{ marginBottom: 14 }}>
-              <label style={labelStyle}>DAU (日活躍用戶)</label>
+              <label style={labelStyle}>DAU (Daily Active Users)</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -239,17 +239,17 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
               />
               {estimatedPeakQPS && (
                 <div style={{ fontSize: 11, color: 'var(--accent)', marginTop: 4 }}>
-                  💡 預估 Peak QPS ≈ {estimatedPeakQPS.toLocaleString()}（DAU/86400 × 10）
+                  💡 Estimated Peak QPS ≈ {estimatedPeakQPS.toLocaleString()} (DAU/86400 × 10)
                 </div>
               )}
             </div>
 
             <div style={{ marginBottom: 14 }}>
-              <label style={labelStyle}>Peak QPS (尖峰每秒請求)</label>
+              <label style={labelStyle}>Peak QPS (Peak Requests Per Second)</label>
               <input
                 type="text"
                 inputMode="numeric"
-                placeholder={estimatedPeakQPS ? `建議 ≥ ${estimatedPeakQPS}` : 'e.g., 10000'}
+                placeholder={estimatedPeakQPS ? `Recommended ≥ ${estimatedPeakQPS}` : 'e.g., 10000'}
                 value={params.peakQPS ?? ''}
                 onChange={(e) => handleNumberChange('peakQPS', e.target.value)}
                 style={inputStyle}
@@ -257,7 +257,7 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
             </div>
 
             <div style={{ marginBottom: 14 }}>
-              <label style={labelStyle}>Avg QPS (平均每秒請求)</label>
+              <label style={labelStyle}>Avg QPS (Average Requests Per Second)</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -281,7 +281,7 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
             </div>
 
             <div style={{ marginBottom: 14 }}>
-              <label style={labelStyle}>Daily Growth (GB/天)</label>
+              <label style={labelStyle}>Daily Growth (GB/Day)</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -294,7 +294,7 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
 
             <div style={{ marginBottom: 14 }}>
               <label style={labelStyle}>
-                Read/Write Ratio：{params.readWriteRatio !== undefined ? `${Math.round(params.readWriteRatio * 100)}% 讀` : 'Unspecified'}
+                Read/Write Ratio: {params.readWriteRatio !== undefined ? `${Math.round(params.readWriteRatio * 100)}% Read` : 'Unspecified'}
               </label>
               <input
                 type="range"
@@ -306,8 +306,8 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
                 style={{ width: '100%' }}
               />
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-secondary)' }}>
-                <span>寫多</span>
-                <span>讀多</span>
+                <span>Write-Heavy</span>
+                <span>Read-Heavy</span>
               </div>
             </div>
 
@@ -355,7 +355,7 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
                   marginBottom: 12,
                 }}
               >
-                清除所有參數
+                Clear All Parameters
               </button>
             )}
           </div>

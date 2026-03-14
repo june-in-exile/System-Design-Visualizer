@@ -29,9 +29,9 @@ func checkDBSelection(ctx model.TopologyContext) []Warning {
 		if dbProps.DBType == "sql" && dbProps.ReadWriteRatio < 0.5 {
 			warnings = append(warnings, Warning{
 				Rule: "db_selection",
-				Message: fmt.Sprintf("⚖️ SQL 擴展性取捨：%q 為高寫入壓力 (讀寫比 %.0f%%)。",
+				Message: fmt.Sprintf("⚖️ SQL Scalability Tradeoff: %q is under high write pressure (read ratio %.0f%%).",
 					node.Label, dbProps.ReadWriteRatio*100),
-				Solution: "實施 Master-Slave 讀寫分離，或考慮切換為寫入性能更好的 NoSQL 資料庫。",
+				Solution: "Implement Master-Slave read-write separation, or consider switching to a NoSQL database with better write performance.",
 				NodeIDs:  []string{node.ID},
 			})
 		}
@@ -63,8 +63,8 @@ func checkReadWriteSeparation(ctx model.TopologyContext) []Warning {
 		if dbProps.ReadWriteRatio > 0.8 {
 			warnings = append(warnings, Warning{
 				Rule:     "read_write_separation",
-				Message:  fmt.Sprintf("📖 讀寫分離建議：%q 讀取比例極高 (%.0f%%)。", node.Label, dbProps.ReadWriteRatio*100),
-				Solution: "建議導入 Master-Slave 讀寫分離架構，主庫負責寫入，複本庫負責讀取以提升效能。",
+				Message:  fmt.Sprintf("📖 Read-Write Separation Suggestion: %q has an extremely high read ratio (%.0f%%).", node.Label, dbProps.ReadWriteRatio*100),
+				Solution: "Consider implementing a Master-Slave read-write separation architecture, where the Master handles writes and Replicas handle reads to improve performance.",
 				NodeIDs:  []string{node.ID},
 			})
 		}
@@ -98,9 +98,9 @@ func checkCAP(ctx model.TopologyContext) []Warning {
 			if dbProps.ConsistencyLevel == "strong" {
 				warnings = append(warnings, Warning{
 					Rule: "cap_theorem",
-					Message: fmt.Sprintf("🚀 效能與一致性權衡：%q (%s) 為 AP 系統，但您要求強一致性。",
+					Message: fmt.Sprintf("🚀 Performance vs. Consistency Tradeoff: %q (%s) is an AP system, but you requested Strong Consistency.",
 						node.Label, dbProps.Product),
-					Solution: "在 AP 系統上實施強一致性 (如 Quorum R/W) 將顯著增加延遲並降低可用性。請評估是否必要。",
+					Solution: "Implementing strong consistency (e.g., Quorum R/W) on an AP system will significantly increase latency and reduce availability. Please evaluate if this is necessary.",
 					NodeIDs:  []string{node.ID},
 				})
 				continue
@@ -109,9 +109,9 @@ func checkCAP(ctx model.TopologyContext) []Warning {
 			// Default warning if no explicit choice is made.
 			warnings = append(warnings, Warning{
 				Rule: "cap_theorem",
-				Message: fmt.Sprintf("📐 CAP 定理：%q (%s) 為 AP 系統。",
+				Message: fmt.Sprintf("📐 CAP Theorem: %q (%s) is an AP system.",
 					node.Label, dbProps.Product),
-				Solution: "注意 AP 系統僅提供最終一致性。若需強一致性，請在屬性中選擇 'Strong' (注意效能) 或更換為 CP 系統 (如 RDBMS)。",
+				Solution: "Note that AP systems only provide eventual consistency. If strong consistency is required, select 'Strong' in the properties (watch for performance impact) or switch to a CP system (like RDBMS).",
 				NodeIDs:  []string{node.ID},
 			})
 		}
@@ -171,9 +171,9 @@ func checkVerticalPartitioning(ctx model.TopologyContext) []Warning {
 		}
 		return []Warning{{
 			Rule: "federation",
-			Message: fmt.Sprintf("🔍 垂直拆分 (Federation) 提醒：偵測到 %d 個資料庫節點 (%s)。",
+			Message: fmt.Sprintf("🔍 Vertical Partitioning (Federation) Reminder: Detected %d database nodes (%s).",
 				len(dbNodes), joinLabels(labels)),
-			Solution: "確保應用層支援跨庫資料聚合，並注意跨庫事務的一致性問題。",
+			Solution: "Ensure the application layer supports cross-database data aggregation, and be mindful of consistency issues in cross-database transactions.",
 			NodeIDs:  ids,
 		}}
 	}
@@ -209,8 +209,8 @@ func checkSearchDatabase(ctx model.TopologyContext) []Warning {
 			if dbProps.Product != "elasticsearch" && dbProps.Product != "solr" {
 				warnings = append(warnings, Warning{
 					Rule:     "search_engine_recommendation",
-					Message:  fmt.Sprintf("🔍 搜尋引擎建議：搜尋服務 %q 直接連線至 %q。", node.Label, target.Label),
-					Solution: "全文搜尋或複雜篩選在 RDBMS/NoSQL 上效率較低。建議使用專門的搜尋引擎（如 Elasticsearch, Solr），並透過同步機制確保資料一致性。",
+					Message:  fmt.Sprintf("🔍 Search Engine Suggestion: Search service %q connects directly to %q.", node.Label, target.Label),
+					Solution: "Full-text search or complex filtering is less efficient on RDBMS/NoSQL. It is recommended to use specialized search engines (e.g., Elasticsearch, Solr) and ensure data consistency through synchronization mechanisms.",
 					NodeIDs:  []string{id, targetID},
 				})
 			}
@@ -254,8 +254,8 @@ func checkServiceDataSource(ctx model.TopologyContext) []Warning {
 		if !hasDataSource {
 			warnings = append(warnings, Warning{
 				Rule:     "missing_data_source",
-				Message:  fmt.Sprintf("❓ 缺少資料來源：服務 %q 目前沒有連線至任何資料儲存或下游服務。", node.Label),
-				Solution: "每個業務服務應有明確的資料來源。請連接至 Database、Cache、Storage 或其他提供資料的 Service。",
+				Message:  fmt.Sprintf("❓ Missing Data Source: Service %q currently has no connection to any data storage or downstream service.", node.Label),
+				Solution: "Each business service should have a clear data source. Please connect to a Database, Cache, Storage, or another data-providing Service.",
 				NodeIDs:  []string{id},
 			})
 		}
@@ -297,8 +297,8 @@ func checkDatabasePerService(ctx model.TopologyContext) []Warning {
 
 			warnings = append(warnings, Warning{
 				Rule:     "shared_database",
-				Message:  fmt.Sprintf("🗄️ 資料庫共享提醒：多個服務 (%s) 共享同一個資料庫 %q。", joinLabels(labels), dbNode.Label),
-				Solution: "在微服務架構中，建議採用 Database-per-Service 模式以解耦服務間的資料依賴與擴展瓶頸。考慮按業務功能拆分資料庫。",
+				Message:  fmt.Sprintf("🗄️ Shared Database Reminder: Multiple services (%s) share the same database %q.", joinLabels(labels), dbNode.Label),
+				Solution: "In a microservices architecture, it is recommended to adopt a Database-per-Service pattern to decouple data dependencies and scaling bottlenecks between services. Consider splitting the database based on business functionality.",
 				NodeIDs:  append([]string{dbID}, serviceIDs...),
 			})
 		}

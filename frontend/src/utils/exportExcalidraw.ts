@@ -1,8 +1,8 @@
 import type { Node, Edge } from '@xyflow/react'
 
 // ============================================================
-// 中性配色（與 nodeConfig.ts 保持一致）
-// 只有警告狀態才使用黃色，一般情況下統一使用中性灰
+// Neutral color scheme (consistent with nodeConfig.ts)
+// Use yellow only for warning states; otherwise use neutral gray.
 // ============================================================
 
 const NEUTRAL_COLOR = '#4b5563'
@@ -13,14 +13,14 @@ function getStrokeColor(_componentType: string, hasWarning = false): string {
 }
 
 // ============================================================
-// 節點尺寸（與 ArchitectureNode.tsx 一致）
+// Node dimensions (consistent with ArchitectureNode.tsx)
 // ============================================================
 
 const NODE_WIDTH = 160
 const NODE_HEIGHT = 80
 
 // ============================================================
-// Handle 位置計算
+// Handle position calculation
 // ============================================================
 
 interface AnchorPoint {
@@ -29,8 +29,8 @@ interface AnchorPoint {
 }
 
 /**
- * 根據 sourceHandle / targetHandle 字串計算連接點座標
- * handle 格式：'top-source', 'bottom-target', 'left-source', 'right-target' 等
+ * Calculates anchor point coordinates based on sourceHandle / targetHandle strings.
+ * Handle format: 'top-source', 'bottom-target', 'left-source', 'right-target', etc.
  */
 function getAnchorPoint(
   nodeX: number,
@@ -55,14 +55,14 @@ function getAnchorPoint(
 }
 
 // ============================================================
-// 核心轉換
+// Core conversion
 // ============================================================
 
 export function toExcalidraw(nodes: Node[], edges: Edge[]): string {
   const elements: Record<string, unknown>[] = []
 
   // ----------------------------------------------------------
-  // 節點 → rectangle + text
+  // Node → rectangle + text
   // ----------------------------------------------------------
   for (const node of nodes) {
     const data = node.data as Record<string, unknown>
@@ -117,7 +117,7 @@ export function toExcalidraw(nodes: Node[], edges: Edge[]): string {
   }
 
   // ----------------------------------------------------------
-  // 連線 → arrow + label text
+  // Edge → arrow + label text
   // ----------------------------------------------------------
   for (const edge of edges) {
     const sourceNode = nodes.find(n => n.id === edge.source)
@@ -170,7 +170,7 @@ export function toExcalidraw(nodes: Node[], edges: Edge[]): string {
       seed: hashString(edge.id),
     })
 
-    // 連線標籤
+    // Edge label
     if (protocol || (connType && connType !== 'unspecified')) {
       const parts: string[] = []
       if (protocol) parts.push(protocol.toUpperCase())
@@ -214,7 +214,7 @@ export function toExcalidraw(nodes: Node[], edges: Edge[]): string {
 }
 
 // ============================================================
-// 工具函數
+// Utility functions
 // ============================================================
 
 function hashString(str: string): number {

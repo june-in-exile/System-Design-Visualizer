@@ -321,7 +321,25 @@ export default function PropertyPanel({
   onNodeDataChange,
 }: PropertyPanelProps) {
   if (!selectedNode) {
-    return null
+    return (
+      <aside
+        style={{
+          width: 300,
+          padding: 16,
+          borderLeft: '1px solid var(--border-color)',
+          backgroundColor: 'var(--bg-secondary)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--text-secondary)',
+          fontSize: 14,
+          fontStyle: 'italic',
+          textAlign: 'center',
+        }}
+      >
+        Select a component to view properties
+      </aside>
+    )
   }
 
   const data = selectedNode.data as Record<string, unknown>

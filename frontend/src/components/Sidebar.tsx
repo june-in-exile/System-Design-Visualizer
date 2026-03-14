@@ -1,8 +1,10 @@
+import { memo, useRef, useEffect, useMemo, useState } from 'react'
 import type { Node, Edge } from '@xyflow/react'
 import type { ComponentType } from '../types/topology'
 import { NODE_TYPE_CONFIG } from '../nodes/nodeConfig'
-import SettingsMenu from './SettingsMenu'
 import logo from '../assets/logo.svg'
+import rough from 'roughjs'
+import { stableSeed } from '../utils/rough'
 
 const COMPONENT_TYPES = Object.keys(NODE_TYPE_CONFIG) as ComponentType[]
 
@@ -12,6 +14,75 @@ interface SidebarProps {
   getNodes: () => Node[];
   getEdges: () => Edge[];
 }
+
+const SidebarItem = memo(({ type, onDragStart }: { type: ComponentType, onDragStart: (e: React.DragEvent, type: ComponentType) => void }) => {
+  const config = NODE_TYPE_CONFIG[type]
+  const svgRef = useRef<SVGSVGElement>(null)
+  const seed = useMemo(() => stableSeed(type), [type])
+  const [isHovered, setIsHovered] = useState(false)
+
+  useEffect(() => {
+    if (!svgRef.current) return
+    const svg = svgRef.current
+    while (svg.firstChild) svg.removeChild(svg.firstChild)
+
+    const rc = rough.svg(svg)
+    const rect = rc.rectangle(3, 3, 162, 34, {
+      stroke: config.color,
+      strokeWidth: isHovered ? 2 : 1.5,
+      fill: isHovered ? `${config.color}25` : `${config.color}12`,
+      fillStyle: 'solid',
+      roughness: 1.2,
+      seed,
+    })
+    svg.appendChild(rect)
+  }, [config.color, seed, isHovered])
+
+  return (
+    <div
+      draggable
+      onDragStart={(e) => onDragStart(e, type)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      title={config.description}
+      style={{
+        position: 'relative',
+        width: 168,
+        height: 40,
+        marginBottom: 12,
+        cursor: 'grab',
+        display: 'flex',
+        alignItems: 'center',
+        padding: '0 12px',
+        color: 'var(--text-primary)',
+        fontSize: 14,
+        fontFamily: 'var(--font-hand)',
+        transition: 'transform 0.1s ease',
+        transform: isHovered ? 'scale(1.02)' : 'scale(1)',
+      }}
+    >
+      <svg
+        ref={svgRef}
+        width={168}
+        height={40}
+        style={{ position: 'absolute', top: 0, left: 0, zIndex: 0 }}
+      />
+      <div style={{ 
+        position: 'relative', 
+        zIndex: 1, 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        width: '100%',
+        height: '100%',
+        gap: 8 
+      }}>
+        {config.icon && <span style={{ fontSize: 18 }}>{config.icon}</span>}
+        <span style={{ fontWeight: 600 }}>{config.label}</span>
+      </div>
+    </div>
+  )
+})
 
 function Sidebar({ theme, setTheme, getNodes, getEdges }: SidebarProps) {
   const onDragStart = (
@@ -84,43 +155,10 @@ function Sidebar({ theme, setTheme, getNodes, getEdges }: SidebarProps) {
           Components
         </h3>
         <div style={{ flex: 1 }}>
-          {COMPONENT_TYPES.map((type) => {
-            const config = NODE_TYPE_CONFIG[type]
-            return (
-              <div
-                key={type}
-                draggable
-                onDragStart={(e) => onDragStart(e, type)}
-                title={config.description}
-                style={{
-                  padding: '8px 12px',
-                  marginBottom: 8,
-                  borderRadius: 6,
-                  border: `1px solid ${config.color}40`,
-                  backgroundColor: 'var(--bg-primary)',
-                  cursor: 'grab',
-                  fontSize: 16,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  color: 'var(--text-primary)',
-                }}
-              >
-                {config.icon && <span>{config.icon}</span>}
-                <span>{config.label}</span>
-              </div>
-            )
-          })}
+          {COMPONENT_TYPES.map((type) => (
+            <SidebarItem key={type} type={type} onDragStart={onDragStart} />
+          ))}
         </div>
-      </div>
-      
-      <div style={{ padding: 16 }}>
-        <SettingsMenu 
-          theme={theme} 
-          setTheme={setTheme} 
-          getNodes={getNodes}
-          getEdges={getEdges}
-        />
       </div>
     </aside>
   )
