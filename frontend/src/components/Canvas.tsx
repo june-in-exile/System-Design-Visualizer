@@ -1118,6 +1118,67 @@ function Canvas({ theme, initialNodes = [], initialEdges = [], onStateChange }: 
             </span>
           </div>
         )}
+        <div ref={presetsRef} style={{ position: 'relative', marginLeft: 'auto' }}>
+            <button
+              onClick={() => setShowPresets(prev => !prev)}
+              style={{
+                padding: '6px 14px',
+                borderRadius: 6,
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'var(--bg-secondary)',
+                color: 'var(--text-primary)',
+                fontSize: 16,
+                fontWeight: 600,
+                cursor: 'pointer',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}
+            >
+              Demo ▾
+            </button>
+            {showPresets && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                marginTop: 6,
+                minWidth: 130,
+                borderRadius: 6,
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'var(--bg-secondary)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                overflow: 'hidden',
+                zIndex: 100,
+              }}>
+                {[
+                  { label: 'Basic', handler: handleDemo },
+                  { label: 'Twitter', handler: handleTwitter },
+                  { label: 'YouTube', handler: handleYouTube },
+                  { label: 'Google', handler: handleGoogle },
+                ].map(({ label, handler }) => (
+                  <button
+                    key={label}
+                    onClick={() => { handler(); setShowPresets(false) }}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      padding: '10px 16px',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      color: 'var(--text-primary)',
+                      fontSize: 16,
+                      fontWeight: 500,
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)' }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
+                  >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       <div ref={reactFlowWrapper} style={{ flex: 1, display: 'flex' }}>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
@@ -1256,65 +1317,6 @@ function Canvas({ theme, initialNodes = [], initialEdges = [], onStateChange }: 
                 params={systemParams}
                 onChange={setSystemParams}
               />
-              <div ref={presetsRef} style={{ position: 'relative' }}>
-                <button
-                  onClick={() => setShowPresets(prev => !prev)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: 6,
-                    border: '1px solid var(--border-color)',
-                    backgroundColor: 'var(--bg-secondary)',
-                    color: 'var(--text-primary)',
-                    fontSize: 13,
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                  }}
-                >
-                  Demo ▾
-                </button>
-                {showPresets && (
-                  <div style={{
-                    position: 'absolute',
-                    bottom: '100%',
-                    left: 0,
-                    marginBottom: 6,
-                    minWidth: 130,
-                    borderRadius: 6,
-                    border: '1px solid var(--border-color)',
-                    backgroundColor: 'var(--bg-secondary)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                    overflow: 'hidden',
-                  }}>
-                    {[
-                      { label: 'Basic', handler: handleDemo },
-                      { label: 'Twitter', handler: handleTwitter },
-                      { label: 'YouTube', handler: handleYouTube },
-                      { label: 'Google', handler: handleGoogle },
-                    ].map(({ label, handler }) => (
-                      <button
-                        key={label}
-                        onClick={() => { handler(); setShowPresets(false) }}
-                        style={{
-                          display: 'block',
-                          width: '100%',
-                          padding: '8px 14px',
-                          border: 'none',
-                          backgroundColor: 'transparent',
-                          color: 'var(--text-primary)',
-                          fontSize: 13,
-                          textAlign: 'left',
-                          cursor: 'pointer',
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)' }}
-                        onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
           </ReactFlow>
           </div>
