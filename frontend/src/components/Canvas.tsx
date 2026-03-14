@@ -1521,7 +1521,7 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
                       )}
                       
                       {w.nodeIds && w.nodeIds.length > 0 && (
-                        <div style={{ fontSize: 11, color: '#3b82f6', opacity: 0.9, fontFamily: 'monospace', marginTop: 4 }}>
+                        <div style={{ fontSize: 11, color: '#3b82f6', opacity: 0.9, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', marginTop: 4 }}>
                           Nodes: {w.nodeIds.join(', ')}
                         </div>
                       )}

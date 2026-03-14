@@ -255,7 +255,7 @@ function ArchitectureNode({ id, data, selected }: NodeProps) {
             border: '1px solid var(--border-color)',
             borderRadius: 6,
             fontSize: 12,
-            fontFamily: 'var(--font-hand)',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
             color: 'var(--text-primary)',
             whiteSpace: 'pre-wrap',
             width: 'max-content',
