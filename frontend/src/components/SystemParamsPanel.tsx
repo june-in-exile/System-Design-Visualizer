@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type { SystemParams } from '../types/topology'
 
 interface SystemParamsPanelProps {
@@ -11,6 +11,9 @@ const LATENCY_OPTIONS = ['p99 < 500ms', 'p99 < 200ms', 'p99 < 100ms', 'p95 < 50m
 
 export default function SystemParamsPanel({ params, onChange }: SystemParamsPanelProps) {
   const [open, setOpen] = useState(false)
+  const [pos, setPos] = useState({ x: 0, y: 0 })
+  const [dragging, setDragging] = useState(false)
+  const dragRef = useRef({ startX: 0, startY: 0, initialX: 0, initialY: 0 })
 
   const handleChange = useCallback((key: keyof SystemParams, value: unknown) => {
     onChange({ ...params, [key]: value })
@@ -26,6 +29,42 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
       if (!isNaN(num)) onChange({ ...params, [key]: num })
     }
   }, [params, onChange])
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    setDragging(true)
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialX: pos.x,
+      initialY: pos.y,
+    }
+    e.preventDefault()
+  }
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!dragging) return
+      const dx = e.clientX - dragRef.current.startX
+      const dy = e.clientY - dragRef.current.startY
+      setPos({
+        x: dragRef.current.initialX + dx,
+        y: dragRef.current.initialY + dy,
+      })
+    }
+
+    const onMouseUp = () => {
+      setDragging(false)
+    }
+
+    if (dragging) {
+      window.addEventListener('mousemove', onMouseMove)
+      window.addEventListener('mouseup', onMouseUp)
+    }
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [dragging])
 
   const estimatedPeakQPS = params.dau ? Math.ceil(params.dau / 86400 * 10) : null
 
@@ -52,7 +91,10 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
   return (
     <div style={{ position: 'relative' }}>
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          setOpen(!open)
+          if (!open) setPos({ x: 0, y: 0 }) // Reset position when opening
+        }}
         style={{
           padding: '6px 12px',
           borderRadius: 6,
@@ -87,7 +129,7 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.35)',
+            backgroundColor: 'transparent', // Transparent background so we can see the canvas
             zIndex: 999,
           }}
         />
@@ -95,9 +137,10 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
           position: 'fixed',
           top: '50%',
           left: '50%',
-          transform: 'translate(-50%, -50%)',
+          transform: `translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px))`,
           width: 380,
           padding: 24,
+          paddingTop: 12,
           borderRadius: 12,
           border: '1px solid var(--border-color)',
           backgroundColor: 'var(--bg-secondary)',
@@ -105,9 +148,24 @@ export default function SystemParamsPanel({ params, onChange }: SystemParamsPane
           zIndex: 1000,
           maxHeight: '80vh',
           overflowY: 'auto',
+          userSelect: dragging ? 'none' : 'auto',
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <h4 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>
+          <div 
+            onMouseDown={onMouseDown}
+            style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              marginBottom: 12,
+              cursor: 'move',
+              padding: '8px 0',
+              borderBottom: '1px solid var(--border-color)',
+              margin: '0 -24px 12px',
+              paddingLeft: 24,
+              paddingRight: 12,
+            }}
+          >
+            <h4 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', pointerEvents: 'none' }}>
               System Parameters
             </h4>
             <button

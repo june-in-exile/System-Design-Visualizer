@@ -16,7 +16,8 @@ ArchitectMind 是一個網頁版的系統架構繪圖與分析工具。它提供
 - **一鍵生成預設架構 (Presets)**：提供經典系統設計模板（Standard Demo, Twitter, YouTube, Google），協助快速上手。
 - **導出功能 (Export)**：支援導出為 Excalidraw, Image, Mermaid 與 PDF 格式。
 - **快捷操作**：支援 **Duplicate** (複製)、**Undo** (還原) 以及 **Merge/Split** (合併/拆分) 功能，提升繪圖效率。
-- **響應式設計**：支援深色模式 (Dark Mode)，簡潔現代的使用者介面。
+- **多主題支援 (Themes)**：支援 5 種主題切換 - Light、Dark、Warm、Dream、CyberPunk，滿足不同視覺偏好。
+- **響應式設計**：簡潔現代的使用者介面。
 
 ## 🛠 技術棧
 
