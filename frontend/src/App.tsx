@@ -5,22 +5,27 @@ import TabBar from './components/TabBar'
 import { useCanvasTabs } from './hooks/useCanvasTabs'
 
 function App() {
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const saved = localStorage.getItem('theme')
-    return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  const [theme, setTheme] = useState<'light' | 'dark' | 'warm' | 'dream'>(() => {
+    const saved = localStorage.getItem('theme') as 'light' | 'dark' | 'warm' | 'dream'
+    if (saved) return saved
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   })
 
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark')
-      localStorage.setItem('theme', 'dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-      localStorage.setItem('theme', 'light')
+    document.documentElement.classList.remove('dark', 'warm', 'dream')
+    if (theme !== 'light') {
+      document.documentElement.classList.add(theme)
     }
-  }, [isDarkMode])
+    localStorage.setItem('theme', theme)
+  }, [theme])
 
-  const toggleDarkMode = () => setIsDarkMode(prev => !prev)
+  const toggleTheme = () => {
+    setTheme(prev => {
+      if (prev === 'light') return 'dark'
+      if (prev === 'dark') return 'warm'
+      return 'light'
+    })
+  }
 
   const {
     tabs,
@@ -53,8 +58,8 @@ function App() {
       }}
     >
       <Sidebar 
-        isDarkMode={isDarkMode} 
-        toggleDarkMode={toggleDarkMode} 
+        theme={theme} 
+        setTheme={setTheme}
         getNodes={() => getCurrentState().nodes}
         getEdges={() => getCurrentState().edges}
       />
@@ -69,7 +74,7 @@ function App() {
         />
         <Canvas
           key={activeTabId}
-          isDarkMode={isDarkMode}
+          theme={theme}
           initialNodes={[...activeTab.nodes]}
           initialEdges={[...activeTab.edges]}
           onStateChange={handleCanvasStateChange}

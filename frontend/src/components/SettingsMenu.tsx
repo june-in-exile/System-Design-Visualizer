@@ -6,16 +6,16 @@ import { exportPdf } from '../utils/exportPdf'
 import { toExcalidraw, downloadExcalidraw } from '../utils/exportExcalidraw'
 
 interface SettingsMenuProps {
-  isDarkMode: boolean
-  toggleDarkMode: () => void
+  theme: 'light' | 'dark' | 'warm' | 'dream'
+  setTheme: (theme: 'light' | 'dark' | 'warm' | 'dream') => void
   getNodes: () => Node[]
   getEdges: () => Edge[]
 }
 
 type ExportStatus = 'idle' | 'exporting' | 'success' | 'error'
-type MenuView = 'main' | 'export'
+type MenuView = 'main' | 'export' | 'theme'
 
-export default function SettingsMenu({ isDarkMode, toggleDarkMode, getNodes, getEdges }: SettingsMenuProps) {
+export default function SettingsMenu({ theme, setTheme, getNodes, getEdges }: SettingsMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [view, setView] = useState<MenuView>('main')
   const [status, setStatus] = useState<ExportStatus>('idle')
@@ -76,15 +76,23 @@ export default function SettingsMenu({ isDarkMode, toggleDarkMode, getNodes, get
 
   const renderMainView = () => {
     const hasNodes = getNodes().length > 0
+    const getThemeLabel = () => {
+      if (theme === 'light') return 'Light'
+      if (theme === 'dark') return 'Dark'
+      if (theme === 'warm') return 'Warm'
+      return 'Dream'
+    }
+
     return (
     <>
       <button
-        onClick={toggleDarkMode}
+        onClick={() => setView('theme')}
         style={itemStyle()}
-        onMouseEnter={(e) => { if (!isOpen) e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)' }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)' }}
         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
       >
-        <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+        <span>Theme ({getThemeLabel()})</span>
+        <span style={{ color: 'var(--text-secondary)' }}>→</span>
       </button>
       <button
         onClick={() => setView('export')}
@@ -97,6 +105,56 @@ export default function SettingsMenu({ isDarkMode, toggleDarkMode, getNodes, get
       </button>
     </>
   )}
+
+  const renderThemeView = () => (
+    <>
+      <button
+        onClick={() => setView('main')}
+        style={{ ...itemStyle(), color: 'var(--text-secondary)', marginBottom: 4 }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)' }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+      >
+        <span>← Back</span>
+      </button>
+      <div style={{ height: 1, backgroundColor: 'var(--border-color)', margin: '4px 0' }} />
+      <button
+        onClick={() => setTheme('light')}
+        style={{ ...itemStyle(), fontWeight: theme === 'light' ? 700 : 400 }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)' }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+      >
+        <span>Light Mode</span>
+        {theme === 'light' && <span>✓</span>}
+      </button>
+      <button
+        onClick={() => setTheme('dark')}
+        style={{ ...itemStyle(), fontWeight: theme === 'dark' ? 700 : 400 }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)' }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+      >
+        <span>Dark Mode</span>
+        {theme === 'dark' && <span>✓</span>}
+      </button>
+      <button
+        onClick={() => setTheme('warm')}
+        style={{ ...itemStyle(), fontWeight: theme === 'warm' ? 700 : 400 }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)' }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+      >
+        <span>Warm Mode</span>
+        {theme === 'warm' && <span>✓</span>}
+      </button>
+      <button
+        onClick={() => setTheme('dream')}
+        style={{ ...itemStyle(), fontWeight: theme === 'dream' ? 700 : 400 }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)' }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+      >
+        <span>Dream Mode</span>
+        {theme === 'dream' && <span>✓</span>}
+      </button>
+    </>
+  )
 
   const renderExportView = () => (
     <>
@@ -127,7 +185,7 @@ export default function SettingsMenu({ isDarkMode, toggleDarkMode, getNodes, get
       </button>
       <div style={{ height: 1, backgroundColor: 'var(--border-color)', margin: '4px 0' }} />
       <button
-        onClick={() => handleExport(() => exportPng(getNodes(), isDarkMode), 'PNG exported', 'PNG failed')}
+        onClick={() => handleExport(() => exportPng(getNodes(), theme), 'PNG exported', 'PNG failed')}
         style={itemStyle()}
         onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)' }}
         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
@@ -135,7 +193,7 @@ export default function SettingsMenu({ isDarkMode, toggleDarkMode, getNodes, get
         PNG Image
       </button>
       <button
-        onClick={() => handleExport(() => exportPdf(getNodes(), isDarkMode), 'PDF exported', 'PDF failed')}
+        onClick={() => handleExport(() => exportPdf(getNodes(), theme), 'PDF exported', 'PDF failed')}
         style={itemStyle()}
         onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)' }}
         onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
@@ -199,7 +257,7 @@ export default function SettingsMenu({ isDarkMode, toggleDarkMode, getNodes, get
             padding: 4,
           }}
         >
-          {effectiveView === 'main' ? renderMainView() : renderExportView()}
+          {effectiveView === 'main' ? renderMainView() : effectiveView === 'export' ? renderExportView() : renderThemeView()}
         </div>
       )}
 

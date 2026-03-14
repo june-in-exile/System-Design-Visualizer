@@ -6,13 +6,13 @@ import SettingsMenu from './SettingsMenu'
 const COMPONENT_TYPES = Object.keys(NODE_TYPE_CONFIG) as ComponentType[]
 
 interface SidebarProps {
-  isDarkMode: boolean;
-  toggleDarkMode: () => void;
+  theme: 'light' | 'dark' | 'warm' | 'dream';
+  setTheme: (theme: 'light' | 'dark' | 'warm' | 'dream') => void;
   getNodes: () => Node[];
   getEdges: () => Edge[];
 }
 
-function Sidebar({ isDarkMode, toggleDarkMode, getNodes, getEdges }: SidebarProps) {
+function Sidebar({ theme, setTheme, getNodes, getEdges }: SidebarProps) {
   const onDragStart = (
     event: React.DragEvent,
     componentType: ComponentType
@@ -74,8 +74,8 @@ function Sidebar({ isDarkMode, toggleDarkMode, getNodes, getEdges }: SidebarProp
       </div>
       
       <SettingsMenu 
-        isDarkMode={isDarkMode} 
-        toggleDarkMode={toggleDarkMode} 
+        theme={theme} 
+        setTheme={setTheme} 
         getNodes={getNodes}
         getEdges={getEdges}
       />

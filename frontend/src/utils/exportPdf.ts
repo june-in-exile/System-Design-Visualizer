@@ -5,7 +5,7 @@ import type { Node } from '@xyflow/react'
 
 export async function exportPdf(
   nodes: Node[],
-  isDarkMode: boolean,
+  theme: 'light' | 'dark' | 'warm' | 'dream',
   filename = 'architecture.pdf'
 ): Promise<void> {
   const viewport = document.querySelector('.react-flow__viewport') as HTMLElement | null
@@ -18,10 +18,12 @@ export async function exportPdf(
   const width = bounds.width + padding * 2
   const height = bounds.height + padding * 2
 
+  const backgroundColor = theme === 'dark' ? '#1f2937' : theme === 'warm' ? '#EBE4D1' : theme === 'dream' ? '#F5F3FF' : '#ffffff'
+
   const dataUrl = await toPng(viewport, {
     width,
     height,
-    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+    backgroundColor,
     pixelRatio: 2,
     style: {
       transform: `translate(${-bounds.x + padding}px, ${-bounds.y + padding}px)`,
@@ -35,12 +37,15 @@ export async function exportPdf(
     format: [width + 100, height + 100],
   })
 
+  const textColor = theme === 'dark' ? '#f9fafb' : theme === 'warm' ? '#433422' : theme === 'dream' ? '#312E81' : '#1f2937'
+  const subTextColor = theme === 'dark' ? '#d1d5db' : theme === 'warm' ? '#6B543D' : theme === 'dream' ? '#4338CA' : '#4b5563'
+
   pdf.setFontSize(16)
-  pdf.setTextColor(isDarkMode ? '#f9fafb' : '#1f2937')
+  pdf.setTextColor(textColor)
   pdf.text('Architecture Diagram', 50, 30)
 
   pdf.setFontSize(10)
-  pdf.setTextColor(isDarkMode ? '#d1d5db' : '#4b5563')
+  pdf.setTextColor(subTextColor)
   pdf.text(new Date().toLocaleString(), 50, 46)
 
   pdf.addImage(dataUrl, 'PNG', 50, 60, bounds.width, bounds.height)

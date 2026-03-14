@@ -46,7 +46,7 @@ function generateNodeId(): string {
 }
 
 interface CanvasProps {
-  isDarkMode: boolean;
+  theme: 'light' | 'dark' | 'warm' | 'dream';
   initialNodes?: Node[];
   initialEdges?: Edge[];
   onStateChange?: (nodes: Node[], edges: Edge[]) => void;
@@ -74,7 +74,16 @@ const CONNECTION_TYPE_LABELS: Record<string, string> = {
   unspecified: '',
 }
 
-function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChange }: CanvasProps) {
+function Canvas({ theme, initialNodes = [], initialEdges = [], onStateChange }: CanvasProps) {
+  const isDarkMode = theme === 'dark'
+  const isWarmMode = theme === 'warm'
+  const isDreamMode = theme === 'dream'
+  
+  const defaultEdgeColor = isDarkMode ? '#d1d5db' : isWarmMode ? '#6B543D' : isDreamMode ? '#83A2FE' : '#b1b1b7'
+  const defaultLabelBg = isDarkMode ? '#1f2937' : isWarmMode ? '#EBE4D1' : isDreamMode ? '#F5F3FF' : '#ffffff'
+  const gridColor = isDarkMode ? '#444' : isWarmMode ? '#D6C2A1' : isDreamMode ? '#DBC5FC' : '#ccc'
+  const tooltipBg = isDarkMode ? '#1e293b' : isWarmMode ? '#EBD8C7' : isDreamMode ? '#ECB2FF' : '#f1f5f9'
+  const tooltipHover = isDarkMode ? '#1e293b' : isWarmMode ? '#EBE2A4' : isDreamMode ? '#DBC5FC' : '#f8fafc'
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges)
@@ -493,7 +502,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
           }
           if (!apply) return edge;
           
-          const color = isDarkMode ? '#d1d5db' : '#b1b1b7'
+          const color = defaultEdgeColor
           let markerEnd: Edge['markerEnd'] = undefined
           let markerStart: Edge['markerStart'] = undefined
           
@@ -513,7 +522,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
         });
       })
     },
-    [setEdges, pushHistory, isDarkMode, selectedNodeIds]
+    [setEdges, pushHistory, theme, selectedNodeIds]
   )
 
   const onEdgeReverse = useCallback(
@@ -578,13 +587,13 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
         targetHandle: params.targetHandle,
         type: 'handdrawn',
         data: { connectionType: 'unspecified', protocol: '', direction: 'uni' },
-        style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 },
-        markerEnd: { type: MarkerType.ArrowClosed, color: isDarkMode ? '#d1d5db' : '#b1b1b7' },
+        style: { stroke: defaultEdgeColor, strokeWidth: 2 },
+        markerEnd: { type: MarkerType.ArrowClosed, color: defaultEdgeColor },
         animated: false,
       }
       setEdges((eds) => [...eds, newEdge])
     },
-    [setEdges, isDarkMode, pushHistory]
+    [setEdges, theme, pushHistory]
   )
 
   const onNodesDelete = useCallback(
@@ -743,19 +752,19 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
     ]
 
     const demoEdges: Edge[] = [
-      { id: 'e-client-dns', source: 'demo-client', target: 'demo-dns', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'dns' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
-      { id: 'e-client-cdn', source: 'demo-client', target: 'demo-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
-      { id: 'e-client-firewall', source: 'demo-client', target: 'demo-firewall', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
-      { id: 'e-firewall-lb', source: 'demo-firewall', target: 'demo-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
-      { id: 'e-cdn-storage', source: 'demo-cdn', target: 'demo-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
-      { id: 'e-lb-proxy', source: 'demo-lb', target: 'demo-reverse-proxy', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
-      { id: 'e-proxy-apigw', source: 'demo-reverse-proxy', target: 'demo-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
-      { id: 'e-apigw-service', source: 'demo-apigw', target: 'demo-service', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
-      { id: 'e-service-mq', source: 'demo-service', target: 'demo-mq', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'async', protocol: 'amqp' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
-      { id: 'e-service-dbm', source: 'demo-service', target: 'demo-db-master', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
-      { id: 'e-service-dbs', source: 'demo-service', target: 'demo-db-slave', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
-      { id: 'e-service-cache', source: 'demo-service', target: 'demo-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false },
-      { id: 'e-service-logger', source: 'demo-service', target: 'demo-logger', sourceHandle: 'left-source', targetHandle: 'right-target', data: { connectionType: 'async', protocol: 'http' }, style: { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }, type: 'handdrawn', animated: false }
+      { id: 'e-client-dns', source: 'demo-client', target: 'demo-dns', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'sync', protocol: 'dns' }, style: { stroke: defaultEdgeColor, strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-client-cdn', source: 'demo-client', target: 'demo-cdn', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { stroke: defaultEdgeColor, strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-client-firewall', source: 'demo-client', target: 'demo-firewall', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { stroke: defaultEdgeColor, strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-firewall-lb', source: 'demo-firewall', target: 'demo-lb', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { stroke: defaultEdgeColor, strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-cdn-storage', source: 'demo-cdn', target: 'demo-storage', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'https' }, style: { stroke: defaultEdgeColor, strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-lb-proxy', source: 'demo-lb', target: 'demo-reverse-proxy', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: { stroke: defaultEdgeColor, strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-proxy-apigw', source: 'demo-reverse-proxy', target: 'demo-apigw', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: { stroke: defaultEdgeColor, strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-apigw-service', source: 'demo-apigw', target: 'demo-service', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'http' }, style: { stroke: defaultEdgeColor, strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-service-mq', source: 'demo-service', target: 'demo-mq', sourceHandle: 'right-source', targetHandle: 'left-target', data: { connectionType: 'async', protocol: 'amqp' }, style: { stroke: defaultEdgeColor, strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-service-dbm', source: 'demo-service', target: 'demo-db-master', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: { stroke: defaultEdgeColor, strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-service-dbs', source: 'demo-service', target: 'demo-db-slave', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'database' }, style: { stroke: defaultEdgeColor, strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-service-cache', source: 'demo-service', target: 'demo-cache', sourceHandle: 'bottom-source', targetHandle: 'top-target', data: { connectionType: 'sync', protocol: 'resp' }, style: { stroke: defaultEdgeColor, strokeWidth: 2 }, type: 'handdrawn', animated: false },
+      { id: 'e-service-logger', source: 'demo-service', target: 'demo-logger', sourceHandle: 'left-source', targetHandle: 'right-target', data: { connectionType: 'async', protocol: 'http' }, style: { stroke: defaultEdgeColor, strokeWidth: 2 }, type: 'handdrawn', animated: false }
     ]
 
     setNodes(demoNodes)
@@ -766,7 +775,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
         rfInstance.fitView({ padding: 0.2, duration: 500 })
       }
     }, 50)
-  }, [pushHistory, setNodes, setEdges, isDarkMode, rfInstance])
+  }, [pushHistory, setNodes, setEdges, theme, rfInstance])
 
   const handleTwitter = useCallback(() => {
     pushHistory()
@@ -807,7 +816,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
       { id: 'tw-monitor', type: 'architecture', position: { x: 50, y: 1200 }, data: { label: 'Monitor', componentType: 'logger', properties: { product: 'prometheus', logType: 'all', alerting: true } } },
     ]
 
-    const edgeStyle = { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }
+    const edgeStyle = { stroke: defaultEdgeColor, strokeWidth: 2 }
 
     const twitterEdges: Edge[] = [
       // User Request Flow (Sync)
@@ -855,7 +864,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
         rfInstance.fitView({ padding: 0.2, duration: 500 })
       }
     }, 50)
-  }, [pushHistory, setNodes, setEdges, isDarkMode, rfInstance])
+  }, [pushHistory, setNodes, setEdges, theme, rfInstance])
 
   const handleYouTube = useCallback(() => {
     pushHistory()
@@ -897,7 +906,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
       { id: 'yt-monitor', type: 'architecture', position: { x: 100, y: 1250 }, data: { label: 'Monitor', componentType: 'logger', properties: { product: 'datadog', logType: 'all', alerting: true } } },
     ]
 
-    const edgeStyle = { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }
+    const edgeStyle = { stroke: defaultEdgeColor, strokeWidth: 2 }
 
     const ytEdges: Edge[] = [
       // Request Flow
@@ -950,7 +959,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
         rfInstance.fitView({ padding: 0.2, duration: 500 })
       }
     }, 50)
-  }, [pushHistory, setNodes, setEdges, isDarkMode, rfInstance])
+  }, [pushHistory, setNodes, setEdges, theme, rfInstance])
 
   const handleGoogle = useCallback(() => {
     pushHistory()
@@ -994,7 +1003,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
       { id: 'gg-monitor', type: 'architecture', position: { x: 0, y: 1200 }, data: { label: 'Monitor', componentType: 'logger', properties: { product: 'elk', logType: 'all', alerting: true } } },
     ]
 
-    const edgeStyle = { stroke: isDarkMode ? '#d1d5db' : '#b1b1b7', strokeWidth: 2 }
+    const edgeStyle = { stroke: defaultEdgeColor, strokeWidth: 2 }
 
     const googleEdges: Edge[] = [
       // Request Flow
@@ -1038,7 +1047,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
         rfInstance.fitView({ padding: 0.2, duration: 500 })
       }
     }, 50)
-  }, [pushHistory, setNodes, setEdges, isDarkMode, rfInstance])
+  }, [pushHistory, setNodes, setEdges, theme, rfInstance])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, backgroundColor: 'var(--bg-primary)' }}>
@@ -1144,7 +1153,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
               const displayLabel = edgeLabel || autoLabel || undefined
               const isNodeSelected = selectedNodeIds.includes(e.source) || selectedNodeIds.includes(e.target);
               const isHighlighted = e.selected || isNodeSelected;
-              const color = isHighlighted ? '#3b82f6' : isDarkMode ? '#d1d5db' : '#b1b1b7'
+              const color = isHighlighted ? '#3b82f6' : defaultEdgeColor
               const direction = edgeData.direction as string | undefined
               const arrowMarker = { type: MarkerType.ArrowClosed, color }
               const markerEnd = direction === 'none' ? undefined : arrowMarker
@@ -1154,7 +1163,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
                 selectable: true,
                 label: displayLabel,
                 labelStyle: { fill: color, fontSize: 11, fontWeight: 600 },
-                labelBgStyle: { fill: isDarkMode ? '#1f2937' : '#ffffff', fillOpacity: 0.85 },
+                labelBgStyle: { fill: defaultLabelBg, fillOpacity: 0.85 },
                 labelBgPadding: [6, 3] as [number, number],
                 labelBgBorderRadius: 3,
                 markerEnd,
@@ -1205,7 +1214,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
               variant={BackgroundVariant.Dots}
               gap={20}
               size={1.5}
-              color={isDarkMode ? '#444' : '#ccc'}
+              color={gridColor}
             />
             
             {analysisResult && (
@@ -1358,7 +1367,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
                       PROBLEMS
                     </h3>
                     <span style={{ 
-                      backgroundColor: isDarkMode ? '#1e293b' : '#f1f5f9',
+                      backgroundColor: tooltipBg,
                       color: 'var(--text-primary)', 
                       padding: '2px 6px', 
                       borderRadius: 12, 
@@ -1407,7 +1416,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
                         }
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = isDarkMode ? '#1e293b' : '#f8fafc'
+                        e.currentTarget.style.backgroundColor = tooltipHover
                         const closeBtn = e.currentTarget.querySelector('.dismiss-btn') as HTMLElement
                         if (closeBtn) closeBtn.style.opacity = '1'
                       }}

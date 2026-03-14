@@ -31,6 +31,55 @@
   --accent: #3b82f6;
 }
 
+.warm {
+  /* Warm Theme */
+  --bg-primary: #EBE4D1;
+  --bg-secondary: #EBD8C7;
+  --bg-tertiary: #EBE2A4;
+  --text-primary: #433422;
+  --text-secondary: #6B543D;
+  --border-color: #D6C2A1;
+  --node-text-secondary: #8C755E;
+  --btn-primary-bg: #EBB863;
+  --btn-primary-text: #ffffff;
+  --btn-disabled-bg: #EBE2A4;
+  --btn-active-bg: #EBC962;
+  --accent: #EBC962;
+}
+
+.dream {
+  /* Dream Theme */
+  --bg-primary: #F5F3FF;
+  --bg-secondary: #B5DFFF;
+  --bg-tertiary: #DBC5FC;
+  --text-primary: #312E81;
+  --text-secondary: #4334CA;
+  --border-color: #83A2FE;
+  --node-text-secondary: #6366F1;
+  --btn-primary-bg: #9991FF;
+  --btn-primary-text: #ffffff;
+  --btn-disabled-bg: #DBC5FC;
+  --btn-active-bg: #9A8FFF;
+  --accent: #ECB2FF;
+}
+
+.cyberpunk {
+  /* CyberPunk Theme */
+  --bg-primary: #050505;
+  --bg-secondary: #0f0f0f;
+  --bg-tertiary: #1a1a1a;
+  --text-primary: #00f3ff;
+  --text-secondary: #ff0055;
+  --border-color: #00f3ff;
+  --node-text-secondary: #bc00ff;
+  --btn-primary-bg: #ff0055;
+  --btn-primary-text: #ffffff;
+  --btn-disabled-bg: #222222;
+  --btn-active-bg: #00f3ff;
+  --accent: #ff0055;
+}
+
+
 * {
   box-sizing: border-box;
   margin: 0;
