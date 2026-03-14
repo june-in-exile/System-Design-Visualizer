@@ -66,6 +66,12 @@ go test ./... -v
 - **Scalability**: 異步解耦 (MQ)、流量削峰建議、資料庫垂直切分提醒。
 - **Observability**: Logger/Monitor 缺失檢查、告警配置驗證。
 
+## 🗺️ 未來展望 (Roadmap)
+
+- [ ] **自定義分析參數**：提供用戶設定 DAU (日活躍用戶)、QPS (每秒查詢率) 等參數的功能，並在架構分析 (Analyze) 時將這些參數納入考量（例如：高 QPS 時建議增加 Load Balancer 或 Cache）。
+- [ ] **基礎設施即代碼 (IaC) 整合**：串接 Terraform 等工具，方便技術人員根據架構圖快速生成部署腳本。
+- [ ] **AI 部署提示詞導出**：將系統設計導出為專屬的 AI Prompt，協助非技術人員透過 AI 工具（如 ChatGPT, Claude）快速理解並實作部署。
+
 ## 📂 專案結構
 
 - `/frontend`: 包含 React 原始碼、React Flow 組件、自定義 Hook 與 API 調用邏輯。
