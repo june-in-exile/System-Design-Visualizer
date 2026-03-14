@@ -105,12 +105,14 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
   const [dismissedWarnings, setDismissedWarnings] = useState<Set<number>>(new Set())
   const [systemParams, setSystemParams] = useState<SystemParams>({})
 
+  const [clipboard, setClipboard] = useState<{ nodes: Node[]; edges: Edge[] } | null>(null)
+
   const [panelHeight, setPanelHeight] = useState(250)
   const [propertyPanelWidth, setPropertyPanelWidth] = useState(300)
   const [showPropertyPanel, setShowPropertyPanel] = useState(true)
   const isDraggingRef = useRef(false)
   const panelHeightRef = useRef(250)
-  
+
   useEffect(() => {
     panelHeightRef.current = panelHeight
   }, [panelHeight])
@@ -234,6 +236,70 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
     redoRef.current = []
   }, [nodes, edges])
 
+  const copyToClipboard = useCallback(() => {
+    if (selectedNodeIds.length === 0) return
+
+    const nodesToCopy = nodes.filter(n => selectedNodeIds.includes(n.id))
+    const edgesToCopy = edges.filter(e => 
+      selectedNodeIds.includes(e.source) && selectedNodeIds.includes(e.target)
+    )
+
+    setClipboard({
+      nodes: JSON.parse(JSON.stringify(nodesToCopy)),
+      edges: JSON.parse(JSON.stringify(edgesToCopy)),
+    })
+  }, [nodes, edges, selectedNodeIds])
+
+  const pasteFromClipboard = useCallback(() => {
+    if (!clipboard) return
+
+    pushHistory()
+
+    const idMap = new Map<string, string>()
+    const offset = { x: 40, y: 40 }
+
+    const newNodes = clipboard.nodes.map(node => {
+      const newNodeId = generateNodeId()
+      idMap.set(node.id, newNodeId)
+      return {
+        ...node,
+        id: newNodeId,
+        position: {
+          x: node.position.x + offset.x,
+          y: node.position.y + offset.y,
+        },
+        selected: true,
+      }
+    })
+
+    const newEdges = clipboard.edges.map(edge => {
+      const newSource = idMap.get(edge.source) || edge.source
+      const newTarget = idMap.get(edge.target) || edge.target
+      const newEdgeId = `edge-${newSource}-${newTarget}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+      
+      return {
+        ...edge,
+        id: newEdgeId,
+        source: newSource,
+        target: newTarget,
+        selected: true,
+      }
+    })
+
+    setNodes(nds => nds.map(n => ({ ...n, selected: false })).concat(newNodes))
+    setEdges(eds => eds.map(e => ({ ...e, selected: false })).concat(newEdges))
+    
+    const newNodeIds = newNodes.map(n => n.id)
+    setSelectedNodeIds(newNodeIds)
+    if (newNodeIds.length > 0) setSelectedNodeId(newNodeIds[0])
+    
+    // Update clipboard with new positions so consecutive pastes are offset
+    setClipboard({
+      nodes: newNodes,
+      edges: newEdges,
+    })
+  }, [clipboard, pushHistory, setNodes, setEdges])
+
   const undo = useCallback(() => {
     if (historyRef.current.length === 0) return
 
@@ -342,10 +408,22 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
 
   const onNodeDragStart = useCallback((event: React.MouseEvent, _node: Node) => {
     if (event.shiftKey) {
-      const draggedNodeIds = [_node.id]
+      // Duplicate all selected nodes (fall back to the dragged node if none selected)
+      const draggedNodeIds = selectedNodeIds.length > 0 && selectedNodeIds.includes(_node.id)
+        ? selectedNodeIds
+        : [_node.id]
       duplicateNodes(draggedNodeIds, { x: 0, y: 0 }, false)
+
+      // Shift+click may toggle selection — re-select all dragged nodes
+      const draggedSet = new Set(draggedNodeIds)
+      requestAnimationFrame(() => {
+        setNodes(nds => nds.map(n => ({
+          ...n,
+          selected: draggedSet.has(n.id) ? true : n.selected,
+        })))
+      })
     }
-  }, [duplicateNodes])
+  }, [duplicateNodes, selectedNodeIds, setNodes])
 
   const canMerge = selectedNodeIds.length === 2
   const selectedNodeForSplit = selectedNodes.length > 0 ? selectedNodes[0] : null
@@ -623,23 +701,27 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
 
   const onSelectionChange = useCallback(({ nodes: selectedNodes, edges: selectedEdges }: { nodes: Node[]; edges: Edge[] }) => {
     const nodeIds = selectedNodes.map(n => n.id)
+    const nodeIdSet = new Set(nodeIds)
     setSelectedNodeIds(nodeIds)
     setSelectedNodeId(nodeIds.length > 0 ? nodeIds[0] : null)
-    
-    let preferredEdges = selectedEdges
-    if (nodeIds.length >= 2) {
-      const internalEdges = selectedEdges.filter(e => nodeIds.includes(e.source) && nodeIds.includes(e.target))
-      if (internalEdges.length > 0) {
-        preferredEdges = internalEdges
-      }
+
+    if (nodeIds.length === 0) {
+      // No nodes selected — edges were explicitly selected
+      setSelectedEdgeId(selectedEdges.length > 0 ? selectedEdges[0].id : null)
+    } else {
+      // Auto-select edges where both endpoints are selected, deselect the rest
+      setEdges(eds => eds.map(e => ({
+        ...e,
+        selected: nodeIdSet.has(e.source) && nodeIdSet.has(e.target),
+      })))
+      setSelectedEdgeId(null)
     }
-    setSelectedEdgeId(preferredEdges.length > 0 ? preferredEdges[0].id : null)
 
     // Automatically show the property panel when something is selected
     if (selectedNodes.length > 0 || selectedEdges.length > 0) {
       setShowPropertyPanel(true)
     }
-  }, [setShowPropertyPanel])
+  }, [setShowPropertyPanel, setEdges])
 
   const onConnect: OnConnect = useCallback(
     (params) => {
@@ -715,9 +797,12 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
     [rfInstance, setNodes, pushHistory]
   )
 
-  const handleAnalyze = useCallback(async () => {
-    if (nodes.length === 0) return
+  const isAnalyzingRef = useRef(false)
 
+  const handleAnalyze = useCallback(async () => {
+    if (nodes.length === 0 || isAnalyzingRef.current) return
+
+    isAnalyzingRef.current = true
     setAnalyzing(true)
     setDismissedWarnings(new Set()) // Reset dismissed warnings for new analysis
     try {
@@ -768,24 +853,47 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
         ],
       })
     } finally {
+      isAnalyzingRef.current = false
       setAnalyzing(false)
     }
   }, [nodes, edges, systemParams])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === 'a') {
+      const target = e.target as HTMLElement
+      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+      
+      if (isInput) return
+
+      if (e.ctrlKey && e.key === 'a' || (e.metaKey && e.key === 'a')) {
         e.preventDefault()
-        if (nodes.length > 0 && !analyzing) {
-          handleAnalyze()
-        }
+        setNodes((nds) => nds.map((node) => ({ ...node, selected: true })))
+        setEdges((eds) => eds.map((edge) => ({ ...edge, selected: true })))
+        
+        const allNodeIds = nodes.map(n => n.id)
+        setSelectedNodeIds(allNodeIds)
+        if (allNodeIds.length > 0) setSelectedNodeId(allNodeIds[0])
       }
+
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
         e.preventDefault()
         redo()
       } else if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
         e.preventDefault()
         undo()
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
+        // Only prevent default if we actually copied something
+        if (selectedNodeIds.length > 0) {
+          e.preventDefault()
+          copyToClipboard()
+        }
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
+        if (clipboard) {
+          e.preventDefault()
+          pasteFromClipboard()
+        }
       }
       if (e.ctrlKey && e.key === 'm') {
         e.preventDefault()
@@ -794,7 +902,23 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [nodes.length, analyzing, handleAnalyze, undo, redo, canMerge, mergeSelectedNodes])
+  }, [undo, redo, canMerge, mergeSelectedNodes, copyToClipboard, pasteFromClipboard, selectedNodeIds, clipboard, nodes.length, analyzing, handleAnalyze])
+
+  // Auto-analyze whenever the topology or system parameters change
+  useEffect(() => {
+    // If there are no nodes, clear the analysis result
+    if (nodes.length === 0) {
+      setAnalysisResult(null)
+      return
+    }
+
+    // Use a debounce timer to avoid excessive analysis requests during rapid changes
+    const timer = setTimeout(() => {
+      handleAnalyze()
+    }, 800)
+
+    return () => clearTimeout(timer)
+  }, [nodes, systemParams, handleAnalyze])
 
   const handleDemo = useCallback(() => {
     pushHistory()
@@ -1128,7 +1252,6 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
       >
         <ToolbarButton
           label={analyzing ? 'Analyzing...' : 'Analyze'}
-          shortcut="Ctrl+A"
           onClick={handleAnalyze}
           disabled={analyzing || nodes.length === 0}
         />
@@ -1275,8 +1398,7 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
               }
 
               const displayLabel = edgeLabel || autoLabel || undefined
-              const isNodeSelected = selectedNodeIds.includes(e.source) || selectedNodeIds.includes(e.target);
-              const isHighlighted = e.selected || isNodeSelected;
+              const isHighlighted = e.selected;
               const color = isHighlighted ? '#3b82f6' : defaultEdgeColor
               const direction = edgeData.direction as string | undefined
               const arrowMarker = { type: MarkerType.ArrowClosed, color }
