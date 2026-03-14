@@ -3,6 +3,7 @@ import type { ComponentType } from '../types/topology'
 
 interface PropertyPanelProps {
   selectedNode: Node | null
+  selectedEdgeId: string | null
   onNodeDataChange: (nodeId: string, newData: Record<string, unknown>) => void
 }
 
@@ -318,9 +319,13 @@ const getTooltip = (label: string, description?: string) => {
 
 export default function PropertyPanel({
   selectedNode,
+  selectedEdgeId,
   onNodeDataChange,
 }: PropertyPanelProps) {
   if (!selectedNode) {
+    if (selectedEdgeId) {
+      return null
+    }
     return (
       <aside
         style={{
@@ -335,6 +340,7 @@ export default function PropertyPanel({
           fontSize: 14,
           fontStyle: 'italic',
           textAlign: 'center',
+          flex: 1,
         }}
       >
         Select a component to view properties
@@ -1427,6 +1433,7 @@ export default function PropertyPanel({
         borderLeft: '1px solid var(--border-color)',
         backgroundColor: 'var(--bg-secondary)',
         overflowY: 'auto',
+        flex: 1,
       }}
     >
       <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>

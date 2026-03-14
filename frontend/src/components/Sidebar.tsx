@@ -134,6 +134,7 @@ function Sidebar({ theme, setTheme, getNodes, getEdges }: SidebarProps) {
             fontWeight: 700,
             letterSpacing: '-0.01em',
             color: 'var(--text-primary)',
+            fontFamily: 'var(--font-hand)',
           }}
         >
           Architect<span style={{ color: 'var(--accent)' }}>Mind</span>

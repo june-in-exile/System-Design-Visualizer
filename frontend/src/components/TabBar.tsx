@@ -8,6 +8,8 @@ interface TabBarProps {
   readonly onAddTab: () => void
   readonly onCloseTab: (tabId: string) => void
   readonly onRenameTab: (tabId: string, newName: string) => void
+  readonly isSidebarOpen: boolean
+  readonly onToggleSidebar: () => void
 }
 
 function TabBar({
@@ -17,6 +19,8 @@ function TabBar({
   onAddTab,
   onCloseTab,
   onRenameTab,
+  isSidebarOpen,
+  onToggleSidebar,
 }: TabBarProps) {
   const [editingTabId, setEditingTabId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
@@ -60,13 +64,47 @@ function TabBar({
         backgroundColor: 'var(--bg-primary)',
         borderBottom: '1px solid var(--border-color)',
         height: 36,
-        paddingLeft: 8,
+        paddingLeft: 4,
         gap: 0,
         overflowX: 'auto',
         overflowY: 'hidden',
         flexShrink: 0,
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       }}
     >
+      <button
+        onClick={onToggleSidebar}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 32,
+          height: 28,
+          border: 'none',
+          background: 'none',
+          color: 'var(--text-secondary)',
+          cursor: 'pointer',
+          borderRadius: 4,
+          fontSize: 18,
+          lineHeight: 1,
+          marginRight: 4,
+          flexShrink: 0,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'
+          e.currentTarget.style.color = 'var(--text-primary)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent'
+          e.currentTarget.style.color = 'var(--text-secondary)'
+        }}
+        title={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
+      >
+        {isSidebarOpen ? '⇠' : '⇢'}
+      </button>
+
+      <div style={{ height: 20, width: 1, backgroundColor: 'var(--border-color)', marginRight: 4 }} />
+
       {tabs.map((tab) => {
         const isActive = tab.id === activeTabId
         const isEditing = tab.id === editingTabId

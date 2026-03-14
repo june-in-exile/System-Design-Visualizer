@@ -99,6 +99,7 @@ export default function EdgePropertyPanel({
         borderLeft: '1px solid var(--border-color)',
         backgroundColor: 'var(--bg-secondary)',
         overflowY: 'auto',
+        flex: 1,
       }}
     >
       <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>

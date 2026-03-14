@@ -106,6 +106,8 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
   const [systemParams, setSystemParams] = useState<SystemParams>({})
 
   const [panelHeight, setPanelHeight] = useState(250)
+  const [propertyPanelWidth, setPropertyPanelWidth] = useState(300)
+  const [showPropertyPanel, setShowPropertyPanel] = useState(true)
   const isDraggingRef = useRef(false)
   const panelHeightRef = useRef(250)
   
@@ -577,7 +579,12 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
       }
     }
     setSelectedEdgeId(preferredEdges.length > 0 ? preferredEdges[0].id : null)
-  }, [])
+
+    // Automatically show the property panel when something is selected
+    if (selectedNodes.length > 0 || selectedEdges.length > 0) {
+      setShowPropertyPanel(true)
+    }
+  }, [setShowPropertyPanel])
 
   const onConnect: OnConnect = useCallback(
     (params) => {
@@ -1099,7 +1106,7 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
         )}
         {analysisResult && (
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
               {analysisResult.success
                 ? `${analysisResult.nodeCount} nodes, ${analysisResult.edgeCount} edges`
                 : 'Analysis failed'}
@@ -1130,8 +1137,9 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
                   border: '1px solid var(--border-color)',
                   backgroundColor: 'var(--bg-secondary)',
                   color: 'var(--text-primary)',
-                  fontSize: 16,
-                  fontWeight: 600,
+                  fontSize: 13,
+                  fontWeight: 400,
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                   cursor: 'pointer',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }}
@@ -1345,6 +1353,7 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
                 zIndex: 10,
                 position: 'relative',
                 boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.05)',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
               }}
             >
               <div
@@ -1523,18 +1532,99 @@ function Canvas({ theme, setTheme, initialNodes = [], initialEdges = [], onState
             </div>
           )}
         </div>
-        <ComponentPropertyPanel
-          selectedNode={selectedNode}
-          onNodeDataChange={onNodeDataChange}
-        />
-        <EdgePropertyPanel
-          selectedEdgeId={selectedEdgeId}
-          edges={edges}
-          onEdgeDataChange={onEdgeDataChange}
-          onEdgeAnimatedChange={onEdgeAnimatedChange}
-          onEdgeDirectionChange={onEdgeDirectionChange}
-          onEdgeReverse={onEdgeReverse}
-        />
+        {showPropertyPanel && (
+          <div style={{ position: 'relative' }}>
+            <div
+              onMouseDown={(e) => {
+                e.preventDefault()
+                isDraggingRef.current = true
+                const startX = e.clientX
+                const startWidth = propertyPanelWidth
+                const handleMouseMove = (moveEvent: MouseEvent) => {
+                  const delta = startX - moveEvent.clientX
+                  const newWidth = Math.max(200, Math.min(600, startWidth + delta))
+                  setPropertyPanelWidth(newWidth)
+                }
+                const handleMouseUp = () => {
+                  isDraggingRef.current = false
+                  document.removeEventListener('mousemove', handleMouseMove)
+                  document.removeEventListener('mouseup', handleMouseUp)
+                }
+                document.addEventListener('mousemove', handleMouseMove)
+                document.addEventListener('mouseup', handleMouseUp)
+              }}
+              style={{
+                position: 'absolute',
+                left: -4,
+                top: 0,
+                bottom: 0,
+                width: 8,
+                cursor: 'col-resize',
+                zIndex: 20,
+                backgroundColor: 'transparent',
+              }}
+              title="Resize panel"
+            />
+            <div
+              style={{
+                width: propertyPanelWidth,
+                display: 'flex',
+                flexDirection: 'column',
+                borderLeft: '1px solid var(--border-color)',
+                backgroundColor: 'var(--bg-secondary)',
+              }}
+            >
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '8px 12px',
+                borderBottom: '1px solid var(--border-color)',
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>Properties</span>
+                <button
+                  onClick={() => setShowPropertyPanel(false)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    fontSize: 16,
+                    padding: 2,
+                    lineHeight: 1,
+                    borderRadius: 3,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--bg-primary)'
+                    e.currentTarget.style.color = 'var(--text-primary)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                    e.currentTarget.style.color = 'var(--text-secondary)'
+                  }}
+                  title="Close panel"
+                >
+                  ×
+                </button>
+              </div>
+              <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <ComponentPropertyPanel
+                  selectedNode={selectedNode}
+                  selectedEdgeId={selectedEdgeId}
+                  onNodeDataChange={onNodeDataChange}
+                />
+                <EdgePropertyPanel
+                  selectedEdgeId={selectedEdgeId}
+                  edges={edges}
+                  onEdgeDataChange={onEdgeDataChange}
+                  onEdgeAnimatedChange={onEdgeAnimatedChange}
+                  onEdgeDirectionChange={onEdgeDirectionChange}
+                  onEdgeReverse={onEdgeReverse}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

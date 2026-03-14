@@ -5,6 +5,7 @@ import TabBar from './components/TabBar'
 import { useCanvasTabs } from './hooks/useCanvasTabs'
 
 function App() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [theme, setTheme] = useState<'light' | 'dark' | 'warm' | 'dream' | 'cyberpunk'>(() => {
     const saved = localStorage.getItem('theme') as 'light' | 'dark' | 'warm' | 'dream' | 'cyberpunk'
     if (saved) return saved
@@ -18,6 +19,17 @@ function App() {
     }
     localStorage.setItem('theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault()
+        setIsSidebarOpen(prev => !prev)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const {
     tabs,
@@ -48,13 +60,15 @@ function App() {
         color: 'var(--text-primary)',
       }}
     >
-      <Sidebar 
-        theme={theme} 
-        setTheme={setTheme}
-        getNodes={() => getCurrentState().nodes}
-        getEdges={() => getCurrentState().edges}
-      />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      {isSidebarOpen && (
+        <Sidebar 
+          theme={theme} 
+          setTheme={setTheme}
+          getNodes={() => getCurrentState().nodes}
+          getEdges={() => getCurrentState().edges}
+        />
+      )}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <TabBar
           tabs={tabs}
           activeTabId={activeTabId}
@@ -62,6 +76,8 @@ function App() {
           onAddTab={addTab}
           onCloseTab={closeTab}
           onRenameTab={renameTab}
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
         <Canvas
           key={activeTabId}

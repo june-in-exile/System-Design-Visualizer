@@ -54,8 +54,9 @@ export default function ToolbarButton({
               ? 'var(--btn-active-bg)'
               : 'var(--bg-secondary)',
           color: disabled ? 'var(--text-secondary)' : 'var(--text-primary)',
-          fontSize: 16,
-          fontWeight: 600,
+          fontSize: 13,
+          fontWeight: 400,
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
           cursor: disabled ? 'not-allowed' : 'pointer',
           ...style,
         }}
@@ -79,6 +80,7 @@ export default function ToolbarButton({
             fontSize: 11,
             fontWeight: 500,
             color: 'var(--text-secondary)',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
             whiteSpace: 'nowrap',
             zIndex: 50,
             pointerEvents: 'none',
