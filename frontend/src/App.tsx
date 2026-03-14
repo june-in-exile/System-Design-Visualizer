@@ -44,7 +44,6 @@ function App() {
         display: 'flex',
         height: '100vh',
         width: '100vw',
-        fontFamily: 'system-ui, sans-serif',
         backgroundColor: 'var(--bg-primary)',
         color: 'var(--text-primary)',
       }}

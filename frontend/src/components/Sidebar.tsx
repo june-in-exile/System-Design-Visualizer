@@ -59,11 +59,10 @@ function Sidebar({ theme, setTheme, getNodes, getEdges }: SidebarProps) {
         <h2
           style={{
             margin: 0,
-            fontSize: 18,
-            fontWeight: 800,
-            letterSpacing: '-0.03em',
+            fontSize: 22,
+            fontWeight: 700,
+            letterSpacing: '-0.01em',
             color: 'var(--text-primary)',
-            fontFamily: 'system-ui, -apple-system, sans-serif',
           }}
         >
           Architect<span style={{ color: 'var(--accent)' }}>Mind</span>
@@ -74,7 +73,7 @@ function Sidebar({ theme, setTheme, getNodes, getEdges }: SidebarProps) {
         <h3
           style={{
             margin: '0 0 12px',
-            fontSize: 12,
+            fontSize: 14,
             textTransform: 'uppercase',
             letterSpacing: '0.05em',
             fontWeight: 700,
@@ -100,7 +99,7 @@ function Sidebar({ theme, setTheme, getNodes, getEdges }: SidebarProps) {
                   border: `1px solid ${config.color}40`,
                   backgroundColor: 'var(--bg-primary)',
                   cursor: 'grab',
-                  fontSize: 13,
+                  fontSize: 16,
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,

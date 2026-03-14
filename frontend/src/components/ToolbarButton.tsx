@@ -54,8 +54,8 @@ export default function ToolbarButton({
               ? 'var(--btn-active-bg)'
               : 'var(--bg-secondary)',
           color: disabled ? 'var(--text-secondary)' : 'var(--text-primary)',
-          fontSize: 13,
-          fontWeight: 500,
+          fontSize: 16,
+          fontWeight: 600,
           cursor: disabled ? 'not-allowed' : 'pointer',
           ...style,
         }}
