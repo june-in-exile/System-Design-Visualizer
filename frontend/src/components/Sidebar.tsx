@@ -1,5 +1,4 @@
 import { memo, useRef, useEffect, useMemo, useState } from 'react'
-import type { Node, Edge } from '@xyflow/react'
 import type { ComponentType } from '../types/topology'
 import { NODE_TYPE_CONFIG } from '../nodes/nodeConfig'
 import logo from '../assets/logo.svg'
@@ -8,12 +7,7 @@ import { stableSeed } from '../utils/rough'
 
 const COMPONENT_TYPES = Object.keys(NODE_TYPE_CONFIG) as ComponentType[]
 
-interface SidebarProps {
-  theme: 'light' | 'dark' | 'warm' | 'dream' | 'cyberpunk';
-  setTheme: (theme: 'light' | 'dark' | 'warm' | 'dream' | 'cyberpunk') => void;
-  getNodes: () => Node[];
-  getEdges: () => Edge[];
-}
+interface SidebarProps {}
 
 const SidebarItem = memo(({ type, onDragStart }: { type: ComponentType, onDragStart: (e: React.DragEvent, type: ComponentType) => void }) => {
   const config = NODE_TYPE_CONFIG[type]
@@ -84,7 +78,7 @@ const SidebarItem = memo(({ type, onDragStart }: { type: ComponentType, onDragSt
   )
 })
 
-function Sidebar({ theme, setTheme, getNodes, getEdges }: SidebarProps) {
+function Sidebar({}: SidebarProps) {
   const onDragStart = (
     event: React.DragEvent,
     componentType: ComponentType

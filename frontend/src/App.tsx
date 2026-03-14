@@ -40,7 +40,6 @@ function App() {
     closeTab,
     renameTab,
     updateCanvasStateRef,
-    getCurrentState,
   } = useCanvasTabs()
 
   const handleCanvasStateChange = useCallback(
@@ -61,12 +60,7 @@ function App() {
       }}
     >
       {isSidebarOpen && (
-        <Sidebar 
-          theme={theme} 
-          setTheme={setTheme}
-          getNodes={() => getCurrentState().nodes}
-          getEdges={() => getCurrentState().edges}
-        />
+        <Sidebar />
       )}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <TabBar
