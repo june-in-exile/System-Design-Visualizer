@@ -13,6 +13,7 @@
   --btn-disabled-bg: #e5e7eb;
   --btn-active-bg: #e8e8e3;
   --accent: #4f46e5;
+  --icon-filter: none;
 }
 
 .dark {
@@ -29,6 +30,7 @@
   --btn-disabled-bg: #2a2a2a;
   --btn-active-bg: #2d2d2d;
   --accent: #6366f1;
+  --icon-filter: invert(1);
 }
 
 .warm {
@@ -45,6 +47,7 @@
   --btn-disabled-bg: #EBE2A4;
   --btn-active-bg: #EBC962;
   --accent: #EBB863;
+  --icon-filter: none;
 }
 
 .dream {
@@ -61,6 +64,7 @@
   --btn-disabled-bg: #DBC5FC;
   --btn-active-bg: #9A8FFF;
   --accent: #9991FF;
+  --icon-filter: none;
 }
 
 .cyberpunk {
@@ -77,6 +81,7 @@
   --btn-disabled-bg: #1c1b26;
   --btn-active-bg: #E8D44A;
   --accent: #E8D44A;
+  --icon-filter: invert(1);
 }
 
 
