@@ -123,6 +123,7 @@ func validate(t model.SystemTopology) []Warning {
 	warnings = append(warnings, checkServerlessReplicas(ctx)...)
 	warnings = append(warnings, checkNoAutoScalingSingle(ctx)...)
 	warnings = append(warnings, checkNoHealthCheckBehindLB(ctx)...)
+	warnings = append(warnings, checkCapacity(ctx)...)
 
 	return warnings
 }

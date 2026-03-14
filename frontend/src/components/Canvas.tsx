@@ -20,11 +20,14 @@ import HandDrawnEdge from '../edges/HandDrawnEdge'
 import ComponentPropertyPanel from './ComponentPropertyPanel'
 import EdgePropertyPanel from './EdgePropertyPanel'
 import ExportMenu from './ExportMenu'
+import SystemParamsPanel from './SystemParamsPanel'
+import ToolbarButton from './ToolbarButton'
 import { NODE_TYPE_CONFIG } from '../nodes/nodeConfig'
 import { analyzeTopology } from '../api/topologyApi'
 import type {
   ComponentType,
   SystemTopology,
+  SystemParams,
   AnalyzeResponse,
   Warning,
 } from '../types/topology'
@@ -86,6 +89,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
   const [analyzing, setAnalyzing] = useState(false)
   const [showWarnings, setShowWarnings] = useState(false)
   const [dismissedWarnings, setDismissedWarnings] = useState<Set<number>>(new Set())
+  const [systemParams, setSystemParams] = useState<SystemParams>({})
 
   const [panelHeight, setPanelHeight] = useState(250)
   const isDraggingRef = useRef(false)
@@ -630,6 +634,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
     setAnalyzing(true)
     setDismissedWarnings(new Set()) // Reset dismissed warnings for new analysis
     try {
+      const hasParams = Object.values(systemParams).some(v => v !== undefined && v !== '' && v !== 0)
       const topology: SystemTopology = {
         id: 'current-design',
         name: 'Untitled Design',
@@ -658,6 +663,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
             ((e.data as Record<string, unknown>)?.protocol as string ??
             '') as SystemTopology['edges'][number]['protocol'],
         })),
+        ...(hasParams ? { params: systemParams } : {}),
       }
 
       const result = await analyzeTopology(topology)
@@ -677,7 +683,7 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
     } finally {
       setAnalyzing(false)
     }
-  }, [nodes, edges])
+  }, [nodes, edges, systemParams])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1034,93 +1040,42 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
           backgroundColor: 'var(--bg-primary)'
         }}
       >
-        <button
+        <ToolbarButton
+          label={analyzing ? 'Analyzing...' : 'Analyze'}
+          shortcut="Ctrl+A"
           onClick={handleAnalyze}
           disabled={analyzing || nodes.length === 0}
-          style={{
-            padding: '6px 16px',
-            borderRadius: 6,
-            border: '1px solid var(--border-color)',
-            backgroundColor: nodes.length === 0 ? 'var(--btn-disabled-bg)' : 'var(--bg-secondary)',
-            color: nodes.length === 0 ? 'var(--text-secondary)' : 'var(--text-primary)',
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: nodes.length === 0 ? 'not-allowed' : 'pointer',
-          }}
-          title="Analyze (Ctrl+A)"
-        >
-          {analyzing ? 'Analyzing...' : 'Analyze'}
-        </button>
-        <button
+        />
+        <ToolbarButton
+          label="Duplicate"
+          shortcut="Ctrl+D"
           onClick={duplicateSelectedNode}
           disabled={!selectedNode}
-          style={{
-            padding: '6px 12px',
-            borderRadius: 6,
-            border: '1px solid var(--border-color)',
-            backgroundColor: selectedNode ? 'var(--bg-secondary)' : 'var(--btn-disabled-bg)',
-            color: 'var(--text-primary)',
-            fontSize: 13,
-            fontWeight: 500,
-            cursor: selectedNode ? 'pointer' : 'not-allowed',
-          }}
-          title="Duplicate selected (Ctrl+D)"
-        >
-          Duplicate
-        </button>
-        <button
+        />
+        <ToolbarButton
+          label="Undo"
+          shortcut="Ctrl+Z"
           onClick={undo}
           disabled={historyRef.current.length === 0}
-          style={{
-            padding: '6px 12px',
-            borderRadius: 6,
-            border: '1px solid var(--border-color)',
-            backgroundColor: historyRef.current.length > 0 ? 'var(--bg-secondary)' : 'var(--btn-disabled-bg)',
-            color: 'var(--text-primary)',
-            fontSize: 13,
-            fontWeight: 500,
-            cursor: historyRef.current.length > 0 ? 'pointer' : 'not-allowed',
-          }}
-          title="Undo (Ctrl+Z)"
-        >
-          Undo
-        </button>
+        />
         <ExportMenu nodes={nodes} edges={edges} isDarkMode={isDarkMode} />
+        <SystemParamsPanel
+          params={systemParams}
+          onChange={setSystemParams}
+        />
         {canMerge && (
-          <button
+          <ToolbarButton
+            label="Merge"
+            shortcut="Ctrl+M"
             onClick={mergeSelectedNodes}
-            style={{
-              padding: '6px 12px',
-              borderRadius: 6,
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--bg-secondary)',
-              color: 'var(--text-primary)',
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: 'pointer',
-            }}
-            title="Merge selected nodes (Ctrl+M)"
-          >
-            Merge
-          </button>
+          />
         )}
         {canSplit && (
-          <button
+          <ToolbarButton
+            label="Split"
             onClick={splitSelectedNode}
-            style={{
-              padding: '6px 12px',
-              borderRadius: 6,
-              border: '1px solid var(--border-color)',
-              backgroundColor: 'var(--bg-secondary)',
-              color: 'var(--text-primary)',
-              fontSize: 13,
-              fontWeight: 500,
-              cursor: 'pointer',
-            }}
             title="Split merged node back into individual components"
-          >
-            Split
-          </button>
+          />
         )}
         {analysisResult && (
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -1282,13 +1237,13 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
               <button
                 onClick={handleDemo}
                 style={{
-                  padding: '8px 16px',
+                  padding: '6px 12px',
                   borderRadius: 6,
                   border: '1px solid var(--border-color)',
                   backgroundColor: 'var(--bg-secondary)',
                   color: 'var(--text-primary)',
                   fontSize: 13,
-                  fontWeight: 600,
+                  fontWeight: 500,
                   cursor: 'pointer',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }}
@@ -1298,13 +1253,13 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
               <button
                 onClick={handleTwitter}
                 style={{
-                  padding: '8px 16px',
+                  padding: '6px 12px',
                   borderRadius: 6,
                   border: '1px solid var(--border-color)',
                   backgroundColor: 'var(--bg-secondary)',
                   color: 'var(--text-primary)',
                   fontSize: 13,
-                  fontWeight: 600,
+                  fontWeight: 500,
                   cursor: 'pointer',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }}
@@ -1314,13 +1269,13 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
               <button
                 onClick={handleYouTube}
                 style={{
-                  padding: '8px 16px',
+                  padding: '6px 12px',
                   borderRadius: 6,
                   border: '1px solid var(--border-color)',
                   backgroundColor: 'var(--bg-secondary)',
                   color: 'var(--text-primary)',
                   fontSize: 13,
-                  fontWeight: 600,
+                  fontWeight: 500,
                   cursor: 'pointer',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }}
@@ -1330,13 +1285,13 @@ function Canvas({ isDarkMode, initialNodes = [], initialEdges = [], onStateChang
               <button
                 onClick={handleGoogle}
                 style={{
-                  padding: '8px 16px',
+                  padding: '6px 12px',
                   borderRadius: 6,
                   border: '1px solid var(--border-color)',
                   backgroundColor: 'var(--bg-secondary)',
                   color: 'var(--text-primary)',
                   fontSize: 13,
-                  fontWeight: 600,
+                  fontWeight: 500,
                   cursor: 'pointer',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }}

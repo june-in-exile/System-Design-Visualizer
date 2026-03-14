@@ -47,16 +47,24 @@ var AllRuleNames = []string{
 	"serverless_replicas",
 	"no_autoscaling_single",
 	"no_healthcheck_behind_lb",
+	"high_qps_no_cache",
+	"high_qps_single_lb",
+	"high_qps_no_autoscaling",
+	"high_dau_no_cdn",
+	"storage_growth_no_partitioning",
+	"high_availability_insufficient_replicas",
+	"latency_long_sync_chain",
+	"read_heavy_no_read_replica",
 }
 
 // AnalyzeResponse is returned after parsing and validating the topology.
 type AnalyzeResponse struct {
-	Success    bool      `json:"success"`
-	NodeCount  int       `json:"nodeCount"`
-	EdgeCount  int       `json:"edgeCount"`
-	TotalRules int       `json:"totalRules"`
-	RulesPassed int      `json:"rulesPassed"`
-	Warnings   []Warning `json:"warnings,omitempty"`
+	Success     bool      `json:"success"`
+	NodeCount   int       `json:"nodeCount"`
+	EdgeCount   int       `json:"edgeCount"`
+	TotalRules  int       `json:"totalRules"`
+	RulesPassed int       `json:"rulesPassed"`
+	Warnings    []Warning `json:"warnings,omitempty"`
 }
 
 // ComputeRulesPassed returns (totalRules, rulesPassed) from a set of warnings.

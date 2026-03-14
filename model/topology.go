@@ -2,11 +2,24 @@ package model
 
 // SystemTopology is the top-level graph sent from the frontend.
 type SystemTopology struct {
-	ID      string       `json:"id" binding:"required"`
-	Name    string       `json:"name" binding:"required"`
-	Version int          `json:"version"`
-	Nodes   []SystemNode `json:"nodes" binding:"required"`
-	Edges   []SystemEdge `json:"edges"`
+	ID      string        `json:"id" binding:"required"`
+	Name    string        `json:"name" binding:"required"`
+	Version int           `json:"version"`
+	Nodes   []SystemNode  `json:"nodes" binding:"required"`
+	Edges   []SystemEdge  `json:"edges"`
+	Params  *SystemParams `json:"params,omitempty"`
+}
+
+// SystemParams holds user-defined capacity and performance parameters.
+type SystemParams struct {
+	DAU            int     `json:"dau,omitempty"`
+	PeakQPS        int     `json:"peakQPS,omitempty"`
+	AvgQPS         int     `json:"avgQPS,omitempty"`
+	StorageGB      float64 `json:"storageGB,omitempty"`
+	DailyGrowthGB  float64 `json:"dailyGrowthGB,omitempty"`
+	ReadWriteRatio float64 `json:"readWriteRatio,omitempty"`
+	LatencyTarget  string  `json:"latencyTarget,omitempty"`
+	Availability   string  `json:"availability,omitempty"`
 }
 
 // Position represents the x/y coordinates of a node on the canvas.
@@ -67,6 +80,7 @@ type TopologyContext struct {
 	Edges    []SystemEdge
 	NodeByID map[string]SystemNode
 	Outgoing map[string][]string // source ID -> list of target IDs
+	Params   *SystemParams
 }
 
 // NewTopologyContext builds a TopologyContext from a SystemTopology.
@@ -84,5 +98,6 @@ func NewTopologyContext(t SystemTopology) TopologyContext {
 		Edges:    t.Edges,
 		NodeByID: nodeByID,
 		Outgoing: outgoing,
+		Params:   t.Params,
 	}
 }

@@ -91,7 +91,7 @@ function TabBar({
               userSelect: 'none',
               whiteSpace: 'nowrap',
               position: 'relative',
-              borderTop: isActive ? '2px solid #3b82f6' : '2px solid transparent',
+              borderTop: isActive ? '2px solid var(--accent)' : '2px solid transparent',
             }}
           >
             {isEditing ? (
@@ -105,7 +105,7 @@ function TabBar({
                   width: Math.max(60, editValue.length * 7 + 16),
                   height: 22,
                   fontSize: 12,
-                  border: '1px solid #3b82f6',
+                  border: '1px solid var(--accent)',
                   borderRadius: 3,
                   padding: '0 4px',
                   outline: 'none',

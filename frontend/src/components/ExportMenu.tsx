@@ -118,6 +118,12 @@ export default function ExportMenu({ nodes, edges, isDarkMode }: ExportMenuProps
       <button
         onClick={() => setIsOpen((prev) => !prev)}
         disabled={disabled}
+        onMouseEnter={(e) => {
+          if (!disabled) e.currentTarget.style.backgroundColor = 'var(--btn-active-bg)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = disabled ? 'var(--btn-disabled-bg)' : 'var(--bg-secondary)'
+        }}
         style={{
           padding: '6px 12px',
           borderRadius: 6,

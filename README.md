@@ -10,7 +10,8 @@ ArchitectMind 是一個網頁版的系統架構繪圖與分析工具。它提供
 
 - **互動式畫布**：基於 React Flow v12，支援節點拖放、連線與自定義屬性。
 - **組件側邊欄**：提供標準的系統設計組件庫（Client, CDN, API Gateway, Message Queue 等）。
-- **後端語法驗證 (Analyze)**：支援 38+ 項自動化規則，檢查架構圖中的組件類型與連線邏輯是否符合系統設計最佳實踐。
+- **後端語法驗證 (Analyze)**：支援 46+ 項自動化規則，檢查架構圖中的組件類型與連線邏輯是否符合系統設計最佳實踐。
+- **自定義分析參數**：可設定 DAU、QPS、Storage、可用性目標等系統參數，Analyze 時會根據這些參數產生更精準的容量規劃建議。
 - **多頁籤支援 (Tabs)**：支援同時開啟多個設計畫布，方便進行架構對比與多專案並行。
 - **一鍵生成預設架構 (Presets)**：提供經典系統設計模板（Standard Demo, Twitter, YouTube, Google），協助快速上手。
 - **導出功能 (Export)**：支援導出為 Excalidraw, Image, Mermaid 與 PDF 格式。
@@ -58,7 +59,7 @@ go test ./... -v
 
 ## 🔍 架構驗證規則範例 (Validation Rules)
 
-後端目前實作了超過 38 項進階架構驗證規則，完整清單請參閱 [api/RULES.md](./api/RULES.md)。規則涵蓋：
+後端目前實作了超過 38 項[架構驗證規則](./docs/RULES.md)，涵蓋：
 
 - **Availability**: 單點故障檢查 (SPOF)、LB/API Gateway 冗餘驗證、Health Check 配置。
 - **Performance**: 讀寫分離建議、快取一致性與失效策略、CDN 全球加速建議。
@@ -68,7 +69,6 @@ go test ./... -v
 
 ## 🗺️ 未來展望 (Roadmap)
 
-- [ ] **自定義分析參數**：提供用戶設定 DAU (日活躍用戶)、QPS (每秒查詢率) 等參數的功能，並在架構分析 (Analyze) 時將這些參數納入考量（例如：高 QPS 時建議增加 Load Balancer 或 Cache）。
 - [ ] **基礎設施即代碼 (IaC) 整合**：串接 Terraform 等工具，方便技術人員根據架構圖快速生成部署腳本。
 - [ ] **AI 部署提示詞導出**：將系統設計導出為專屬的 AI Prompt，協助非技術人員透過 AI 工具（如 ChatGPT, Claude）快速理解並實作部署。
 

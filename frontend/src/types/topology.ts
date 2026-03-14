@@ -167,12 +167,24 @@ export interface SystemEdge {
   label?: string
 }
 
+export interface SystemParams {
+  dau?: number
+  peakQPS?: number
+  avgQPS?: number
+  storageGB?: number
+  dailyGrowthGB?: number
+  readWriteRatio?: number
+  latencyTarget?: string
+  availability?: string
+}
+
 export interface SystemTopology {
   id: string
   name: string
   version: number
   nodes: SystemNode[]
   edges: SystemEdge[]
+  params?: SystemParams
 }
 
 export interface Warning {

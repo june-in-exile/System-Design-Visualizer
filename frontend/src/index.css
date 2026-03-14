@@ -10,6 +10,9 @@
   --node-text-secondary: #6b7280;
   --btn-primary-bg: #4f46e5;
   --btn-primary-text: #ffffff;
+  --btn-disabled-bg: #e5e7eb;
+  --btn-active-bg: #e8e8e3;
+  --accent: #3b82f6;
 }
 
 .dark {
@@ -23,6 +26,9 @@
   --node-text-secondary: #9ca3af;
   --btn-primary-bg: #6366f1;
   --btn-primary-text: #ffffff;
+  --btn-disabled-bg: #2a2a2a;
+  --btn-active-bg: #2d2d2d;
+  --accent: #3b82f6;
 }
 
 * {

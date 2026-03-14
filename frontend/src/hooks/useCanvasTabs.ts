@@ -1,11 +1,13 @@
 import { useState, useCallback, useRef } from 'react'
 import type { Node, Edge } from '@xyflow/react'
+import type { SystemParams } from '../types/topology'
 
 export interface CanvasTab {
   readonly id: string
   readonly name: string
   readonly nodes: readonly Node[]
   readonly edges: readonly Edge[]
+  readonly params: SystemParams
 }
 
 let tabCounter = 0
@@ -20,6 +22,7 @@ function createEmptyTab(name: string): CanvasTab {
     name: name,
     nodes: [],
     edges: [],
+    params: {},
   }
 }
 
@@ -28,7 +31,7 @@ export function useCanvasTabs() {
     return [createEmptyTab('Untitled 1')]
   })
   const [activeTabId, setActiveTabId] = useState<string>(() => tabs[0].id)
-  const canvasStateRef = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null)
+  const canvasStateRef = useRef<{ nodes: Node[]; edges: Edge[]; params: SystemParams } | null>(null)
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0]
 
@@ -38,7 +41,7 @@ export function useCanvasTabs() {
     setTabs((prev) =>
       prev.map((tab) =>
         tab.id === activeTabId
-          ? { ...tab, nodes: [...state.nodes], edges: [...state.edges] }
+          ? { ...tab, nodes: [...state.nodes], edges: [...state.edges], params: { ...state.params } }
           : tab
       )
     )
@@ -86,8 +89,8 @@ export function useCanvasTabs() {
   }, [])
 
   const updateCanvasStateRef = useCallback(
-    (nodes: Node[], edges: Edge[]) => {
-      canvasStateRef.current = { nodes, edges }
+    (nodes: Node[], edges: Edge[], params?: SystemParams) => {
+      canvasStateRef.current = { nodes, edges, params: params ?? {} }
     },
     []
   )
